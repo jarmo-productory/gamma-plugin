@@ -92,6 +92,18 @@ function renderTimetable(timetable) {
   timetable.items.forEach(item => {
     const itemDiv = document.createElement('div');
     itemDiv.className = 'slide-item';
+    let contentHtml = '';
+    item.content.forEach(contentItem => {
+        contentHtml += `<p>${contentItem.text}</p>`;
+        if (contentItem.subItems && contentItem.subItems.length > 0) {
+            contentHtml += `<ul class="sub-items-list">`;
+            contentItem.subItems.forEach(subItem => {
+                contentHtml += `<li class="sub-item">${subItem}</li>`;
+            });
+            contentHtml += `</ul>`;
+        }
+    });
+
     itemDiv.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: baseline;">
         <h3 class="slide-item__title">${item.title}</h3>
@@ -100,6 +112,9 @@ function renderTimetable(timetable) {
           <input type="number" value="${item.duration}" min="1" style="width: 40px; margin-left: 8px;" data-id="${item.id}" class="duration-input">
           <span style="font-size: 12px; color: #6b7280;">min</span>
         </div>
+      </div>
+      <div class="slide-item__content">
+        ${contentHtml}
       </div>
     `;
     mainContainer.appendChild(itemDiv);
