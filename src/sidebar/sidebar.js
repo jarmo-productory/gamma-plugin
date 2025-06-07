@@ -166,13 +166,15 @@ function renderTimetable(timetable) {
     const contentHtml = generateContentHtml(item.content);
 
     itemDiv.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <div class="slide-item-header">
         <h3 class="slide-item__title">${item.title}</h3>
-        <div>
+        <div class="slide-item-time">
           <span style="font-size: 12px; color: #6b7280;">${item.startTime} - ${item.endTime}</span>
-          <input type="number" value="${item.duration}" min="1" style="width: 40px; margin-left: 8px;" data-id="${item.id}" class="duration-input">
-          <span style="font-size: 12px; color: #6b7280;">min</span>
         </div>
+      </div>
+      <div class="duration-slider-container">
+          <input type="range" min="0" max="15" value="${item.duration}" class="duration-slider" data-id="${item.id}">
+          <span class="duration-value">${item.duration} min</span>
       </div>
       <div class="slide-item__content">
         ${contentHtml}
@@ -181,34 +183,40 @@ function renderTimetable(timetable) {
     mainContainer.appendChild(itemDiv);
   });
 
-  const durationInputs = mainContainer.querySelectorAll('.duration-input');
-  durationInputs.forEach(input => {
-    input.addEventListener('change', handleDurationChange);
+  const durationSliders = mainContainer.querySelectorAll('.duration-slider');
+  durationSliders.forEach(slider => {
+    slider.addEventListener('input', handleDurationChange);
   });
 }
 
 const debouncedSave = debounce(() => {
     if (currentTimetable) {
         saveData(getTimetableKey(), currentTimetable);
+        console.log('Timetable saved.');
     }
 }, 500);
 
 function handleDurationChange(event) {
-    const itemId = event.target.getAttribute('data-id');
-    const newDuration = parseInt(event.target.value, 10);
+  const itemId = event.target.getAttribute('data-id');
+  const newDuration = parseInt(event.target.value, 10);
+  
+  // Update the value display next to the slider
+  const valueDisplay = event.target.nextElementSibling;
+  if(valueDisplay) {
+    valueDisplay.textContent = `${newDuration} min`;
+  }
 
-    if (currentTimetable) {
-        const item = currentTimetable.items.find(i => i.id === itemId);
-        if (item) {
-            item.duration = newDuration;
-            // Recalculate the entire timetable
-            const newTimetable = generateTimetable(currentTimetable.items, {
-                startTime: currentTimetable.startTime
-            });
-            renderTimetable(newTimetable);
-            debouncedSave();
-        }
+  if (currentTimetable) {
+    const item = currentTimetable.items.find(i => i.id === itemId);
+    if (item) {
+      item.duration = newDuration;
+      const newTimetable = generateTimetable(currentTimetable.items, {
+        startTime: currentTimetable.startTime
+      });
+      renderTimetable(newTimetable);
+      debouncedSave();
     }
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -19,11 +19,17 @@ interface SlideData {
 
 function extractSlides(): SlideData[] {
   const slides: SlideData[] = [];
+  const seenIds = new Set<string>();
   const cardWrappers = document.querySelectorAll<HTMLDivElement>('div.card-wrapper[data-card-id]');
 
   cardWrappers.forEach((card, idx) => {
     try {
-      const id = card.getAttribute('data-card-id') || `slide-${idx}`;
+      const id = card.getAttribute('data-card-id');
+      if (!id || seenIds.has(id)) {
+        return; // Skip if no ID or if it's a duplicate
+      }
+      seenIds.add(id);
+
       const level = parseInt(card.getAttribute('data-card-depth') || '0', 10);
       const heading = card.querySelector('.node-heading .heading [data-node-view-content-inner="heading"]');
       const title = heading ? heading.textContent?.trim() || '' : '';
@@ -58,8 +64,7 @@ function extractSlides(): SlideData[] {
 
       slides.push({ id, title, content, order: idx, level });
     } catch (e) {
-      // Error handling for DOM changes
-      console.warn('Failed to extract slide', idx, e);
+      console.error(`Error processing slide ${idx}:`, e);
     }
   });
   return slides;

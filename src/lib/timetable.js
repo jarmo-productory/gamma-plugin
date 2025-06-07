@@ -56,33 +56,42 @@ function parseTime(timeString) {
  * @returns {Timetable}
  */
 export function generateTimetable(slides, options = {}) {
-  const { startTime = '09:00', defaultDuration = 5 } = options;
+  const {
+    startTime = '09:00',
+    defaultDuration = 5,
+    breakAfter = 60,
+    breakDuration = 10
+  } = options;
 
-  const timetableItems = [];
-  let currentTime = parseTime(startTime);
-  let totalDuration = 0;
+  let currentTime = new Date(`1970-01-01T${startTime}:00`);
+  let timeSinceLastBreak = 0;
 
-  slides.forEach((slide) => {
+  const items = slides.map(slide => {
+    const itemDuration = slide.duration === 0 ? 0 : (slide.duration || defaultDuration);
+    
+    // Logic for breaks can be added here later
+    // For now, just add the item duration
+
     const itemStartTime = new Date(currentTime);
-    const duration = defaultDuration;
-    
-    currentTime.setMinutes(currentTime.getMinutes() + duration);
-    totalDuration += duration;
-    
-    timetableItems.push({
+    currentTime.setMinutes(currentTime.getMinutes() + itemDuration);
+    const itemEndTime = new Date(currentTime);
+
+    timeSinceLastBreak += itemDuration;
+
+    return {
       id: slide.id,
       title: slide.title,
       content: slide.content,
-      startTime: formatTime(itemStartTime),
-      duration,
-      endTime: formatTime(currentTime),
-    });
+      startTime: itemStartTime.toTimeString().slice(0, 5),
+      endTime: itemEndTime.toTimeString().slice(0, 5),
+      duration: itemDuration,
+    };
   });
 
   return {
     startTime,
-    items: timetableItems,
-    totalDuration,
+    items,
+    totalDuration: timeSinceLastBreak,
   };
 }
 

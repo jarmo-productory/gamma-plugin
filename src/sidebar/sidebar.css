@@ -186,4 +186,22 @@ body {
 
 .content-link:hover {
   text-decoration: underline;
+}
+
+.duration-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.duration-slider {
+  flex-grow: 1;
+}
+
+.duration-value {
+  font-size: 13px;
+  color: #4b5563;
+  min-width: 50px; /* Prevents layout shift */
+  text-align: right;
 } 
