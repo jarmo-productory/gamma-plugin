@@ -4,9 +4,12 @@
 const EXT_VERSION = '0.1.0';
 
 import { generateTimetable, generateCSV, downloadFile } from '../lib/timetable.js';
+import { saveData, loadData, debounce } from '../lib/storage.js';
 
 let connected = false;
 let lastSlides = [];
+let currentTimetable = null;
+const getTimetableKey = () => `timetable-${window.location.href}`;
 
 function renderDebugInfo(slides = []) {
   const slideCount = slides.length;
@@ -65,6 +68,7 @@ function renderSlides(slides = []) {
 }
 
 function renderTimetable(timetable) {
+  currentTimetable = timetable;
   const mainContainer = document.getElementById('sidebar-main');
   if (!mainContainer) return;
   
@@ -75,7 +79,8 @@ function renderTimetable(timetable) {
   exportBtn.id = 'export-btn';
   exportBtn.textContent = 'Export to CSV';
   exportBtn.onclick = () => {
-    const csv = generateCSV(timetable);
+    if (!currentTimetable) return;
+    const csv = generateCSV(currentTimetable);
     const filename = `gamma-timetable-${new Date().toISOString().slice(0,10)}.csv`;
     downloadFile(filename, csv);
   };
@@ -90,14 +95,47 @@ function renderTimetable(timetable) {
     itemDiv.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: baseline;">
         <h3 class="slide-item__title">${item.title}</h3>
-        <span style="font-size: 12px; color: #6b7280;">${item.startTime} - ${item.endTime} (${item.duration}m)</span>
+        <div>
+          <span style="font-size: 12px; color: #6b7280;">${item.startTime} - ${item.endTime}</span>
+          <input type="number" value="${item.duration}" min="1" style="width: 40px; margin-left: 8px;" data-id="${item.id}" class="duration-input">
+          <span style="font-size: 12px; color: #6b7280;">min</span>
+        </div>
       </div>
     `;
     mainContainer.appendChild(itemDiv);
   });
+
+  const durationInputs = mainContainer.querySelectorAll('.duration-input');
+  durationInputs.forEach(input => {
+    input.addEventListener('change', handleDurationChange);
+  });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+const debouncedSave = debounce(() => {
+    if (currentTimetable) {
+        saveData(getTimetableKey(), currentTimetable);
+    }
+}, 500);
+
+function handleDurationChange(event) {
+    const itemId = event.target.getAttribute('data-id');
+    const newDuration = parseInt(event.target.value, 10);
+
+    if (currentTimetable) {
+        const item = currentTimetable.items.find(i => i.id === itemId);
+        if (item) {
+            item.duration = newDuration;
+            // Recalculate the entire timetable
+            const newTimetable = generateTimetable(currentTimetable.items, {
+                startTime: currentTimetable.startTime
+            });
+            renderTimetable(newTimetable);
+            debouncedSave();
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   const versionDisplay = document.getElementById('version-display');
   const footerContainer = document.getElementById('sidebar-footer');
 
@@ -113,11 +151,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Initial load
-  chrome.runtime.sendMessage({ type: 'REQUEST_GAMMA_SLIDES' }, (response) => {
-    connected = true;
-    updateUI(response?.slides);
-  });
+  // Initial load from storage or slides
+  const savedTimetable = await loadData(getTimetableKey());
+  if (savedTimetable) {
+    renderTimetable(savedTimetable);
+  } else {
+      chrome.runtime.sendMessage({ type: 'REQUEST_GAMMA_SLIDES' }, (response) => {
+        connected = true;
+        updateUI(response?.slides);
+      });
+  }
 
   // Listen for live updates
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
