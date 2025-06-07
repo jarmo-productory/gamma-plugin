@@ -92,4 +92,23 @@ body {
   border-radius: 4px;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+#generate-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #4f46e5;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#generate-btn:hover {
+  background-color: #4338ca;
 } 

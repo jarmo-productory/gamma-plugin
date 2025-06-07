@@ -3,7 +3,10 @@
 // Placeholder: Replace with actual version from manifest.json during build
 const EXT_VERSION = '0.1.0';
 
+import { generateTimetable } from '../lib/timetable.js';
+
 let connected = false;
+let lastSlides = [];
 
 function renderDebugInfo(slides = []) {
   const slideCount = slides.length;
@@ -22,11 +25,25 @@ function renderSlides(slides = []) {
   const mainContainer = document.getElementById('sidebar-main');
   
   if (!mainContainer) return;
+  mainContainer.innerHTML = ''; // Clear previous content
+
+  // Add "Generate Timetable" button
+  const generateBtn = document.createElement('button');
+  generateBtn.id = 'generate-btn';
+  generateBtn.textContent = 'Generate Timetable';
+  generateBtn.onclick = () => {
+    const timetable = generateTimetable(lastSlides);
+    renderTimetable(timetable);
+  };
+  mainContainer.appendChild(generateBtn);
+
+  const slideList = document.createElement('div');
+  slideList.id = 'slide-list';
+  mainContainer.appendChild(slideList);
 
   if (!slides.length) {
-    mainContainer.innerHTML = '<p>No slides found on the current page.</p>';
+    slideList.innerHTML = '<p>No slides found on the current page.</p>';
   } else {
-    mainContainer.innerHTML = ''; // Clear previous content
     slides.forEach(slide => {
       const slideDiv = document.createElement('div');
       slideDiv.className = 'slide-item';
@@ -42,9 +59,28 @@ function renderSlides(slides = []) {
       });
       slideDiv.appendChild(title);
       slideDiv.appendChild(contentList);
-      mainContainer.appendChild(slideDiv);
+      slideList.appendChild(slideDiv);
     });
   }
+}
+
+function renderTimetable(timetable) {
+  const mainContainer = document.getElementById('sidebar-main');
+  if (!mainContainer) return;
+  
+  mainContainer.innerHTML = `<h3>Timetable (Total: ${timetable.totalDuration} mins)</h3>`;
+
+  timetable.items.forEach(item => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'slide-item';
+    itemDiv.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <h3 class="slide-item__title">${item.title}</h3>
+        <span style="font-size: 12px; color: #6b7280;">${item.startTime} - ${item.endTime} (${item.duration}m)</span>
+      </div>
+    `;
+    mainContainer.appendChild(itemDiv);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -56,7 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const updateUI = (slides = []) => {
-    renderSlides(slides);
+    lastSlides = slides || [];
+    renderSlides(lastSlides);
     if(footerContainer) {
       footerContainer.innerHTML = renderDebugInfo(slides);
     }
