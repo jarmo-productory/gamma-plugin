@@ -1,3 +1,5 @@
+import { jsPDF } from 'jspdf';
+
 /**
  * @typedef {object} Slide
  * @property {string} id
@@ -102,17 +104,77 @@ export function generateCSV(timetable) {
 /**
  * Triggers a file download for the given content.
  * @param {string} filename
- * @param {string} content
- * @param {string} mimeType
+ * @param {string} url
+ * @param {boolean} isBlob
  */
-export function downloadFile(filename, content, mimeType = 'text/csv;charset=utf-8;') {
-    const blob = new Blob([content], { type: mimeType });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+export function downloadFile(filename, url, isBlob = false) {
+  const link = document.createElement('a');
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+
+  if (isBlob) {
+    link.href = url;
+  } else {
+    const blob = new Blob([url], { type: 'text/csv;charset=utf-8;' });
+    link.href = URL.createObjectURL(blob);
+  }
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
+ * Generates an Excel file from timetable data.
+ * @param {object} timetable
+ * @returns {Blob}
+ */
+export function generateXLSX(timetable) {
+  const worksheet = XLSX.utils.json_to_sheet(timetable.items);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Timetable');
+  const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  return new Blob([wbout], { type: 'application/octet-stream' });
+}
+
+/**
+ * Generates a PDF file from timetable data.
+ * @param {object} timetable
+ */
+export function generatePDF(timetable) {
+    const doc = new jsPDF();
+    let y = 10;
+
+    doc.setFontSize(16);
+    doc.text('Gamma Timetable', 10, y);
+    y += 10;
+
+    timetable.items.forEach(item => {
+        doc.setFontSize(12);
+        doc.text(`${item.startTime} - ${item.endTime} (${item.duration}m) - ${item.title}`, 10, y);
+        y += 7;
+
+        item.content.forEach(contentItem => {
+            doc.setFontSize(10);
+            doc.text(contentItem.text, 15, y);
+            y+= 5;
+            if (contentItem.subItems && contentItem.subItems.length > 0) {
+                contentItem.subItems.forEach(subItem => {
+                    doc.text(`- ${subItem}`, 20, y);
+                    y += 5;
+                });
+            }
+        });
+        y+=5;
+    });
+
+    doc.save('gamma-timetable.pdf');
+}
+
+/**
+ * Copies text to the clipboard.
+ * @param {string} text
+ * @returns {Promise<void>}
+ */
+export function copyToClipboard(text) {
+  return navigator.clipboard.writeText(text);
 } 

@@ -3,13 +3,48 @@
 // Placeholder: Replace with actual version from manifest.json during build
 const EXT_VERSION = '0.1.0';
 
-import { generateTimetable, generateCSV, downloadFile } from '../lib/timetable.js';
+import {
+  generateTimetable,
+  generateCSV,
+  downloadFile,
+  generateXLSX,
+  generatePDF,
+  copyToClipboard,
+} from '../lib/timetable.js';
 import { saveData, loadData, debounce } from '../lib/storage.js';
 
 let connected = false;
 let lastSlides = [];
 let currentTimetable = null;
 const getTimetableKey = () => `timetable-${window.location.href}`;
+
+function generateContentHtml(content) {
+  let contentHtml = '';
+  content.forEach(contentItem => {
+    switch (contentItem.type) {
+      case 'paragraph':
+        contentHtml += `<p>${contentItem.text}</p>`;
+        break;
+      case 'image':
+        contentHtml += `<img src="${contentItem.text}" class="thumbnail-img">`;
+        break;
+      case 'link':
+        contentHtml += `<a href="${contentItem.text}" target="_blank" class="content-link">${contentItem.text}</a>`;
+        break;
+      case 'list_item':
+        contentHtml += `<p>${contentItem.text}</p>`;
+        if (contentItem.subItems && contentItem.subItems.length > 0) {
+          contentHtml += `<ul class="sub-items-list">`;
+          contentItem.subItems.forEach(subItem => {
+            contentHtml += `<li class="sub-item">${subItem}</li>`;
+          });
+          contentHtml += `</ul>`;
+        }
+        break;
+    }
+  });
+  return contentHtml;
+}
 
 function renderDebugInfo(slides = []) {
   const slideCount = slides.length;
@@ -24,47 +59,38 @@ function renderDebugInfo(slides = []) {
   `;
 }
 
-function renderSlides(slides = []) {
+function renderSlides(slides) {
   const mainContainer = document.getElementById('sidebar-main');
-  
   if (!mainContainer) return;
   mainContainer.innerHTML = ''; // Clear previous content
 
+  slides.forEach(slide => {
+    const slideDiv = document.createElement('div');
+    slideDiv.className = 'slide-item';
+    const contentHtml = generateContentHtml(slide.content);
+
+    slideDiv.innerHTML = `
+      <h3 class="slide-item__title">${slide.title}</h3>
+      <div class="slide-item__content">
+        ${contentHtml}
+      </div>
+    `;
+    mainContainer.appendChild(slideDiv);
+  });
+
   // Add "Generate Timetable" button
   const generateBtn = document.createElement('button');
-  generateBtn.id = 'generate-btn';
+  generateBtn.className = 'btn';
   generateBtn.textContent = 'Generate Timetable';
   generateBtn.onclick = () => {
-    const timetable = generateTimetable(lastSlides);
-    renderTimetable(timetable);
+    const startTime = prompt("Enter start time (e.g., 09:00):", "09:00");
+    if(startTime) {
+      const timetable = generateTimetable(slides, { startTime });
+      renderTimetable(timetable);
+      saveData(getTimetableKey(), timetable);
+    }
   };
   mainContainer.appendChild(generateBtn);
-
-  const slideList = document.createElement('div');
-  slideList.id = 'slide-list';
-  mainContainer.appendChild(slideList);
-
-  if (!slides.length) {
-    slideList.innerHTML = '<p>No slides found on the current page.</p>';
-  } else {
-    slides.forEach(slide => {
-      const slideDiv = document.createElement('div');
-      slideDiv.className = 'slide-item';
-      const title = document.createElement('h3');
-      title.className = 'slide-item__title';
-      title.textContent = slide.title || '(Untitled Slide)';
-      const contentList = document.createElement('ul');
-      contentList.className = 'slide-item__content';
-      slide.content.forEach(c => {
-        const li = document.createElement('li');
-        li.textContent = c;
-        contentList.appendChild(li);
-      });
-      slideDiv.appendChild(title);
-      slideDiv.appendChild(contentList);
-      slideList.appendChild(slideDiv);
-    });
-  }
 }
 
 function renderTimetable(timetable) {
@@ -75,34 +101,69 @@ function renderTimetable(timetable) {
   const header = document.createElement('h3');
   header.innerHTML = `Timetable (Total: ${timetable.totalDuration} mins)`;
   
-  const exportBtn = document.createElement('button');
-  exportBtn.id = 'export-btn';
-  exportBtn.textContent = 'Export to CSV';
-  exportBtn.onclick = () => {
+  const generateBtn = document.createElement('button');
+  generateBtn.className = 'btn';
+  generateBtn.textContent = 'Regenerate Timetable';
+  generateBtn.onclick = () => {
+    const startTime = prompt("Enter start time (e.g., 09:00):", "09:00");
+    if(startTime) {
+      const newTimetable = generateTimetable(lastSlides, { startTime });
+      renderTimetable(newTimetable);
+      saveData(getTimetableKey(), newTimetable);
+    }
+  };
+
+  const exportOptionsContainer = document.createElement('div');
+  exportOptionsContainer.className = 'export-options';
+  exportOptionsContainer.innerHTML = `
+    <button id="export-csv-btn" class="export-btn">CSV</button>
+    <button id="export-xlsx-btn" class="export-btn">Excel</button>
+    <button id="export-pdf-btn" class="export-btn">PDF</button>
+    <button id="copy-clipboard-btn" class="export-btn">Copy</button>
+  `;
+
+  mainContainer.innerHTML = ''; // Clear previous content
+  mainContainer.appendChild(header);
+  mainContainer.appendChild(generateBtn);
+  mainContainer.appendChild(exportOptionsContainer);
+
+  const exportCSVBtn = exportOptionsContainer.querySelector('#export-csv-btn');
+  exportCSVBtn.onclick = () => {
     if (!currentTimetable) return;
     const csv = generateCSV(currentTimetable);
     const filename = `gamma-timetable-${new Date().toISOString().slice(0,10)}.csv`;
     downloadFile(filename, csv);
   };
 
-  mainContainer.innerHTML = ''; // Clear previous content
-  mainContainer.appendChild(header);
-  mainContainer.appendChild(exportBtn);
+  const exportXLSXBtn = exportOptionsContainer.querySelector('#export-xlsx-btn');
+  exportXLSXBtn.onclick = () => {
+    if (!currentTimetable) return;
+    const blob = generateXLSX(currentTimetable);
+    const filename = `gamma-timetable-${new Date().toISOString().slice(0,10)}.xlsx`;
+    const url = URL.createObjectURL(blob);
+    downloadFile(filename, url, true);
+  };
+
+  const exportPDFBtn = exportOptionsContainer.querySelector('#export-pdf-btn');
+  exportPDFBtn.onclick = () => {
+    if (!currentTimetable) return;
+    generatePDF(currentTimetable);
+  };
+
+  const copyClipboardBtn = exportOptionsContainer.querySelector('#copy-clipboard-btn');
+  copyClipboardBtn.onclick = () => {
+    if (!currentTimetable) return;
+    const csv = generateCSV(currentTimetable);
+    copyToClipboard(csv).then(() => {
+        copyClipboardBtn.textContent = 'Copied!';
+        setTimeout(() => { copyClipboardBtn.textContent = 'Copy'; }, 2000);
+    });
+  };
 
   timetable.items.forEach(item => {
     const itemDiv = document.createElement('div');
     itemDiv.className = 'slide-item';
-    let contentHtml = '';
-    item.content.forEach(contentItem => {
-        contentHtml += `<p>${contentItem.text}</p>`;
-        if (contentItem.subItems && contentItem.subItems.length > 0) {
-            contentHtml += `<ul class="sub-items-list">`;
-            contentItem.subItems.forEach(subItem => {
-                contentHtml += `<li class="sub-item">${subItem}</li>`;
-            });
-            contentHtml += `</ul>`;
-        }
-    });
+    const contentHtml = generateContentHtml(item.content);
 
     itemDiv.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: baseline;">

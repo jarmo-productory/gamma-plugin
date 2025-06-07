@@ -8,18 +8,17 @@ export default defineConfig({
     outDir: '../dist',
     emptyOutDir: true,
     rollupOptions: {
+      external: ['sheetjs'],
       input: {
-        background: resolve(__dirname, 'src/background.js'),
-        content: resolve(__dirname, 'src/content.ts'),
-        popup: resolve(__dirname, 'src/popup/popup.html'),
-        sidebar: resolve(__dirname, 'src/sidebar/sidebar.html')
+        background: 'src/background.js',
+        content: 'src/content.ts',
+        popup: 'src/popup/popup.html',
+        sidebar: 'src/sidebar/sidebar.html'
       },
       output: {
-        entryFileNames: (chunkInfo) => {
-          if (chunkInfo.name === 'content') return 'content.js';
-          return '[name].js';
-        },
-        assetFileNames: '[name][extname]'
+        entryFileNames: `[name].js`,
+        chunkFileNames: `assets/[name]-[hash].js`,
+        assetFileNames: `[name].[ext]`,
       }
     }
   },
@@ -28,10 +27,9 @@ export default defineConfig({
       targets: [
         { src: resolve(__dirname, 'src/manifest.json'), dest: '.' },
         { src: resolve(__dirname, 'src/assets'), dest: '.' },
-        { src: resolve(__dirname, 'src/popup/popup.js'), dest: 'popup' },
-        { src: resolve(__dirname, 'src/sidebar/sidebar.js'), dest: 'sidebar' },
-        { src: resolve(__dirname, 'src/sidebar/sidebar.css'), dest: 'sidebar' }
-      ]
-    })
+        { src: resolve(__dirname, 'src/popup/popup.js'), dest: 'popup/' },
+        { src: resolve(__dirname, 'src/lib/xlsx.full.min.js'), dest: 'lib/' },
+      ],
+    }),
   ]
 }); 

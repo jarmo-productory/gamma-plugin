@@ -2,19 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Gamma Timetable Sidebar</title>
+  <title>Gamma Timetable</title>
   <link rel="stylesheet" href="sidebar.css">
 </head>
 <body>
-  <header class="sidebar-header">
-    <h2>Course Timetable <span id="version-display" class="version"></span></h2>
-  </header>
-  <main id="sidebar-main" class="sidebar-main">
-    <p>Loading slides...</p>
-  </main>
-  <footer id="sidebar-footer" class="sidebar-footer">
-    <!-- Debug info will be injected here -->
-  </footer>
+  <div id="sidebar-root">
+    <header class="sidebar-header">
+      <h2>Course Timetable <span id="version-display" class="version"></span></h2>
+    </header>
+    <main id="sidebar-main" class="sidebar-main">
+      <p>Loading slides...</p>
+    </main>
+    <footer id="sidebar-footer" class="sidebar-footer">
+      <!-- Debug info will be injected here -->
+    </footer>
+  </div>
+  <script src="../lib/xlsx.full.min.js"></script>
   <script type="module" src="sidebar.js"></script>
 </body>
 </html> 
