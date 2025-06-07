@@ -1,1 +1,1 @@
-chrome.runtime.onInstalled.addListener(()=>{console.log("Gamma Timetable Extension installed.")});
+let s=[];chrome.runtime.onInstalled.addListener(()=>{console.log("Gamma Timetable Extension installed.")});chrome.runtime.onMessage.addListener((e,i,n)=>{e.type==="GAMMA_SLIDES"&&Array.isArray(e.slides)&&(s=e.slides,chrome.runtime.sendMessage({type:"GAMMA_SLIDES",slides:s}))});chrome.runtime.onMessage.addListener((e,i,n)=>{e.type==="REQUEST_GAMMA_SLIDES"&&n({slides:s})});

@@ -1,5 +1,8 @@
 // content.ts - Gamma slide extraction logic
 
+// Add this at the top for TypeScript to recognize the Chrome extension API
+declare var chrome: any;
+
 interface SlideData {
   id: string;
   title: string;
@@ -47,8 +50,20 @@ function extractSlides(): SlideData[] {
   return slides;
 }
 
-// For development: log extracted slides
+function observeAndExtractSlides() {
+  let lastCount = 0;
+  const observer = new MutationObserver(() => {
+    const cards = document.querySelectorAll<HTMLDivElement>('div.card-wrapper[data-card-id]');
+    if (cards.length && cards.length !== lastCount) {
+      lastCount = cards.length;
+      const slides = extractSlides();
+      console.log('Extracted Gamma slides:', slides);
+      chrome.runtime.sendMessage({ type: 'GAMMA_SLIDES', slides });
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
 if (window.location.hostname.endsWith('gamma.app')) {
-  const slides = extractSlides();
-  console.log('Extracted Gamma slides:', slides);
+  observeAndExtractSlides();
 } 

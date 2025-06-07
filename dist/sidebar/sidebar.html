@@ -3,10 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Gamma Timetable Sidebar</title>
-  <style>body{font-family:sans-serif;padding:1em;min-width:300px;}</style>
+  <link rel="stylesheet" crossorigin href="/sidebar.css">
 </head>
 <body>
-  <h2>Course Timetable</h2>
-  <p>Sidebar UI will appear here.</p>
+  <header class="sidebar-header">
+    <h2>Course Timetable <span id="version-display" class="version"></span></h2>
+  </header>
+  <main id="sidebar-main" class="sidebar-main">
+    <p>Loading slides...</p>
+  </main>
+  <footer id="sidebar-footer" class="sidebar-footer">
+    <!-- Debug info will be injected here -->
+  </footer>
+  <script src="sidebar.js"></script>
 </body>
 </html> 
