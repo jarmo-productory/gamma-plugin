@@ -111,4 +111,23 @@ body {
 
 #generate-btn:hover {
   background-color: #4338ca;
+}
+
+#export-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  margin-left: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4f46e5;
+  background-color: #e0e7ff;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background-color 0.2s;
+}
+
+#export-btn:hover {
+  background-color: #c7d2fe;
 } 

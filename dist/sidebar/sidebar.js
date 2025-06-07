@@ -3,7 +3,7 @@
 // Placeholder: Replace with actual version from manifest.json during build
 const EXT_VERSION = '0.1.0';
 
-import { generateTimetable } from '../lib/timetable.js';
+import { generateTimetable, generateCSV, downloadFile } from '../lib/timetable.js';
 
 let connected = false;
 let lastSlides = [];
@@ -68,7 +68,21 @@ function renderTimetable(timetable) {
   const mainContainer = document.getElementById('sidebar-main');
   if (!mainContainer) return;
   
-  mainContainer.innerHTML = `<h3>Timetable (Total: ${timetable.totalDuration} mins)</h3>`;
+  const header = document.createElement('h3');
+  header.innerHTML = `Timetable (Total: ${timetable.totalDuration} mins)`;
+  
+  const exportBtn = document.createElement('button');
+  exportBtn.id = 'export-btn';
+  exportBtn.textContent = 'Export to CSV';
+  exportBtn.onclick = () => {
+    const csv = generateCSV(timetable);
+    const filename = `gamma-timetable-${new Date().toISOString().slice(0,10)}.csv`;
+    downloadFile(filename, csv);
+  };
+
+  mainContainer.innerHTML = ''; // Clear previous content
+  mainContainer.appendChild(header);
+  mainContainer.appendChild(exportBtn);
 
   timetable.items.forEach(item => {
     const itemDiv = document.createElement('div');

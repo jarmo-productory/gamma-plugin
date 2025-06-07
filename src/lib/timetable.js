@@ -82,4 +82,37 @@ export function generateTimetable(slides, options = {}) {
     items: timetableItems,
     totalDuration,
   };
+}
+
+/**
+ * Generates a CSV string from a timetable.
+ * @param {Timetable} timetable
+ * @returns {string}
+ */
+export function generateCSV(timetable) {
+  let csv = 'Item,Start Time,Duration (min),End Time\n';
+  timetable.items.forEach(item => {
+    // Escape quotes in title
+    const title = item.title.replace(/"/g, '""');
+    csv += `"${title}",${item.startTime},${item.duration},${item.endTime}\n`;
+  });
+  return csv;
+}
+
+/**
+ * Triggers a file download for the given content.
+ * @param {string} filename
+ * @param {string} content
+ * @param {string} mimeType
+ */
+export function downloadFile(filename, content, mimeType = 'text/csv;charset=utf-8;') {
+    const blob = new Blob([content], { type: mimeType });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 } 

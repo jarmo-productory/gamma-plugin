@@ -58,7 +58,12 @@ function observeAndExtractSlides() {
       lastCount = cards.length;
       const slides = extractSlides();
       console.log('Extracted Gamma slides:', slides);
-      chrome.runtime.sendMessage({ type: 'GAMMA_SLIDES', slides });
+      try {
+        chrome.runtime.sendMessage({ type: 'GAMMA_SLIDES', slides });
+      } catch (e) {
+        console.warn('Could not send slide data. Extension context may be invalidated.', e);
+        observer.disconnect(); // Stop observing to prevent further errors
+      }
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
