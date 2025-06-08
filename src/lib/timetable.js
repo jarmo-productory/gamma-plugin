@@ -1,5 +1,3 @@
-import { jsPDF } from 'jspdf';
-
 /**
  * @typedef {object} Slide
  * @property {string} id
@@ -143,40 +141,6 @@ export function generateXLSX(timetable) {
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Timetable');
   const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
   return new Blob([wbout], { type: 'application/octet-stream' });
-}
-
-/**
- * Generates a PDF file from timetable data.
- * @param {object} timetable
- */
-export function generatePDF(timetable) {
-    const doc = new jsPDF();
-    let y = 10;
-
-    doc.setFontSize(16);
-    doc.text('Gamma Timetable', 10, y);
-    y += 10;
-
-    timetable.items.forEach(item => {
-        doc.setFontSize(12);
-        doc.text(`${item.startTime} - ${item.endTime} (${item.duration}m) - ${item.title}`, 10, y);
-        y += 7;
-
-        item.content.forEach(contentItem => {
-            doc.setFontSize(10);
-            doc.text(contentItem.text, 15, y);
-            y+= 5;
-            if (contentItem.subItems && contentItem.subItems.length > 0) {
-                contentItem.subItems.forEach(subItem => {
-                    doc.text(`- ${subItem}`, 20, y);
-                    y += 5;
-                });
-            }
-        });
-        y+=5;
-    });
-
-    doc.save('gamma-timetable.pdf');
 }
 
 /**

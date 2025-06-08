@@ -8,7 +8,6 @@ import {
   generateCSV,
   downloadFile,
   generateXLSX,
-  generatePDF,
   copyToClipboard,
 } from '../lib/timetable.js';
 import { saveData, loadData, debounce } from '../lib/storage.js';
@@ -113,7 +112,6 @@ function renderTimetable(timetable) {
   exportOptionsContainer.innerHTML = `
     <button id="export-csv-btn" class="export-btn">CSV</button>
     <button id="export-xlsx-btn" class="export-btn">Excel</button>
-    <button id="export-pdf-btn" class="export-btn">PDF</button>
     <button id="copy-clipboard-btn" class="export-btn">Copy</button>
   `;
   toolbar.appendChild(exportOptionsContainer);
@@ -137,12 +135,6 @@ function renderTimetable(timetable) {
     const filename = `gamma-timetable-${new Date().toISOString().slice(0,10)}.xlsx`;
     const url = URL.createObjectURL(blob);
     downloadFile(filename, url, true);
-  };
-
-  const exportPDFBtn = exportOptionsContainer.querySelector('#export-pdf-btn');
-  exportPDFBtn.onclick = () => {
-    if (!currentTimetable) return;
-    generatePDF(currentTimetable);
   };
 
   const copyClipboardBtn = exportOptionsContainer.querySelector('#copy-clipboard-btn');
