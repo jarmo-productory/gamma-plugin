@@ -1,7 +1,7 @@
 // sidebar.js - Receives slide data and displays it in the sidebar
 
-// Placeholder: Replace with actual version from manifest.json during build
-const EXT_VERSION = '0.1.0';
+// The version is injected by the build process, with a fallback for development
+const EXT_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'DEV';
 
 import {
   generateTimetable,
@@ -126,6 +126,9 @@ function renderTimetable(timetable) {
   const header = document.createElement('h3');
   header.innerHTML = `Timetable (Total: ${timetable.totalDuration} mins)`;
   
+  const toolbar = document.createElement('div');
+  toolbar.className = 'sticky-toolbar';
+
   const generateBtn = document.createElement('button');
   generateBtn.className = 'btn';
   generateBtn.textContent = 'Regenerate Timetable';
@@ -137,6 +140,7 @@ function renderTimetable(timetable) {
       getTimetableKey().then(key => saveData(key, newTimetable));
     }
   };
+  toolbar.appendChild(generateBtn);
 
   const exportOptionsContainer = document.createElement('div');
   exportOptionsContainer.className = 'export-options';
@@ -146,11 +150,11 @@ function renderTimetable(timetable) {
     <button id="export-pdf-btn" class="export-btn">PDF</button>
     <button id="copy-clipboard-btn" class="export-btn">Copy</button>
   `;
+  toolbar.appendChild(exportOptionsContainer);
 
   mainContainer.innerHTML = ''; // Clear previous content
   mainContainer.appendChild(header);
-  mainContainer.appendChild(generateBtn);
-  mainContainer.appendChild(exportOptionsContainer);
+  mainContainer.appendChild(toolbar);
 
   const exportCSVBtn = exportOptionsContainer.querySelector('#export-csv-btn');
   exportCSVBtn.onclick = () => {

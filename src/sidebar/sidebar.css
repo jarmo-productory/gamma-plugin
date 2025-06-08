@@ -151,8 +151,21 @@ body {
 
 .export-options {
   display: flex;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.sticky-toolbar {
+  position: -webkit-sticky; /* For Safari */
+  position: sticky;
+  top: 0;
+  background-color: #ffffff; /* Or your preferred background color */
+  padding: 10px 0;
+  z-index: 100;
+  border-bottom: 1px solid #e5e7eb; /* Light border for separation */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .export-btn {
@@ -204,4 +217,12 @@ body {
   color: #4b5563;
   min-width: 50px; /* Prevents layout shift */
   text-align: right;
+}
+
+@media (max-width: 350px) {
+  .sticky-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 } 

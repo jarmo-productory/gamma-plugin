@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import packageJson from './package.json';
 
 export default defineConfig({
-  root: 'src',
   build: {
-    outDir: '../dist',
+    outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       external: ['sheetjs'],
@@ -13,7 +13,7 @@ export default defineConfig({
         background: 'src/background.js',
         content: 'src/content.ts',
         popup: 'src/popup/popup.html',
-        sidebar: 'src/sidebar/sidebar.html'
+        sidebar: 'src/sidebar/sidebar.js'
       },
       output: {
         entryFileNames: `[name].js`,
@@ -25,11 +25,14 @@ export default defineConfig({
   plugins: [
     viteStaticCopy({
       targets: [
-        { src: resolve(__dirname, 'src/manifest.json'), dest: '.' },
-        { src: resolve(__dirname, 'src/assets'), dest: '.' },
-        { src: resolve(__dirname, 'src/popup/popup.js'), dest: 'popup/' },
-        { src: resolve(__dirname, 'src/lib/xlsx.full.min.js'), dest: 'lib/' },
+        { src: 'src/manifest.json', dest: '.' },
+        { src: 'src/assets', dest: '.' },
+        { src: 'src/popup/popup.js', dest: 'popup/' },
+        { src: 'src/lib/xlsx.full.min.js', dest: 'lib/' },
       ],
     }),
-  ]
+  ],
+  define: {
+    '__APP_VERSION__': JSON.stringify(packageJson.version),
+  },
 }); 
