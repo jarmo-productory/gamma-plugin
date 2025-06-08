@@ -177,16 +177,25 @@ function renderTimetable(timetable) {
   const mainContainer = document.getElementById('sidebar-main');
   if (!mainContainer) return;
   
-  const header = document.createElement('h3');
-  header.innerHTML = `Timetable (Total: ${timetable.totalDuration} mins)`;
-  
-  const toolbar = document.createElement('div');
-  toolbar.className = 'sticky-toolbar';
+  const durationBadge = document.getElementById('duration-badge');
+  if (durationBadge) {
+    const hours = Math.floor(timetable.totalDuration / 60);
+    const minutes = timetable.totalDuration % 60;
+    durationBadge.textContent = `${hours}h ${minutes}m`;
+  }
 
-  const generateBtn = document.createElement('button');
-  generateBtn.className = 'btn';
-  generateBtn.textContent = 'Regenerate Timetable';
-  generateBtn.onclick = () => {
+  const toolbar = document.getElementById('functions-toolbar');
+  if (!toolbar) return;
+  toolbar.innerHTML = ''; // Clear previous content
+
+  const timeDisplaySection = document.createElement('div');
+  timeDisplaySection.className = 'time-display-section';
+  // Time display will be added in the next task
+
+  const refreshBtn = document.createElement('button');
+  refreshBtn.className = 'btn refresh-btn';
+  refreshBtn.innerHTML = `<img src="/assets/refresh.svg" alt="Refresh Timetable">`;
+  refreshBtn.onclick = () => {
     const startTime = prompt("Enter start time (e.g., 09:00):", "09:00");
     if(startTime) {
       const newTimetable = generateTimetable(lastSlides, { startTime });
@@ -194,20 +203,19 @@ function renderTimetable(timetable) {
       getTimetableKey().then(key => saveData(key, newTimetable));
     }
   };
-  toolbar.appendChild(generateBtn);
+  timeDisplaySection.appendChild(refreshBtn);
+  toolbar.appendChild(timeDisplaySection);
 
   const exportOptionsContainer = document.createElement('div');
   exportOptionsContainer.className = 'export-options';
   exportOptionsContainer.innerHTML = `
-    <button id="export-csv-btn" class="export-btn">CSV</button>
-    <button id="export-xlsx-btn" class="export-btn">Excel</button>
-    <button id="copy-clipboard-btn" class="export-btn">Copy</button>
+    <button id="export-csv-btn" class="export-btn"><img src="/assets/csv.svg" alt="CSV">CSV</button>
+    <button id="export-xlsx-btn" class="export-btn"><img src="/assets/xlsx.svg" alt="Excel">Excel</button>
+    <button id="copy-clipboard-btn" class="export-btn"><img src="/assets/copy.svg" alt="Copy">Copy</button>
   `;
   toolbar.appendChild(exportOptionsContainer);
 
   mainContainer.innerHTML = ''; // Clear previous content
-  mainContainer.appendChild(header);
-  mainContainer.appendChild(toolbar);
 
   const exportCSVBtn = exportOptionsContainer.querySelector('#export-csv-btn');
   exportCSVBtn.onclick = () => {
