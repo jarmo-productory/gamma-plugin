@@ -18,30 +18,92 @@ let connected = false;
 let lastSlides = [];
 let currentTimetable = null;
 let port = null;
+let currentTabId = null;
+let currentPresentationUrl = null; // Track the current presentation
 
-const updateUIWithNewSlides = async (slides) => {
-  console.log('[SIDEBAR] updateUIWithNewSlides called with', slides?.length || 0, 'slides');
-  const footerContainer = document.getElementById('sidebar-footer');
-  lastSlides = slides || [];
-  if (slides.length === 0) {
-    // Handle case where there are no slides
-    document.getElementById('sidebar-main').innerHTML = '<p>No slides detected in this Gamma presentation.</p>';
-    if (footerContainer) {
-        footerContainer.innerHTML = renderDebugInfo(slides, 'Received: slide-data (empty)');
-    }
+/**
+ * Reconciles fresh slide data with the existing timetable, preserving user-set durations.
+ * @param {Array} newSlides - The fresh slide data from the content script.
+ */
+function reconcileAndUpdate(newSlides) {
+  if (!currentTimetable) {
+    // If there's no timetable yet, generate a fresh one.
+    console.log('[SIDEBAR] No current timetable, generating a new one.');
+    const newTimetable = generateTimetable(newSlides);
+    renderTimetable(newTimetable);
+    debouncedSave();
     return;
   }
 
-  const timetableKey = await getTimetableKey();
-  const storedTimetable = await loadData(timetableKey);
+  console.log('[SIDEBAR] Reconciling new slide data with existing timetable.');
+  const newItems = [];
+  const existingItemsMap = new Map(currentTimetable.items.map(item => [item.id, item]));
+  const newSlidesMap = new Map(newSlides.map(slide => [slide.id, slide]));
 
-  const newTimetable = generateTimetable(slides, {
-    startTime: storedTimetable?.startTime || '09:00',
-    existingItems: storedTimetable?.items || []
-  });
+  // 1. Go through new slides to update existing items and add new ones
+  for (const slide of newSlides) {
+    const existingItem = existingItemsMap.get(slide.id);
+    if (existingItem) {
+      // This slide already exists. Update its content but keep the duration.
+      newItems.push({
+        ...existingItem, // This keeps the user's duration
+        title: slide.title,
+        content: slide.content,
+        // order and level might be useful to update too if they change
+      });
+    } else {
+      // This is a new slide. Add it with a default duration.
+      newItems.push({
+        ...slide,
+        duration: 5, // Default duration for new slides
+      });
+    }
+  }
 
-  renderTimetable(newTimetable);
-  saveData(timetableKey, newTimetable); // Save the reconciled timetable immediately
+  // 2. Update the timetable with the reconciled list of items.
+  currentTimetable.items = newItems;
+
+  // 3. Recalculate all times and render the updated timetable.
+  const recalculatedTimetable = recalculateTimetable(currentTimetable);
+  renderTimetable(recalculatedTimetable);
+  debouncedSave();
+}
+
+const updateUIWithNewSlides = async (slides, tabId) => {
+  console.log(`[SIDEBAR] updateUIWithNewSlides called for tab ${tabId} with`, slides?.length || 0, 'slides');
+  currentTabId = tabId;
+  lastSlides = slides || [];
+
+  const footerContainer = document.getElementById('sidebar-footer');
+  if (slides.length === 0) {
+    document.getElementById('sidebar-main').innerHTML = '<p>No slides detected in this Gamma presentation.</p>';
+    if (footerContainer) footerContainer.innerHTML = renderDebugInfo(slides, 'Received: slide-data (empty)');
+    return;
+  }
+
+  const presentationUrl = slides[0]?.presentationUrl;
+  if (!presentationUrl) return; // Cannot proceed without a unique URL
+
+  // Check if we have switched to a new presentation
+  if (presentationUrl !== currentPresentationUrl) {
+    console.log(`[SIDEBAR] Switched to new presentation: ${presentationUrl}. Loading from storage...`);
+    currentPresentationUrl = presentationUrl; // Update the current presentation tracker
+    
+    const timetableKey = `timetable-${presentationUrl}`;
+    const storedTimetable = await loadData(timetableKey);
+
+    if (storedTimetable) {
+      console.log('[SIDEBAR] Found stored timetable.');
+      currentTimetable = storedTimetable;
+    } else {
+      console.log('[SIDEBAR] No stored timetable, generating a new one...');
+      currentTimetable = generateTimetable(slides);
+    }
+  }
+
+  // With the correct timetable loaded (or created), reconcile the latest slide content.
+  // This function will use the `currentTimetable` which is now the single source of truth.
+  reconcileAndUpdate(slides);
 
   if (footerContainer) {
     footerContainer.innerHTML = renderDebugInfo(slides, 'Rendered: slide-data');
@@ -66,22 +128,33 @@ function connectToBackground() {
     footerContainer.innerHTML = renderDebugInfo([], 'Connected to background');
   }
 
-  // Add a small delay before requesting slides to ensure the background script is ready
-  setTimeout(() => {
-    console.log('[SIDEBAR] Sending get-slides request...');
-    if (port) {
-      port.postMessage({ type: 'get-slides' });
-      if (footerContainer) {
-        footerContainer.innerHTML = renderDebugInfo([], 'Sent: get-slides');
-      }
-    }
-  }, 100);
+  // DO NOT request slides immediately. Wait for the background script
+  // to tell us which tab is active.
 
   port.onMessage.addListener((msg) => {
     console.log('[SIDEBAR] Received message from background:', msg);
     if (msg.type === 'slide-data') {
-      console.log('[SIDEBAR] Received slide-data from background:', msg.slides?.length || 0, 'slides');
-      updateUIWithNewSlides(msg.slides);
+      console.log('[SIDEBAR] Received slide-data for tab', msg.tabId, 'with', msg.slides?.length || 0, 'slides');
+      // This is the entry point for updates from the content script
+      updateUIWithNewSlides(msg.slides, msg.tabId);
+    } else if (msg.type === 'gamma-tab-activated') {
+      console.log(`[SIDEBAR] Gamma tab ${msg.tabId} activated. Requesting new slides.`);
+      currentTabId = msg.tabId;
+      // Clear current content and show loading state
+      document.getElementById('sidebar-main').innerHTML = '<p>Loading timetable...</p>';
+      port.postMessage({ type: 'get-slides' });
+    } else if (msg.type === 'show-message') {
+      console.log(`[SIDEBAR] Displaying message: ${msg.message}`);
+      document.getElementById('sidebar-main').innerHTML = `<p>${msg.message}</p>`;
+      // also clear the header
+      const titleElement = document.getElementById('timetable-title');
+      if (titleElement) {
+        titleElement.textContent = 'Gamma Timetable';
+      }
+      const durationBadge = document.getElementById('duration-badge');
+      if (durationBadge) {
+        durationBadge.textContent = '0h 0m';
+      }
     } else if (msg.type === 'error') {
       console.error('[SIDEBAR] Error from background:', msg.message);
       document.getElementById('sidebar-main').innerHTML = `<p style="color: red;">${msg.message}</p>`;
@@ -102,32 +175,6 @@ function connectToBackground() {
       footerContainer.innerHTML = renderDebugInfo([], 'Disconnected');
     }
   });
-}
-
-async function getCurrentTabUrl() {
-  try {
-    return await new Promise((resolve, reject) => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (chrome.runtime.lastError) {
-          return reject(new Error(chrome.runtime.lastError.message));
-        }
-        if (tabs[0] && tabs[0].url) {
-          resolve(tabs[0].url);
-        } else {
-          console.warn('Could not get current tab URL. Falling back to default.');
-          resolve('default-timetable');
-        }
-      });
-    });
-  } catch (error) {
-    console.error('Error getting current tab URL:', error);
-    return 'default-timetable'; // Fallback in case of error
-  }
-}
-
-async function getTimetableKey() {
-  const url = await getCurrentTabUrl();
-  return `timetable-${url}`;
 }
 
 function generateContentHtml(content) {
@@ -258,12 +305,10 @@ function renderTimetable(timetable) {
 
   // Prepend the time input to the time display section
   timeDisplaySection.prepend(createTimeInput(timetable, (newStartTime) => {
-    const newTimetable = generateTimetable(lastSlides, {
-      startTime: newStartTime,
-      existingItems: currentTimetable?.items || [],
-    });
+    currentTimetable.startTime = newStartTime;
+    const newTimetable = recalculateTimetable(currentTimetable);
     renderTimetable(newTimetable);
-    getTimetableKey().then(key => saveData(key, newTimetable));
+    debouncedSave();
   }));
   
   toolbar.appendChild(timeDisplaySection);
@@ -336,7 +381,8 @@ function renderTimetable(timetable) {
 
 const debouncedSave = debounce(async () => {
     if (currentTimetable) {
-        const key = await getTimetableKey();
+        // The presentation URL is now stored on the timetable object itself
+        const key = `timetable-${currentPresentationUrl}`;
         saveData(key, currentTimetable);
         console.log('Timetable saved.');
     }
@@ -357,9 +403,7 @@ function handleDurationChange(event) {
   const item = currentTimetable.items.find(i => i.id === itemId);
   if (item) {
     item.duration = newDuration;
-    const newTimetable = generateTimetable(currentTimetable.items, {
-      startTime: currentTimetable.startTime
-    });
+    const newTimetable = recalculateTimetable(currentTimetable);
     renderTimetable(newTimetable);
     debouncedSave();
   }
@@ -369,6 +413,39 @@ function handleDurationChange(event) {
   if (displaySpan) {
     displaySpan.textContent = `${newDuration} min`;
   }
+}
+
+/**
+ * Recalculates all start and end times in a timetable based on the items' durations.
+ * This should be called after a duration or start time changes.
+ * @param {object} timetable The timetable object to recalculate.
+ * @returns {object} The recalculated timetable object.
+ */
+function recalculateTimetable(timetable) {
+  let currentTime = new Date(`1970-01-01T${timetable.startTime}:00`);
+  let totalDuration = 0;
+
+  const newItems = timetable.items.map(item => {
+    const itemStartTime = new Date(currentTime);
+    const itemDuration = item.duration;
+
+    currentTime.setMinutes(currentTime.getMinutes() + itemDuration);
+    const itemEndTime = new Date(currentTime);
+
+    totalDuration += itemDuration;
+
+    return {
+      ...item, // Preserve id, title, content, etc.
+      startTime: itemStartTime.toTimeString().slice(0, 5),
+      endTime: itemEndTime.toTimeString().slice(0, 5),
+    };
+  });
+
+  return {
+    ...timetable,
+    items: newItems,
+    totalDuration: totalDuration,
+  };
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -27,6 +27,7 @@ interface SlideData {
   content: ContentItem[];
   order: number;
   level: number;
+  presentationUrl: string;
 }
 
 function extractSlides(): SlideData[] {
@@ -126,7 +127,7 @@ function extractSlides(): SlideData[] {
         }
       });
 
-      slides.push({ id, title, content, order: idx, level });
+      slides.push({ id, title, content, order: idx, level, presentationUrl: window.location.href });
     } catch (e) {
       console.error(`Error processing slide ${idx}:`, e);
     }
@@ -134,46 +135,27 @@ function extractSlides(): SlideData[] {
   return slides;
 }
 
-function observeAndExtractSlides() {
+function observeAndExtractSlides(sendSlidesFn: () => void) {
   console.log('[CONTENT] Setting up MutationObserver');
+  
   const processChanges = debounce(() => {
-    const slides = extractSlides();
-    console.log('Re-extracting slides due to DOM change:', slides);
-  }, 500); // Debounce for 500ms
+    console.log('[CONTENT] DOM change detected, re-sending slides.');
+    sendSlidesFn();
+  }, 250); // Debounce for 250ms to batch rapid changes
 
   const observer = new MutationObserver((mutations) => {
-    let changed = false;
-    for (const mutation of mutations) {
-      if (mutation.type === 'childList') {
-        const isCard = (node: Node): boolean =>
-          node instanceof HTMLElement && node.matches('div.card-wrapper[data-card-id]');
-
-        for (const node of Array.from(mutation.addedNodes)) {
-          if (isCard(node) || (node instanceof HTMLElement && node.querySelector('div.card-wrapper[data-card-id]'))) {
-            console.log('Relevant card added:', node);
-            changed = true;
-            break;
-          }
-        }
-        if (changed) break;
-
-        for (const node of Array.from(mutation.removedNodes)) {
-          if (isCard(node)) {
-            console.log('Relevant card removed:', node);
-            changed = true;
-            break;
-          }
-        }
-        if (changed) break;
-      }
-    }
-
-    if (changed) {
-      processChanges();
-    }
+    // For simplicity and robustness, we'll just trigger on any change
+    // without trying to be too clever about what changed.
+    processChanges();
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  // Observe the entire body for any changes to structure, attributes, or text.
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    characterData: true
+  });
 }
 
 if (window.location.hostname.endsWith('gamma.app')) {
@@ -234,17 +216,9 @@ if (window.location.hostname.endsWith('gamma.app')) {
         console.log('[CONTENT] Sending initial slide data...');
         sendSlidesToBackground();
       }, 1000);
-      
-      // Set up periodic updates to keep connection alive and detect new slides
-      const heartbeatInterval = setInterval(() => {
-        if (port) {
-          console.log('[CONTENT] Periodic slide update...');
-          sendSlidesToBackground();
-        } else {
-          console.log('[CONTENT] No port available for periodic update');
-          clearInterval(heartbeatInterval);
-        }
-      }, 5000); // Every 5 seconds
+
+      // Start observing for DOM changes and pass the sender function
+      observeAndExtractSlides(sendSlidesToBackground);
       
     } catch (error) {
       console.error('[CONTENT] Failed to connect to background:', error);
@@ -259,11 +233,13 @@ if (window.location.hostname.endsWith('gamma.app')) {
     console.log('[CONTENT] Document still loading, waiting for DOMContentLoaded');
     document.addEventListener('DOMContentLoaded', () => {
       console.log('[CONTENT] DOMContentLoaded fired');
-      observeAndExtractSlides();
+      // The connection logic now handles the observer setup
+      // observeAndExtractSlides(); 
     });
   } else {
     console.log('[CONTENT] Document already loaded');
-    observeAndExtractSlides();
+    // The connection logic now handles the observer setup
+    // observeAndExtractSlides();
   }
   
   // Let's also do an initial extraction after a delay to see what's there

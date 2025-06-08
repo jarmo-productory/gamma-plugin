@@ -67,7 +67,7 @@ export function generateTimetable(slides, options = {}) {
 
   const items = slides.map(slide => {
     const existingItem = existingItems.find(item => item.id === slide.id);
-    const itemDuration = existingItem ? existingItem.duration : (slide.duration === 0 ? 0 : (slide.duration || defaultDuration));
+    const itemDuration = existingItem ? existingItem.duration : defaultDuration;
     
     // Logic for breaks can be added here later
     // For now, just add the item duration
