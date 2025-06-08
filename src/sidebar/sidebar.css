@@ -198,8 +198,8 @@ body {
 
 .export-options {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .sticky-toolbar {
@@ -216,18 +216,34 @@ body {
 }
 
 .export-btn {
-  flex-grow: 1;
-  padding: 8px;
-  background-color: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
   cursor: pointer;
-  font-size: 13px;
-  text-align: center;
+  transition: all 0.15s ease-in-out;
 }
 
 .export-btn:hover {
-  background-color: #e5e7eb;
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.export-btn:active {
+  background-color: #e2e8f0;
+}
+
+.export-btn img {
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
 }
 
 .thumbnail-img {
@@ -264,6 +280,30 @@ body {
   color: #4b5563;
   min-width: 50px; /* Prevents layout shift */
   text-align: right;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.refresh-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.refresh-btn img {
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
 }
 
 @media (max-width: 350px) {
