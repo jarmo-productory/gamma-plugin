@@ -284,9 +284,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Listen for live updates
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg.type === 'GAMMA_SLIDES' && Array.isArray(msg.slides)) {
+    if (msg.type === 'GAMMA_SLIDES') {
+      console.log('Received live slide update:', msg.slides);
       connected = true;
-      updateUI(msg.slides);
+      lastSlides = msg.slides || [];
+      // If a timetable is already displayed, regenerate it to incorporate changes.
+      // Otherwise, the initial render logic will handle it.
+      if (currentTimetable) {
+        const newTimetable = generateTimetable(lastSlides, {
+          startTime: currentTimetable.startTime,
+        });
+        renderTimetable(newTimetable);
+        debouncedSave();
+      } else {
+        // If we are in the initial view, just re-render the slides list.
+        updateUI(lastSlides);
+      }
     }
   });
 }); 
