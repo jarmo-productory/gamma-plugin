@@ -236,7 +236,8 @@ body {
   border-color: #cbd5e1;
 }
 
-.export-btn:active {
+.export-btn:active,
+.export-btn.copied {
   background-color: #e2e8f0;
 }
 
@@ -282,28 +283,60 @@ body {
   text-align: right;
 }
 
-.refresh-btn {
+.time-display-section {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
+  gap: 8px;
+}
+
+.time-input-container {
+  display: flex;
+  align-items: center;
   height: 32px;
-  background-color: transparent;
+  padding: 0 8px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease-in-out;
+  background-color: transparent;
 }
 
-.refresh-btn:hover {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
+.time-input-segment {
+  width: 2ch; /* 2 characters wide */
+  border: none;
+  background: transparent;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  text-align: center;
 }
 
-.refresh-btn img {
-  width: 16px;
-  height: 16px;
-  color: #6b7280;
+.time-input-segment:focus {
+  outline: none;
+}
+
+.time-input-separator {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  margin: 0 2px;
+}
+
+.time-display {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.copy-btn-icon-only {
+  padding: 0;
+  width: 32px;
+  justify-content: center;
 }
 
 @media (max-width: 350px) {

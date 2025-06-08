@@ -158,6 +158,66 @@ function generateContentHtml(content) {
   return contentHtml;
 }
 
+function createTimeInput(timetable, onTimeChange) {
+  const container = document.createElement('div');
+  container.className = 'time-input-container';
+
+  const [initialHours, initialMinutes] = timetable.startTime.split(':');
+
+  const hoursInput = document.createElement('input');
+  hoursInput.type = 'text';
+  hoursInput.className = 'time-input-segment';
+  hoursInput.value = initialHours;
+  hoursInput.maxLength = 2;
+  hoursInput.placeholder = '00';
+
+  const separator = document.createElement('span');
+  separator.className = 'time-input-separator';
+  separator.textContent = ':';
+
+  const minutesInput = document.createElement('input');
+  minutesInput.type = 'text';
+  minutesInput.className = 'time-input-segment';
+  minutesInput.value = initialMinutes;
+  minutesInput.maxLength = 2;
+  minutesInput.placeholder = '00';
+
+  const handleTimeChange = () => {
+    const hours = hoursInput.value.padStart(2, '0');
+    const minutes = minutesInput.value.padStart(2, '0');
+
+    const h = parseInt(hours, 10);
+    const m = parseInt(minutes, 10);
+
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+      onTimeChange(`${hours}:${minutes}`);
+    }
+  };
+
+  const debouncedHandleTimeChange = debounce(handleTimeChange, 400);
+  
+  hoursInput.addEventListener('input', () => {
+    if (hoursInput.value.length >= 2) {
+      hoursInput.value = hoursInput.value.slice(0, 2);
+      minutesInput.focus();
+    }
+    debouncedHandleTimeChange();
+  });
+
+  minutesInput.addEventListener('input', () => {
+    if (minutesInput.value.length >= 2) {
+      minutesInput.value = minutesInput.value.slice(0, 2);
+    }
+    debouncedHandleTimeChange();
+  });
+
+  container.appendChild(hoursInput);
+  container.appendChild(separator);
+  container.appendChild(minutesInput);
+  
+  return container;
+}
+
 function renderDebugInfo(slides = [], lastAction = 'none') {
   const slideCount = slides.length;
   let firstSlide = slides[0] ? JSON.stringify(slides[0], null, 2) : 'N/A';
@@ -190,20 +250,14 @@ function renderTimetable(timetable) {
 
   const timeDisplaySection = document.createElement('div');
   timeDisplaySection.className = 'time-display-section';
-  // Time display will be added in the next task
 
-  const refreshBtn = document.createElement('button');
-  refreshBtn.className = 'btn refresh-btn';
-  refreshBtn.innerHTML = `<img src="/assets/refresh.svg" alt="Refresh Timetable">`;
-  refreshBtn.onclick = () => {
-    const startTime = prompt("Enter start time (e.g., 09:00):", "09:00");
-    if(startTime) {
-      const newTimetable = generateTimetable(lastSlides, { startTime });
-      renderTimetable(newTimetable);
-      getTimetableKey().then(key => saveData(key, newTimetable));
-    }
-  };
-  timeDisplaySection.appendChild(refreshBtn);
+  // Prepend the time input to the time display section
+  timeDisplaySection.prepend(createTimeInput(timetable, (newStartTime) => {
+    const newTimetable = generateTimetable(lastSlides, { startTime: newStartTime });
+    renderTimetable(newTimetable);
+    getTimetableKey().then(key => saveData(key, newTimetable));
+  }));
+  
   toolbar.appendChild(timeDisplaySection);
 
   const exportOptionsContainer = document.createElement('div');
@@ -211,7 +265,7 @@ function renderTimetable(timetable) {
   exportOptionsContainer.innerHTML = `
     <button id="export-csv-btn" class="export-btn"><img src="/assets/csv.svg" alt="CSV">CSV</button>
     <button id="export-xlsx-btn" class="export-btn"><img src="/assets/xlsx.svg" alt="Excel">Excel</button>
-    <button id="copy-clipboard-btn" class="export-btn"><img src="/assets/copy.svg" alt="Copy">Copy</button>
+    <button id="copy-clipboard-btn" class="export-btn copy-btn-icon-only"><img src="/assets/copy.svg" alt="Copy"></button>
   `;
   toolbar.appendChild(exportOptionsContainer);
 
@@ -239,8 +293,8 @@ function renderTimetable(timetable) {
     if (!currentTimetable) return;
     const csv = generateCSV(currentTimetable);
     copyToClipboard(csv).then(() => {
-        copyClipboardBtn.textContent = 'Copied!';
-        setTimeout(() => { copyClipboardBtn.textContent = 'Copy'; }, 2000);
+        copyClipboardBtn.classList.add('copied');
+        setTimeout(() => { copyClipboardBtn.classList.remove('copied'); }, 2000);
     });
   };
 
