@@ -320,7 +320,7 @@ function renderTimetable(timetable) {
       </div>
       <div class="duration-slider-container">
         <input type="range" min="0" max="60" value="${item.duration}" class="duration-slider" data-slide-id="${item.id}">
-        <span class="duration-display">${item.duration} min</span>
+        <span class="duration-display">${parseInt(item.duration, 10)} min</span>
       </div>
       <div class="slide-item-content">${contentHtml}</div>
     `;
@@ -343,7 +343,7 @@ const debouncedSave = debounce(async () => {
 }, 500);
 
 function handleSliderInput(event) {
-  const newDuration = parseFloat(event.target.value).toFixed(1);
+  const newDuration = parseInt(event.target.value, 10);
   const valueDisplay = event.target.nextElementSibling;
   if (valueDisplay) {
     valueDisplay.textContent = `${newDuration} min`;
@@ -352,18 +352,22 @@ function handleSliderInput(event) {
 
 function handleDurationChange(event) {
   const itemId = event.target.getAttribute('data-slide-id');
-  const newDuration = parseFloat(event.target.value);
+  const newDuration = parseInt(event.target.value, 10);
   
-  if (currentTimetable) {
-    const item = currentTimetable.items.find(i => i.id === itemId);
-    if (item) {
-      item.duration = newDuration;
-      const newTimetable = generateTimetable(currentTimetable.items, {
-        startTime: currentTimetable.startTime
-      });
-      renderTimetable(newTimetable);
-      debouncedSave();
-    }
+  const item = currentTimetable.items.find(i => i.id === itemId);
+  if (item) {
+    item.duration = newDuration;
+    const newTimetable = generateTimetable(currentTimetable.items, {
+      startTime: currentTimetable.startTime
+    });
+    renderTimetable(newTimetable);
+    debouncedSave();
+  }
+
+  // Update the displayed duration value
+  const displaySpan = event.target.nextElementSibling;
+  if (displaySpan) {
+    displaySpan.textContent = `${newDuration} min`;
   }
 }
 
