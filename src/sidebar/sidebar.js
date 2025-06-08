@@ -237,6 +237,11 @@ function renderTimetable(timetable) {
   const mainContainer = document.getElementById('sidebar-main');
   if (!mainContainer) return;
   
+  const titleElement = document.getElementById('timetable-title');
+  if (titleElement) {
+    titleElement.textContent = timetable.items[0]?.title || 'Course Timetable';
+  }
+
   const durationBadge = document.getElementById('duration-badge');
   if (durationBadge) {
     const hours = Math.floor(timetable.totalDuration / 60);
@@ -307,16 +312,14 @@ function renderTimetable(timetable) {
       <div class="slide-item-header">
         <h3 class="slide-item__title">${item.title}</h3>
         <div class="slide-item-time">
-          <span style="font-size: 12px; color: #6b7280;">${item.startTime} - ${item.endTime}</span>
+          ${item.startTime} - ${item.endTime}
         </div>
       </div>
       <div class="duration-slider-container">
-          <input type="range" min="0.5" max="30" value="${item.duration}" step="0.5" class="duration-slider" data-id="${item.id}">
-          <span class="duration-value">${item.duration} min</span>
+        <input type="range" min="0" max="60" value="${item.duration}" class="duration-slider" data-slide-id="${item.id}">
+        <span class="duration-display">${item.duration} min</span>
       </div>
-      <div class="slide-item__content">
-        ${contentHtml}
-      </div>
+      <div class="slide-item-content">${contentHtml}</div>
     `;
     mainContainer.appendChild(itemDiv);
   });
@@ -345,7 +348,7 @@ function handleSliderInput(event) {
 }
 
 function handleDurationChange(event) {
-  const itemId = event.target.getAttribute('data-id');
+  const itemId = event.target.getAttribute('data-slide-id');
   const newDuration = parseFloat(event.target.value);
   
   if (currentTimetable) {
