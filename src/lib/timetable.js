@@ -138,7 +138,27 @@ export function downloadFile(filename, url, isBlob = false) {
  * @returns {Blob}
  */
 export function generateXLSX(timetable) {
-  const worksheet = XLSX.utils.json_to_sheet(timetable.items);
+  // 1. Remove the 'id' field from items for export
+  const itemsForExport = timetable.items.map(({ id, ...rest }) => rest);
+
+  // 2. Get the slideshow title from the first slide, or use a default
+  const slideShowTitle = timetable.items[0]?.title || 'Course Timetable';
+
+  // 3. Create the worksheet from the modified data
+  const worksheet = XLSX.utils.json_to_sheet(itemsForExport);
+
+  // 4. Prepend the title and a blank row
+  XLSX.utils.sheet_add_aoa(worksheet, [[slideShowTitle]], { origin: 'A1' });
+  XLSX.utils.sheet_add_aoa(worksheet, [[]], { origin: 'A2' });
+  
+  // 5. Shift existing data down by two rows
+  if (worksheet['!ref']) {
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    range.s.r += 2; // Start row +2
+    range.e.r += 2; // End row +2
+    worksheet['!ref'] = XLSX.utils.encode_range(range);
+  }
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Timetable');
   const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
