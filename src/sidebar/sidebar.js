@@ -258,7 +258,10 @@ function renderTimetable(timetable) {
 
   // Prepend the time input to the time display section
   timeDisplaySection.prepend(createTimeInput(timetable, (newStartTime) => {
-    const newTimetable = generateTimetable(lastSlides, { startTime: newStartTime });
+    const newTimetable = generateTimetable(lastSlides, {
+      startTime: newStartTime,
+      existingItems: currentTimetable?.items || [],
+    });
     renderTimetable(newTimetable);
     getTimetableKey().then(key => saveData(key, newTimetable));
   }));
