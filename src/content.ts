@@ -1,7 +1,9 @@
 // content.ts - Gamma slide extraction logic
 
-// Add this at the top for TypeScript to recognize the Chrome extension API
-declare var chrome: any;
+// The types are now handled by the @types/chrome package, so this is not needed.
+// declare var chrome: any;
+
+console.log('[CONTENT] Script loaded on:', window.location.href);
 
 // Debounce function
 function debounce<F extends (...args: any[]) => any>(func: F, wait: number): (...args: Parameters<F>) => void {
@@ -28,9 +30,61 @@ interface SlideData {
 }
 
 function extractSlides(): SlideData[] {
+  console.log('[CONTENT] extractSlides() called');
   const slides: SlideData[] = [];
   const seenIds = new Set<string>();
+  
+  // Try multiple selectors to find slides
   const cardWrappers = document.querySelectorAll<HTMLDivElement>('div.card-wrapper[data-card-id]');
+  console.log('[CONTENT] Found card wrappers with data-card-id:', cardWrappers.length);
+  
+  // Alternative selectors if the first one doesn't work
+  if (cardWrappers.length === 0) {
+    console.log('[CONTENT] No card-wrapper elements found, trying alternative selectors...');
+    
+    // Try looking for any element with data-card-id
+    const anyCards = document.querySelectorAll('[data-card-id]');
+    console.log('[CONTENT] Elements with data-card-id:', anyCards.length);
+    
+    // Try looking for slide-like structures
+    const slideElements = document.querySelectorAll('.card, .slide, [class*="card"], [class*="slide"]');
+    console.log('[CONTENT] Slide-like elements:', slideElements.length);
+    
+    // Log some sample elements to understand the structure
+    if (anyCards.length > 0) {
+      console.log('[CONTENT] Sample card element:', anyCards[0]);
+      console.log('[CONTENT] Sample card classes:', anyCards[0].className);
+      console.log('[CONTENT] Sample card parent:', anyCards[0].parentElement);
+    }
+    
+    // Look at the DOM structure
+    console.log('[CONTENT] Document body classes:', document.body.className);
+    console.log('[CONTENT] Looking for gamma-specific selectors...');
+    
+    // Try to find gamma-specific elements
+    const gammaElements = document.querySelectorAll('[class*="gamma"], [id*="gamma"], [data-*="gamma"]');
+    console.log('[CONTENT] Gamma-related elements:', gammaElements.length);
+  }
+  
+  console.log('[CONTENT] Document body:', document.body);
+  console.log('[CONTENT] All divs with data-card-id:', document.querySelectorAll('[data-card-id]').length);
+  console.log('[CONTENT] All elements with class card-wrapper:', document.querySelectorAll('.card-wrapper').length);
+  
+  // Log the first few elements to see what's actually in the DOM
+  if (cardWrappers.length === 0) {
+    console.log('[CONTENT] No slides found. Let me check what IS in the DOM:');
+    console.log('[CONTENT] Body innerHTML (first 1000 chars):', document.body.innerHTML.substring(0, 1000));
+    console.log('[CONTENT] All iframes:', document.querySelectorAll('iframe'));
+    
+    // Check if we're in an iframe
+    if (window !== window.top) {
+      console.log('[CONTENT] We are inside an iframe');
+      console.log('[CONTENT] Frame URL:', window.location.href);
+      console.log('[CONTENT] Parent URL:', document.referrer);
+    } else {
+      console.log('[CONTENT] We are in the main window');
+    }
+  }
 
   cardWrappers.forEach((card, idx) => {
     try {
@@ -81,15 +135,10 @@ function extractSlides(): SlideData[] {
 }
 
 function observeAndExtractSlides() {
+  console.log('[CONTENT] Setting up MutationObserver');
   const processChanges = debounce(() => {
     const slides = extractSlides();
     console.log('Re-extracting slides due to DOM change:', slides);
-    try {
-      chrome.runtime.sendMessage({ type: 'GAMMA_SLIDES_UPDATED', slides });
-    } catch (e) {
-      console.warn('Could not send slide data. Extension context may be invalidated.', e);
-      observer.disconnect();
-    }
   }, 500); // Debounce for 500ms
 
   const observer = new MutationObserver((mutations) => {
@@ -128,5 +177,98 @@ function observeAndExtractSlides() {
 }
 
 if (window.location.hostname.endsWith('gamma.app')) {
-  observeAndExtractSlides();
+  console.log('[CONTENT] On gamma.app, initializing...');
+  
+  let port: chrome.runtime.Port | null = null;
+  let reconnectTimeout: number | undefined;
+  
+  const connectToBackground = () => {
+    try {
+      port = chrome.runtime.connect({ name: 'content-script' });
+      console.log('[CONTENT] Port created:', port);
+      
+      // Add error handling for port
+      port.onDisconnect.addListener(() => {
+        console.error('[CONTENT] Disconnected from background:', chrome.runtime.lastError);
+        port = null;
+        
+        // Attempt to reconnect after a delay
+        if (!reconnectTimeout) {
+          reconnectTimeout = window.setTimeout(() => {
+            console.log('[CONTENT] Attempting to reconnect...');
+            reconnectTimeout = undefined;
+            connectToBackground();
+          }, 2000);
+        }
+      });
+
+      // This function now sends slide data through the background script
+      const sendSlidesToBackground = () => {
+        if (!port) {
+          console.error('[CONTENT] No port available, cannot send slides');
+          return;
+        }
+        
+        const slides = extractSlides();
+        console.log('[CONTENT] Sending slides to background:', slides.length, 'slides');
+        try {
+          port.postMessage({ type: 'slide-data', slides: slides });
+        } catch (error) {
+          console.error('[CONTENT] Error sending slides:', error);
+        }
+      };
+      
+      // Listen for requests forwarded from the background script
+      port.onMessage.addListener((msg) => {
+        console.log('[CONTENT] Received message from background:', msg);
+        if (msg.type === 'get-slides') {
+          console.log('[CONTENT] Content script received get-slides request from background.');
+          sendSlidesToBackground();
+        }
+      });
+
+      console.log('[CONTENT] Message listeners set up, connection established');
+      
+      // Send initial slide data after a short delay
+      setTimeout(() => {
+        console.log('[CONTENT] Sending initial slide data...');
+        sendSlidesToBackground();
+      }, 1000);
+      
+      // Set up periodic updates to keep connection alive and detect new slides
+      const heartbeatInterval = setInterval(() => {
+        if (port) {
+          console.log('[CONTENT] Periodic slide update...');
+          sendSlidesToBackground();
+        } else {
+          console.log('[CONTENT] No port available for periodic update');
+          clearInterval(heartbeatInterval);
+        }
+      }, 5000); // Every 5 seconds
+      
+    } catch (error) {
+      console.error('[CONTENT] Failed to connect to background:', error);
+    }
+  };
+  
+  // Initial connection
+  connectToBackground();
+
+  // Defer the observer until the DOM is ready.
+  if (document.readyState === 'loading') {
+    console.log('[CONTENT] Document still loading, waiting for DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('[CONTENT] DOMContentLoaded fired');
+      observeAndExtractSlides();
+    });
+  } else {
+    console.log('[CONTENT] Document already loaded');
+    observeAndExtractSlides();
+  }
+  
+  // Let's also do an initial extraction after a delay to see what's there
+  setTimeout(() => {
+    console.log('[CONTENT] Delayed extraction after 2 seconds:');
+    extractSlides();
+  }, 2000);
 } 

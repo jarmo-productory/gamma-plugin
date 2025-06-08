@@ -1,5 +1,7 @@
 // sidebar.js - Receives slide data and displays it in the sidebar
 
+console.log('[SIDEBAR] Script loaded');
+
 // The version is injected by the build process, with a fallback for development
 const EXT_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'DEV';
 
@@ -15,6 +17,92 @@ import { saveData, loadData, debounce } from '../lib/storage.js';
 let connected = false;
 let lastSlides = [];
 let currentTimetable = null;
+let port = null;
+
+const updateUIWithNewSlides = async (slides) => {
+  console.log('[SIDEBAR] updateUIWithNewSlides called with', slides?.length || 0, 'slides');
+  const footerContainer = document.getElementById('sidebar-footer');
+  lastSlides = slides || [];
+  if (slides.length === 0) {
+    // Handle case where there are no slides
+    document.getElementById('sidebar-main').innerHTML = '<p>No slides detected in this Gamma presentation.</p>';
+    if (footerContainer) {
+        footerContainer.innerHTML = renderDebugInfo(slides, 'Received: slide-data (empty)');
+    }
+    return;
+  }
+
+  const timetableKey = await getTimetableKey();
+  const storedTimetable = await loadData(timetableKey);
+
+  const newTimetable = generateTimetable(slides, {
+    startTime: storedTimetable?.startTime || '09:00',
+    existingItems: storedTimetable?.items || []
+  });
+
+  renderTimetable(newTimetable);
+  saveData(timetableKey, newTimetable); // Save the reconciled timetable immediately
+
+  if (footerContainer) {
+    footerContainer.innerHTML = renderDebugInfo(slides, 'Rendered: slide-data');
+  }
+};
+
+function connectToBackground() {
+  console.log('[SIDEBAR] Connecting to background script...');
+  port = chrome.runtime.connect({ name: 'sidebar' });
+  console.log('[SIDEBAR] Connected to background');
+
+  // Add error handling for the port
+  if (!port) {
+    console.error('[SIDEBAR] Failed to create port connection');
+    return;
+  }
+
+  // Set connected status
+  connected = true;
+  const footerContainer = document.getElementById('sidebar-footer');
+  if (footerContainer) {
+    footerContainer.innerHTML = renderDebugInfo([], 'Connected to background');
+  }
+
+  // Add a small delay before requesting slides to ensure the background script is ready
+  setTimeout(() => {
+    console.log('[SIDEBAR] Sending get-slides request...');
+    if (port) {
+      port.postMessage({ type: 'get-slides' });
+      if (footerContainer) {
+        footerContainer.innerHTML = renderDebugInfo([], 'Sent: get-slides');
+      }
+    }
+  }, 100);
+
+  port.onMessage.addListener((msg) => {
+    console.log('[SIDEBAR] Received message from background:', msg);
+    if (msg.type === 'slide-data') {
+      console.log('[SIDEBAR] Received slide-data from background:', msg.slides?.length || 0, 'slides');
+      updateUIWithNewSlides(msg.slides);
+    } else if (msg.type === 'error') {
+      console.error('[SIDEBAR] Error from background:', msg.message);
+      document.getElementById('sidebar-main').innerHTML = `<p style="color: red;">${msg.message}</p>`;
+      const footerContainer = document.getElementById('sidebar-footer');
+      if (footerContainer) {
+        footerContainer.innerHTML = renderDebugInfo([], 'Error: ' + msg.message);
+      }
+    }
+  });
+
+  port.onDisconnect.addListener(() => {
+    port = null;
+    connected = false;
+    console.log('[SIDEBAR] Disconnected from background script.');
+    // Optionally show a disconnected state in the UI
+    const footerContainer = document.getElementById('sidebar-footer');
+    if (footerContainer) {
+      footerContainer.innerHTML = renderDebugInfo([], 'Disconnected');
+    }
+  });
+}
 
 async function getCurrentTabUrl() {
   try {
@@ -70,14 +158,15 @@ function generateContentHtml(content) {
   return contentHtml;
 }
 
-function renderDebugInfo(slides = []) {
+function renderDebugInfo(slides = [], lastAction = 'none') {
   const slideCount = slides.length;
   let firstSlide = slides[0] ? JSON.stringify(slides[0], null, 2) : 'N/A';
   return `
     <div class="debug-info">
       <strong>Debug Info</strong><br>
       Slides Detected: <strong>${slideCount}</strong><br>
-      Connected: <span style="color:${connected ? 'green' : 'red'};font-weight:bold;">${connected ? 'Yes' : 'No'}</span><br>
+      Connection Status: <span style="color:${connected ? 'green' : 'red'};font-weight:bold;">${connected ? 'Connected' : 'Disconnected'}</span><br>
+      Last Action: <span style="font-family: monospace;">${lastAction}</span><br>
       <details><summary>First Slide Preview</summary><pre>${firstSlide}</pre></details>
     </div>
   `;
@@ -211,66 +300,13 @@ function handleDurationChange(event) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('[SIDEBAR] DOMContentLoaded fired');
   const versionDisplay = document.getElementById('version-display');
-  const footerContainer = document.getElementById('sidebar-footer');
 
   if(versionDisplay) {
     versionDisplay.textContent = `v${EXT_VERSION}`;
   }
 
-  const updateUIWithNewSlides = async (slides) => {
-    lastSlides = slides || [];
-    if (slides.length === 0) {
-      // Handle case where there are no slides
-      document.getElementById('sidebar-main').innerHTML = '<p>No slides detected in this Gamma presentation.</p>';
-      return;
-    }
-
-    const timetableKey = await getTimetableKey();
-    const storedTimetable = await loadData(timetableKey);
-
-    const newTimetable = generateTimetable(slides, {
-      startTime: storedTimetable?.startTime || '09:00',
-      existingItems: storedTimetable?.items || []
-    });
-
-    renderTimetable(newTimetable);
-    saveData(timetableKey, newTimetable); // Save the reconciled timetable immediately
-
-    if (footerContainer) {
-      footerContainer.innerHTML = renderDebugInfo(slides);
-    }
-  };
-
-  // Initial load from storage or slides
-  try {
-    const timetableKey = await getTimetableKey();
-    const savedTimetable = await loadData(timetableKey);
-    if (savedTimetable && savedTimetable.items.length > 0) {
-      // If we have saved data, render it first for a fast UI response.
-      // Then, request fresh slide data to reconcile in the background.
-      renderTimetable(savedTimetable);
-      if (footerContainer) {
-        footerContainer.innerHTML = renderDebugInfo(savedTimetable.items);
-      }
-    }
-    // Always request fresh data on load to catch any changes made while the panel was closed.
-    chrome.runtime.sendMessage({ type: 'REQUEST_GAMMA_SLIDES' }, (response) => {
-      connected = true;
-      if (response && response.slides) {
-        updateUIWithNewSlides(response.slides);
-      }
-    });
-  } catch (error) {
-    console.error("Error on initial load:", error);
-  }
-
-  // Listen for slide updates from the content script
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'GAMMA_SLIDES_UPDATED') {
-      connected = true;
-      updateUIWithNewSlides(message.slides);
-      sendResponse({ status: 'ok' });
-    }
-  });
+  // Establish the connection to the background script
+  connectToBackground();
 }); 
