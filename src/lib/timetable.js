@@ -58,14 +58,16 @@ export function generateTimetable(slides, options = {}) {
     startTime = '09:00',
     defaultDuration = 5,
     breakAfter = 60,
-    breakDuration = 10
+    breakDuration = 10,
+    existingItems = []
   } = options;
 
   let currentTime = new Date(`1970-01-01T${startTime}:00`);
   let timeSinceLastBreak = 0;
 
   const items = slides.map(slide => {
-    const itemDuration = slide.duration === 0 ? 0 : (slide.duration || defaultDuration);
+    const existingItem = existingItems.find(item => item.id === slide.id);
+    const itemDuration = existingItem ? existingItem.duration : (slide.duration === 0 ? 0 : (slide.duration || defaultDuration));
     
     // Logic for breaks can be added here later
     // For now, just add the item duration

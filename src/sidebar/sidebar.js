@@ -218,59 +218,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     versionDisplay.textContent = `v${EXT_VERSION}`;
   }
 
-  const updateUI = (slides = []) => {
+  const updateUIWithNewSlides = async (slides) => {
     lastSlides = slides || [];
-    // If we have slides but no timetable, generate one with a default time.
-    if (slides.length > 0 && !currentTimetable) {
-      const defaultStartTime = '09:00';
-      const timetable = generateTimetable(slides, { startTime: defaultStartTime });
-      renderTimetable(timetable);
-      getTimetableKey().then(key => saveData(key, timetable));
+    if (slides.length === 0) {
+      // Handle case where there are no slides
+      document.getElementById('sidebar-main').innerHTML = '<p>No slides detected in this Gamma presentation.</p>';
+      return;
     }
-    if(footerContainer) {
+
+    const timetableKey = await getTimetableKey();
+    const storedTimetable = await loadData(timetableKey);
+
+    const newTimetable = generateTimetable(slides, {
+      startTime: storedTimetable?.startTime || '09:00',
+      existingItems: storedTimetable?.items || []
+    });
+
+    renderTimetable(newTimetable);
+    saveData(timetableKey, newTimetable); // Save the reconciled timetable immediately
+
+    if (footerContainer) {
       footerContainer.innerHTML = renderDebugInfo(slides);
     }
-  }
+  };
 
   // Initial load from storage or slides
   try {
     const timetableKey = await getTimetableKey();
     const savedTimetable = await loadData(timetableKey);
-    if (savedTimetable) {
+    if (savedTimetable && savedTimetable.items.length > 0) {
+      // If we have saved data, render it first for a fast UI response.
+      // Then, request fresh slide data to reconcile in the background.
       renderTimetable(savedTimetable);
-    } else {
-        chrome.runtime.sendMessage({ type: 'REQUEST_GAMMA_SLIDES' }, (response) => {
-          connected = true;
-          updateUI(response?.slides);
-        });
+      if (footerContainer) {
+        footerContainer.innerHTML = renderDebugInfo(savedTimetable.items);
+      }
     }
-  } catch (error) {
-    console.error('Failed to load initial data:', error);
-    // Fallback to requesting slides if storage fails
+    // Always request fresh data on load to catch any changes made while the panel was closed.
     chrome.runtime.sendMessage({ type: 'REQUEST_GAMMA_SLIDES' }, (response) => {
       connected = true;
-      updateUI(response?.slides);
+      if (response && response.slides) {
+        updateUIWithNewSlides(response.slides);
+      }
     });
+  } catch (error) {
+    console.error("Error on initial load:", error);
   }
 
-  // Listen for live updates
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg.type === 'GAMMA_SLIDES') {
-      console.log('Received live slide update:', msg.slides);
+  // Listen for slide updates from the content script
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'GAMMA_SLIDES_UPDATED') {
       connected = true;
-      lastSlides = msg.slides || [];
-      // If a timetable is already displayed, regenerate it to incorporate changes.
-      // Otherwise, the initial render logic will handle it.
-      if (currentTimetable) {
-        const newTimetable = generateTimetable(lastSlides, {
-          startTime: currentTimetable.startTime,
-        });
-        renderTimetable(newTimetable);
-        debouncedSave();
-      } else {
-        // If we are in the initial view, just re-render the slides list.
-        updateUI(lastSlides);
-      }
+      updateUIWithNewSlides(message.slides);
+      sendResponse({ status: 'ok' });
     }
   });
 }); 

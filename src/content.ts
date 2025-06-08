@@ -85,7 +85,7 @@ function observeAndExtractSlides() {
     const slides = extractSlides();
     console.log('Re-extracting slides due to DOM change:', slides);
     try {
-      chrome.runtime.sendMessage({ type: 'GAMMA_SLIDES', slides });
+      chrome.runtime.sendMessage({ type: 'GAMMA_SLIDES_UPDATED', slides });
     } catch (e) {
       console.warn('Could not send slide data. Extension context may be invalidated.', e);
       observer.disconnect();
