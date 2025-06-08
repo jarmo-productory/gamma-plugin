@@ -16,7 +16,32 @@ import { saveData, loadData, debounce } from '../lib/storage.js';
 let connected = false;
 let lastSlides = [];
 let currentTimetable = null;
-const getTimetableKey = () => `timetable-${window.location.href}`;
+
+async function getCurrentTabUrl() {
+  try {
+    return await new Promise((resolve, reject) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (chrome.runtime.lastError) {
+          return reject(new Error(chrome.runtime.lastError.message));
+        }
+        if (tabs[0] && tabs[0].url) {
+          resolve(tabs[0].url);
+        } else {
+          console.warn('Could not get current tab URL. Falling back to default.');
+          resolve('default-timetable');
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Error getting current tab URL:', error);
+    return 'default-timetable'; // Fallback in case of error
+  }
+}
+
+async function getTimetableKey() {
+  const url = await getCurrentTabUrl();
+  return `timetable-${url}`;
+}
 
 function generateContentHtml(content) {
   let contentHtml = '';
@@ -87,7 +112,7 @@ function renderSlides(slides) {
     if(startTime) {
       const timetable = generateTimetable(slides, { startTime });
       renderTimetable(timetable);
-      saveData(getTimetableKey(), timetable);
+      getTimetableKey().then(key => saveData(key, timetable));
     }
   };
   mainContainer.appendChild(generateBtn);
@@ -109,7 +134,7 @@ function renderTimetable(timetable) {
     if(startTime) {
       const newTimetable = generateTimetable(lastSlides, { startTime });
       renderTimetable(newTimetable);
-      saveData(getTimetableKey(), newTimetable);
+      getTimetableKey().then(key => saveData(key, newTimetable));
     }
   };
 
@@ -189,9 +214,10 @@ function renderTimetable(timetable) {
   });
 }
 
-const debouncedSave = debounce(() => {
+const debouncedSave = debounce(async () => {
     if (currentTimetable) {
-        saveData(getTimetableKey(), currentTimetable);
+        const key = await getTimetableKey();
+        saveData(key, currentTimetable);
         console.log('Timetable saved.');
     }
 }, 500);
@@ -236,14 +262,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Initial load from storage or slides
-  const savedTimetable = await loadData(getTimetableKey());
-  if (savedTimetable) {
-    renderTimetable(savedTimetable);
-  } else {
-      chrome.runtime.sendMessage({ type: 'REQUEST_GAMMA_SLIDES' }, (response) => {
-        connected = true;
-        updateUI(response?.slides);
-      });
+  try {
+    const timetableKey = await getTimetableKey();
+    const savedTimetable = await loadData(timetableKey);
+    if (savedTimetable) {
+      renderTimetable(savedTimetable);
+    } else {
+        chrome.runtime.sendMessage({ type: 'REQUEST_GAMMA_SLIDES' }, (response) => {
+          connected = true;
+          updateUI(response?.slides);
+        });
+    }
+  } catch (error) {
+    console.error('Failed to load initial data:', error);
+    // Fallback to requesting slides if storage fails
+    chrome.runtime.sendMessage({ type: 'REQUEST_GAMMA_SLIDES' }, (response) => {
+      connected = true;
+      updateUI(response?.slides);
+    });
   }
 
   // Listen for live updates

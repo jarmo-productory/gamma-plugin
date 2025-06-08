@@ -6,8 +6,12 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "preview": "vite preview",
+    "package": "npm run build && zip -r ../gamma-plugin-release.zip ../dist"
   },
+  "keywords": [],
+  "author": "",
   "dependencies": {
     "jspdf": "^3.0.1"
   }
