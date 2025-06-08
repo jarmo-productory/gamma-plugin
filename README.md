@@ -27,11 +27,9 @@ Follow these steps to install the extension. No technical experience needed!
     *   *Alternatively, you can copy and paste this address into your browser: `chrome://extensions`*
 *   In the top-right corner of the "Extensions" page, turn on the **Developer mode** switch.
 
-![Developer Mode Switch](httpsd://i.imgur.com/i7gV6rV.png)
 
 *   Now that Developer mode is on, a new menu will appear. Click the **Load unpacked** button.
 
-![Load Unpacked Button](https://i.imgur.com/h4iB54r.png)
 
 *   A file selection window will open. Navigate to the folder you unzipped in Step 2 and select the **`dist`** folder inside it. Click **Select Folder**.
 
