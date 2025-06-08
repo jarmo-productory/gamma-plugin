@@ -13,12 +13,17 @@ export default defineConfig({
         background: 'src/background.js',
         content: 'src/content.ts',
         popup: 'src/popup/popup.html',
-        sidebar: 'src/sidebar/sidebar.js'
+        sidebar: 'src/sidebar/sidebar.html'
       },
       output: {
         entryFileNames: `[name].js`,
-        chunkFileNames: `assets/[name]-[hash].js`,
-        assetFileNames: `[name].[ext]`,
+        chunkFileNames: `assets/[name].js`,
+        assetFileNames: ({ name }) => {
+          if (name.endsWith('.css')) {
+            return '[name][extname]';
+          }
+          return 'assets/[name][extname]';
+        },
       }
     }
   },
@@ -27,7 +32,6 @@ export default defineConfig({
       targets: [
         { src: 'src/manifest.json', dest: '.' },
         { src: 'src/assets', dest: '.' },
-        { src: 'src/popup/popup.js', dest: 'popup/' },
         { src: 'src/lib/xlsx.full.min.js', dest: 'lib/' },
       ],
     }),

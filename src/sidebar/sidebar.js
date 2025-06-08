@@ -84,40 +84,6 @@ function renderDebugInfo(slides = []) {
   `;
 }
 
-function renderSlides(slides) {
-  const mainContainer = document.getElementById('sidebar-main');
-  if (!mainContainer) return;
-  mainContainer.innerHTML = ''; // Clear previous content
-
-  slides.forEach(slide => {
-    const slideDiv = document.createElement('div');
-    slideDiv.className = 'slide-item';
-    const contentHtml = generateContentHtml(slide.content);
-
-    slideDiv.innerHTML = `
-      <h3 class="slide-item__title">${slide.title}</h3>
-      <div class="slide-item__content">
-        ${contentHtml}
-      </div>
-    `;
-    mainContainer.appendChild(slideDiv);
-  });
-
-  // Add "Generate Timetable" button
-  const generateBtn = document.createElement('button');
-  generateBtn.className = 'btn';
-  generateBtn.textContent = 'Generate Timetable';
-  generateBtn.onclick = () => {
-    const startTime = prompt("Enter start time (e.g., 09:00):", "09:00");
-    if(startTime) {
-      const timetable = generateTimetable(slides, { startTime });
-      renderTimetable(timetable);
-      getTimetableKey().then(key => saveData(key, timetable));
-    }
-  };
-  mainContainer.appendChild(generateBtn);
-}
-
 function renderTimetable(timetable) {
   currentTimetable = timetable;
   const mainContainer = document.getElementById('sidebar-main');
@@ -259,7 +225,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const updateUI = (slides = []) => {
     lastSlides = slides || [];
-    renderSlides(lastSlides);
+    // If we have slides but no timetable, generate one with a default time.
+    if (slides.length > 0 && !currentTimetable) {
+      const defaultStartTime = '09:00';
+      const timetable = generateTimetable(slides, { startTime: defaultStartTime });
+      renderTimetable(timetable);
+      getTimetableKey().then(key => saveData(key, timetable));
+    }
     if(footerContainer) {
       footerContainer.innerHTML = renderDebugInfo(slides);
     }

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gamma Timetable</title>
+  <script type="module" crossorigin src="/sidebar.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill.js">
+  <link rel="stylesheet" crossorigin href="/sidebar.css">
+</head>
+<body>
+  <div id="sidebar-root">
+    <header class="sidebar-header">
+      <h2>Course Timetable <span id="version-display" class="version"></span></h2>
+    </header>
+    <main id="sidebar-main" class="sidebar-main">
+      <p>Loading slides...</p>
+    </main>
+    <footer id="sidebar-footer" class="sidebar-footer">
+      <!-- Debug info will be injected here -->
+    </footer>
+  </div>
+  <script src="../lib/xlsx.full.min.js"></script>
+</body>
+</html> 
