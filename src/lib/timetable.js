@@ -138,26 +138,37 @@ export function downloadFile(filename, url, isBlob = false) {
  * @returns {Blob}
  */
 export function generateXLSX(timetable) {
-  // 1. Remove the 'id' field from items for export
-  const itemsForExport = timetable.items.map(({ id, ...rest }) => rest);
+  // 1. Get the presentation title from the first slide, or use a default.
+  const presentationTitle = timetable.items[0]?.title || 'Course Timetable';
 
-  // 2. Get the slideshow title from the first slide, or use a default
-  const slideShowTitle = timetable.items[0]?.title || 'Course Timetable';
+  // 2. Prepare the data rows for the worksheet.
+  const dataRows = timetable.items.map(item => [
+    item.startTime,
+    item.endTime,
+    item.duration,
+    item.title,
+  ]);
 
-  // 3. Create the worksheet from the modified data
-  const worksheet = XLSX.utils.json_to_sheet(itemsForExport);
+  // 3. Define the headers.
+  const headers = ['Start', 'End', 'Duration', 'Slide title'];
 
-  // 4. Prepend the title and a blank row
-  XLSX.utils.sheet_add_aoa(worksheet, [[slideShowTitle]], { origin: 'A1' });
-  XLSX.utils.sheet_add_aoa(worksheet, [[]], { origin: 'A2' });
-  
-  // 5. Shift existing data down by two rows
-  if (worksheet['!ref']) {
-    const range = XLSX.utils.decode_range(worksheet['!ref']);
-    range.s.r += 2; // Start row +2
-    range.e.r += 2; // End row +2
-    worksheet['!ref'] = XLSX.utils.encode_range(range);
-  }
+  // 4. Combine all parts into a single array of arrays.
+  const sheetData = [
+    [presentationTitle], // Row 1: Presentation Title in A1
+    headers,             // Row 2: Headers
+    ...dataRows          // Row 3 onwards: Data
+  ];
+
+  // 5. Create the worksheet from the array of arrays.
+  const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+  // 6. Set column widths for better readability.
+  worksheet['!cols'] = [
+    { wch: 10 }, // Start
+    { wch: 10 }, // End
+    { wch: 10 }, // Duration
+    { wch: 80 }, // Slide title
+  ];
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Timetable');

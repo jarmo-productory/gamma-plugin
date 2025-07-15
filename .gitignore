@@ -26,4 +26,17 @@ node_modules/
 
 # Task files
 tasks.json
-tasks/ 
+tasks/
+
+# Taskmaster
+.taskmaster/
+
+# Cursor
+.cursor/
+
+# Roo
+.roo/
+
+# IDE specific files
+.roomodes
+.windsurfrules 

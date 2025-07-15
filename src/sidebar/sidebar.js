@@ -270,7 +270,7 @@ function renderDebugInfo(slides = [], lastAction = 'none') {
   let firstSlide = slides[0] ? JSON.stringify(slides[0], null, 2) : 'N/A';
   return `
     <div class="debug-info">
-      <strong>Debug Info</strong><br>
+      <strong>Debug Info (v${EXT_VERSION})</strong><br>
       Slides Detected: <strong>${slideCount}</strong><br>
       Connection Status: <span style="color:${connected ? 'green' : 'red'};font-weight:bold;">${connected ? 'Connected' : 'Disconnected'}</span><br>
       Last Action: <span style="font-family: monospace;">${lastAction}</span><br>
@@ -450,11 +450,6 @@ function recalculateTimetable(timetable) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[SIDEBAR] DOMContentLoaded fired');
-  const versionDisplay = document.getElementById('version-display');
-
-  if(versionDisplay) {
-    versionDisplay.textContent = `v${EXT_VERSION}`;
-  }
 
   // Establish the connection to the background script
   connectToBackground();
