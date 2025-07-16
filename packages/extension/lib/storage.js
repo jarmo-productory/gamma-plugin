@@ -1,18 +1,20 @@
 /**
+ * Storage abstraction layer for the Gamma Timetable Extension
+ * Now imports from shared StorageManager for unified behavior
+ * Maintains identical API for backward compatibility
+ */
+
+// Import from shared StorageManager
+import { saveData as sharedSaveData, loadData as sharedLoadData, debounce as sharedDebounce } from '@shared/storage';
+
+/**
  * Saves data to chrome.storage.local.
  * @param {string} key
  * @param {any} value
  * @returns {Promise<void>}
  */
 export function saveData(key, value) {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.set({ [key]: value }, () => {
-      if (chrome.runtime.lastError) {
-        return reject(chrome.runtime.lastError);
-      }
-      resolve();
-    });
-  });
+  return sharedSaveData(key, value);
 }
 
 /**
@@ -21,14 +23,7 @@ export function saveData(key, value) {
  * @returns {Promise<any>}
  */
 export function loadData(key) {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.get(key, (result) => {
-      if (chrome.runtime.lastError) {
-        return reject(chrome.runtime.lastError);
-      }
-      resolve(result[key]);
-    });
-  });
+  return sharedLoadData(key);
 }
 
 /**
@@ -38,10 +33,8 @@ export function loadData(key) {
  * @returns {Function}
  */
 export function debounce(func, delay) {
-    let timeout;
-    return function(...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), delay);
-    };
-} 
+  return sharedDebounce(func, delay);
+}
+
+// Legacy support: Also export the original functions for compatibility
+export { saveData as saveDataLegacy, loadData as loadDataLegacy, debounce as debounceLegacy }; 
