@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Gamma Timetable</title>
-  <script type="module" crossorigin src="/sidebar.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill.js">
-  <link rel="stylesheet" crossorigin href="/sidebar.css">
+  <link rel="stylesheet" href="sidebar.css">
 </head>
 <body>
   <div id="sidebar-root">
@@ -25,6 +23,7 @@
       <!-- Debug info will be injected here -->
     </footer>
   </div>
-  <script src="/lib/xlsx.full.min.js"></script>
+  <script src="lib/xlsx.full.min.js"></script>
+  <script type="module" src="sidebar/sidebar.js"></script>
 </body>
 </html> 

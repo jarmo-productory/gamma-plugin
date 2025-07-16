@@ -1,0 +1,17 @@
+.sticky-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@media (max-width: 350px) {
+  .sticky-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
+.slide-item {
+  background-color: #ffffff;
+} 

@@ -1,22 +1,38 @@
 {
-  "devDependencies": {
-    "@types/chrome": "^0.0.326",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.5",
-    "vite-plugin-static-copy": "^3.0.0",
-    "archiver": "^5.3.1"
-  },
+  "name": "gamma-timetable-extension",
+  "version": "0.0.6",
+  "description": "Chrome extension that extracts slide content from Gamma presentations and generates customizable timetables",
+  "keywords": [
+    "chrome-extension",
+    "gamma",
+    "presentation",
+    "timetable",
+    "education"
+  ],
+  "author": "",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "BUILD_TARGET=extension vite build",
+    "build:extension": "BUILD_TARGET=extension vite build",
+    "build:web": "BUILD_TARGET=web vite build",
+    "build:shared": "BUILD_TARGET=shared vite build",
+    "build:all": "npm run build:extension && npm run build:web && npm run build:shared",
     "preview": "vite preview",
-    "package": "npm run build && zip -r ../gamma-plugin-release.zip dist",
-    "sync-version": "node src/scripts/sync-version.js"
+    "package": "npm run build:extension && zip -r ../gamma-plugin-release.zip dist",
+    "sync-version": "node packages/extension/scripts/sync-version.js",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist dist-web dist-shared dist-types"
   },
-  "keywords": [],
-  "author": "",
+  "devDependencies": {
+    "@types/chrome": "^0.0.326",
+    "@types/node": "^24.0.14",
+    "archiver": "^5.3.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-static-copy": "^3.0.0"
+  },
   "dependencies": {
     "jspdf": "^3.0.1"
-  },
-  "version": "0.0.5"
+  }
 }

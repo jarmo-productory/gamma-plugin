@@ -3,17 +3,20 @@ import { resolve } from 'path';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import packageJson from './package.json';
 
-export default defineConfig({
+// Build target can be set via BUILD_TARGET env var
+const buildTarget = process.env.BUILD_TARGET || 'extension';
+
+const extensionConfig = {
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       external: ['sheetjs'],
       input: {
-        background: 'src/background.js',
-        content: 'src/content.ts',
-        popup: 'src/popup/popup.html',
-        sidebar: 'src/sidebar/sidebar.html'
+        background: 'packages/extension/background.js',
+        content: 'packages/extension/content.ts',
+        'popup/popup': 'packages/extension/popup/popup.js',
+        'sidebar/sidebar': 'packages/extension/sidebar/sidebar.js'
       },
       output: {
         entryFileNames: `[name].js`,
@@ -30,13 +33,64 @@ export default defineConfig({
   plugins: [
     viteStaticCopy({
       targets: [
-        { src: 'src/manifest.json', dest: '.' },
-        { src: 'src/assets/*', dest: 'assets' },
-        { src: 'src/lib/xlsx.full.min.js', dest: 'lib/' },
+        { src: 'packages/extension/manifest.json', dest: '.' },
+        { src: 'packages/extension/assets/*', dest: 'assets' },
+        { src: 'packages/extension/lib/xlsx.full.min.js', dest: 'lib/' },
+        { src: 'packages/extension/popup/popup.html', dest: '.' },
+        { src: 'packages/extension/sidebar/sidebar.html', dest: '.' },
+        { src: 'packages/extension/sidebar/sidebar.css', dest: '.' }
       ],
     }),
   ],
+  resolve: {
+    alias: {
+      '@shared': resolve(__dirname, 'packages/shared'),
+      '@extension': resolve(__dirname, 'packages/extension'),
+    }
+  }
+};
+
+const webConfig = {
+  build: {
+    outDir: 'dist-web',
+    emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: 'packages/web/src/index.html'
+      }
+    }
+  },
+  resolve: {
+    alias: {
+      '@shared': resolve(__dirname, 'packages/shared'),
+      '@web': resolve(__dirname, 'packages/web'),
+    }
+  }
+};
+
+const sharedConfig = {
+  build: {
+    outDir: 'dist-shared',
+    emptyOutDir: true,
+    lib: {
+      entry: resolve(__dirname, 'packages/shared/index.ts'),
+      name: 'SharedComponents',
+      fileName: 'shared'
+    }
+  }
+};
+
+// Select configuration based on build target
+const configs = {
+  extension: extensionConfig,
+  web: webConfig,
+  shared: sharedConfig
+};
+
+export default defineConfig({
+  ...configs[buildTarget],
   define: {
     '__APP_VERSION__': JSON.stringify(packageJson.version),
+    '__BUILD_TARGET__': JSON.stringify(buildTarget),
   },
 }); 
