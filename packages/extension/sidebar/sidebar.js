@@ -14,12 +14,21 @@ import {
 } from '../lib/timetable.js';
 import { saveData, loadData, debounce } from '../lib/storage.js';
 
+// Sprint 0: Import authentication and configuration infrastructure
+// These provide the foundation for future cloud sync capabilities
+import { authManager } from '@shared/auth';
+import { configManager } from '@shared/config';
+
 let connected = false;
 let lastSlides = [];
 let currentTimetable = null;
 let port = null;
 let currentTabId = null;
 let currentPresentationUrl = null; // Track the current presentation
+
+// Sprint 0: Infrastructure state (authentication and configuration ready but inactive)
+let authInitialized = false;
+let configInitialized = false;
 
 /**
  * Reconciles fresh slide data with the existing timetable, preserving user-set durations.
@@ -451,6 +460,151 @@ function recalculateTimetable(timetable) {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[SIDEBAR] DOMContentLoaded fired');
 
+  // Sprint 0: Initialize authentication and configuration infrastructure
+  await initializeInfrastructure();
+
   // Establish the connection to the background script
   connectToBackground();
-}); 
+});
+
+/**
+ * Initialize authentication and configuration managers
+ * Sprint 0: Sets up infrastructure but keeps all cloud features disabled
+ */
+async function initializeInfrastructure() {
+  try {
+    console.log('[SIDEBAR] Initializing Sprint 0 infrastructure...');
+    
+    // Initialize configuration manager
+    await configManager.initialize();
+    configInitialized = true;
+    console.log('[SIDEBAR] ConfigManager initialized');
+    
+    // Initialize authentication manager  
+    await authManager.initialize();
+    authInitialized = true;
+    console.log('[SIDEBAR] AuthManager initialized');
+    
+    // Apply user preferences for current functionality
+    await applyUserPreferences();
+    
+    // Set up event listeners for future UI (Sprint 1+)
+    setupInfrastructureEventListeners();
+    
+    console.log('[SIDEBAR] Sprint 0 infrastructure ready - working in offline mode');
+    
+  } catch (error) {
+    console.error('[SIDEBAR] Failed to initialize infrastructure:', error);
+    // Extension should continue working even if infrastructure fails
+    console.log('[SIDEBAR] Continuing in fallback mode...');
+  }
+}
+
+/**
+ * Apply user preferences that affect current functionality
+ * Sprint 0: Only handles export format preference
+ */
+async function applyUserPreferences() {
+  try {
+    if (!authInitialized) return;
+    
+    const preferences = await authManager.getUserPreferences();
+    console.log('[SIDEBAR] Applied user preferences:', preferences);
+    
+    // Apply export format preference if available
+    // Future: This will control default export behavior
+    
+  } catch (error) {
+    console.warn('[SIDEBAR] Could not apply user preferences:', error);
+  }
+}
+
+/**
+ * Set up event listeners for infrastructure UI elements
+ * Sprint 0: Elements are hidden, but listeners are ready for Sprint 1
+ */
+function setupInfrastructureEventListeners() {
+  // Auth status elements (hidden in Sprint 0)
+  const authLoginBtn = document.getElementById('auth-login-btn');
+  const authLogoutBtn = document.getElementById('auth-logout-btn');
+  
+  if (authLoginBtn) {
+    authLoginBtn.addEventListener('click', async () => {
+      console.log('[SIDEBAR] Login clicked - Sprint 0 stub');
+      await authManager.login(); // No-op in Sprint 0
+    });
+  }
+  
+  if (authLogoutBtn) {
+    authLogoutBtn.addEventListener('click', async () => {
+      console.log('[SIDEBAR] Logout clicked - Sprint 0 stub');
+      await authManager.logout(); // No-op in Sprint 0
+    });
+  }
+  
+  // Settings elements (hidden in Sprint 0)
+  const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+  const settingsCloseBtn = document.getElementById('settings-close-btn');
+  const settingsPanel = document.getElementById('settings-panel');
+  
+  if (settingsToggleBtn && settingsPanel) {
+    settingsToggleBtn.addEventListener('click', () => {
+      console.log('[SIDEBAR] Settings toggle - Sprint 0 stub');
+      // In Sprint 1: settingsPanel.style.display = 'block';
+    });
+  }
+  
+  if (settingsCloseBtn && settingsPanel) {
+    settingsCloseBtn.addEventListener('click', () => {
+      console.log('[SIDEBAR] Settings close - Sprint 0 stub');
+      // In Sprint 1: settingsPanel.style.display = 'none';
+    });
+  }
+  
+  // Export format preference (functional in Sprint 0)
+  const exportFormatSelect = document.getElementById('export-format-select');
+  if (exportFormatSelect) {
+    exportFormatSelect.addEventListener('change', async (e) => {
+      try {
+        await authManager.updateUserPreferences({ 
+          exportFormat: e.target.value 
+        });
+        console.log('[SIDEBAR] Export format preference updated:', e.target.value);
+      } catch (error) {
+        console.warn('[SIDEBAR] Could not save export preference:', error);
+      }
+    });
+  }
+  
+  // Development settings (hidden by default, can be shown via feature flags)
+  const debugModeCheckbox = document.getElementById('debug-mode-checkbox');
+  if (debugModeCheckbox) {
+    debugModeCheckbox.addEventListener('change', async (e) => {
+      try {
+        await configManager.updateFeatureFlags({ 
+          debugMode: e.target.checked 
+        });
+        console.log('[SIDEBAR] Debug mode:', e.target.checked);
+        
+        // Show/hide debug elements based on flag
+        updateDebugVisibility(e.target.checked);
+      } catch (error) {
+        console.warn('[SIDEBAR] Could not update debug mode:', error);
+      }
+    });
+  }
+  
+  console.log('[SIDEBAR] Infrastructure event listeners ready');
+}
+
+/**
+ * Update visibility of debug elements based on debug mode
+ */
+function updateDebugVisibility(debugMode) {
+  const devSettingsGroup = document.getElementById('dev-settings-group');
+  if (devSettingsGroup) {
+    devSettingsGroup.style.display = debugMode ? 'block' : 'none';
+  }
+  
+  // Future: Add more debug-specific UI elements here
+} 

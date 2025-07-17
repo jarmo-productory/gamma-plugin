@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const packageJsonPath = path.resolve(__dirname, '../../package.json');
+const packageJsonPath = path.resolve(__dirname, '../../../package.json');
 const manifestPath = path.resolve(__dirname, '../manifest.json');
 
 try {
