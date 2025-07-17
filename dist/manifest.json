@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gamma Timetable Extension",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "description": "Extracts slide content from Gamma presentations and generates customizable timetables.",
   "permissions": [
     "activeTab",
