@@ -4,9 +4,126 @@
   <meta charset="UTF-8">
   <title>Gamma Timetable</title>
   <link rel="stylesheet" href="sidebar.css">
+  <style>
+    /* Authentication UI styles (hidden in Sprint 0) */
+    .auth-header {
+      display: none; /* Hidden in Sprint 0 */
+      padding: 0.75em;
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 0.85em;
+    }
+    
+    .auth-user-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5em;
+    }
+    
+    .auth-user-details {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    
+    .auth-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.75em;
+    }
+    
+    .auth-status-badge {
+      padding: 0.2em 0.5em;
+      border-radius: 12px;
+      font-size: 0.75em;
+      font-weight: 500;
+    }
+    
+    .auth-status-badge.guest {
+      background-color: #ffeaa7;
+      color: #2d3436;
+    }
+    
+    .auth-status-badge.authenticated {
+      background-color: #00b894;
+      color: white;
+    }
+    
+    .auth-sync-status {
+      display: none; /* Will be shown when cloud sync is available */
+      margin-top: 0.5em;
+      padding: 0.4em;
+      background-color: #e3f2fd;
+      border-radius: 4px;
+      font-size: 0.75em;
+      color: #1565c0;
+    }
+    
+    .auth-actions {
+      display: flex;
+      gap: 0.5em;
+      margin-top: 0.5em;
+    }
+    
+    .auth-btn {
+      padding: 0.3em 0.6em;
+      border: 1px solid #007bff;
+      background-color: transparent;
+      color: #007bff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75em;
+      text-decoration: none;
+    }
+    
+    .auth-btn:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .auth-btn.primary {
+      background-color: #007bff;
+      color: white;
+    }
+    
+    .auth-btn.primary:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
   <div id="sidebar-root">
+    <!-- Authentication Header (Hidden in Sprint 0) -->
+    <div id="auth-header" class="auth-header">
+      <div class="auth-user-info">
+        <div class="auth-user-details">
+          <div id="auth-avatar" class="auth-avatar">G</div>
+          <div>
+            <div id="auth-user-name">Guest User</div>
+            <div id="auth-user-email" style="color: #666; font-size: 0.85em;">Not signed in</div>
+          </div>
+        </div>
+        <span id="auth-status-badge" class="auth-status-badge guest">Guest</span>
+      </div>
+      
+      <div id="auth-sync-status" class="auth-sync-status">
+        <span id="sync-status-text">Offline mode - Local storage only</span>
+      </div>
+      
+      <div class="auth-actions">
+        <button id="auth-login-btn" class="auth-btn primary">Sign In</button>
+        <button id="auth-logout-btn" class="auth-btn" style="display: none;">Sign Out</button>
+        <button id="auth-sync-btn" class="auth-btn" style="display: none;">Sync Now</button>
+      </div>
+    </div>
+    
     <header class="sidebar-header">
       <div class="header-row">
         <h2 class="title"><span id="timetable-title">Course Timetable</span></h2>

@@ -14,12 +14,17 @@ import {
 } from '../lib/timetable.js';
 import { saveData, loadData, debounce } from '../lib/storage.js';
 
+// Import authentication manager for Sprint 0 infrastructure
+import { authManager } from '../../../packages/shared/auth/index.js';
+import { config } from '../../../packages/shared/config/index.js';
+
 let connected = false;
 let lastSlides = [];
 let currentTimetable = null;
 let port = null;
 let currentTabId = null;
 let currentPresentationUrl = null; // Track the current presentation
+let authUnsubscribe = null; // For cleaning up auth state listener
 
 /**
  * Reconciles fresh slide data with the existing timetable, preserving user-set durations.
@@ -448,9 +453,254 @@ function recalculateTimetable(timetable) {
   };
 }
 
+/**
+ * Initialize authentication UI and state management
+ * Sprint 0: Sets up infrastructure but keeps UI hidden
+ */
+async function initializeAuthentication() {
+  // Check if authentication features should be shown
+  const shouldShow = authManager.shouldShowAuthUI();
+  
+  // Get UI elements
+  const authHeader = document.getElementById('auth-header');
+  const authUserName = document.getElementById('auth-user-name');
+  const authUserEmail = document.getElementById('auth-user-email');
+  const authAvatar = document.getElementById('auth-avatar');
+  const authStatusBadge = document.getElementById('auth-status-badge');
+  const authSyncStatus = document.getElementById('auth-sync-status');
+  const syncStatusText = document.getElementById('sync-status-text');
+  const authLoginBtn = document.getElementById('auth-login-btn');
+  const authLogoutBtn = document.getElementById('auth-logout-btn');
+  const authSyncBtn = document.getElementById('auth-sync-btn');
+  
+  if (!authHeader) {
+    console.log('[SIDEBAR] Auth UI elements not found');
+    return;
+  }
+  
+  // Sprint 0: Keep authentication UI hidden
+  if (shouldShow) {
+    authHeader.style.display = 'block';
+    console.log('[SIDEBAR] Authentication UI enabled');
+  } else {
+    authHeader.style.display = 'none';
+    console.log('[SIDEBAR] Authentication UI hidden (Sprint 0)');
+  }
+  
+  // Set up authentication state listener
+  authUnsubscribe = authManager.onAuthStateChange((authState) => {
+    updateAuthenticationUI(authState);
+  });
+  
+  // Set up button event listeners
+  if (authLoginBtn) {
+    authLoginBtn.addEventListener('click', handleAuthLogin);
+  }
+  if (authLogoutBtn) {
+    authLogoutBtn.addEventListener('click', handleAuthLogout);
+  }
+  if (authSyncBtn) {
+    authSyncBtn.addEventListener('click', handleAuthSync);
+  }
+  
+  console.log('[SIDEBAR] Authentication system initialized');
+}
+
+/**
+ * Update authentication UI based on current auth state
+ */
+function updateAuthenticationUI(authState) {
+  const authUserName = document.getElementById('auth-user-name');
+  const authUserEmail = document.getElementById('auth-user-email');
+  const authAvatar = document.getElementById('auth-avatar');
+  const authStatusBadge = document.getElementById('auth-status-badge');
+  const authSyncStatus = document.getElementById('auth-sync-status');
+  const syncStatusText = document.getElementById('sync-status-text');
+  const authLoginBtn = document.getElementById('auth-login-btn');
+  const authLogoutBtn = document.getElementById('auth-logout-btn');
+  const authSyncBtn = document.getElementById('auth-sync-btn');
+  
+  if (!authUserName || !authUserEmail || !authAvatar || !authStatusBadge) {
+    return;
+  }
+  
+  if (authState.isLoading) {
+    // Loading state
+    authUserName.textContent = 'Loading...';
+    authUserEmail.textContent = 'Checking authentication...';
+    authAvatar.textContent = '...';
+    authStatusBadge.textContent = 'Loading';
+    authStatusBadge.className = 'auth-status-badge guest';
+    
+    if (authLoginBtn) authLoginBtn.disabled = true;
+    if (authLogoutBtn) authLogoutBtn.disabled = true;
+    if (authSyncBtn) authSyncBtn.disabled = true;
+    
+  } else if (authState.isAuthenticated && authState.user) {
+    // Authenticated state (Future Sprint 1+)
+    authUserName.textContent = authState.user.name || authState.user.email;
+    authUserEmail.textContent = authState.user.email;
+    authAvatar.textContent = authState.user.name ? authState.user.name.charAt(0).toUpperCase() : 'U';
+    authStatusBadge.textContent = 'Signed In';
+    authStatusBadge.className = 'auth-status-badge authenticated';
+    
+    if (authLoginBtn) {
+      authLoginBtn.style.display = 'none';
+      authLoginBtn.disabled = false;
+    }
+    if (authLogoutBtn) {
+      authLogoutBtn.style.display = 'inline-block';
+      authLogoutBtn.disabled = false;
+    }
+    if (authSyncBtn && config.isFeatureEnabled('cloudSync')) {
+      authSyncBtn.style.display = 'inline-block';
+      authSyncBtn.disabled = false;
+    }
+    
+    // Show sync status for authenticated users
+    if (authSyncStatus && config.isFeatureEnabled('cloudSync')) {
+      authSyncStatus.style.display = 'block';
+      if (syncStatusText) {
+        syncStatusText.textContent = 'Cloud sync enabled';
+      }
+    }
+    
+  } else {
+    // Guest/unauthenticated state (Sprint 0 default)
+    authUserName.textContent = 'Guest User';
+    authUserEmail.textContent = 'Not signed in';
+    authAvatar.textContent = 'G';
+    authStatusBadge.textContent = 'Guest';
+    authStatusBadge.className = 'auth-status-badge guest';
+    
+    if (authLoginBtn) {
+      authLoginBtn.style.display = 'inline-block';
+      authLoginBtn.disabled = false;
+    }
+    if (authLogoutBtn) {
+      authLogoutBtn.style.display = 'none';
+      authLogoutBtn.disabled = false;
+    }
+    if (authSyncBtn) {
+      authSyncBtn.style.display = 'none';
+    }
+    
+    // Show offline status for guests
+    if (authSyncStatus) {
+      authSyncStatus.style.display = 'block';
+      if (syncStatusText) {
+        syncStatusText.textContent = 'Offline mode - Local storage only';
+      }
+    }
+  }
+  
+  if (authState.lastError) {
+    console.error('[SIDEBAR] Auth error:', authState.lastError);
+  }
+}
+
+/**
+ * Handle authentication login attempt
+ * Sprint 0: Shows message about Sprint 1 availability
+ */
+async function handleAuthLogin() {
+  try {
+    console.log('[SIDEBAR] Login attempted - will be implemented in Sprint 1');
+    
+    // Sprint 0: Show user-friendly message
+    const footerContainer = document.getElementById('sidebar-footer');
+    if (footerContainer) {
+      footerContainer.innerHTML = `
+        <div class="auth-info-message" style="background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 4px; padding: 12px; color: #1565c0; font-size: 14px;">
+          <strong>Coming Soon!</strong><br>
+          User authentication and cloud sync will be available in the next update.
+          <br><small>Currently running in guest mode with local storage.</small>
+        </div>
+      `;
+    }
+    
+    // Future Sprint 1 implementation:
+    // - Integrate with Clerk authentication
+    // - Handle OAuth flows
+    // - Store authentication tokens securely
+    
+  } catch (error) {
+    console.error('[SIDEBAR] Login failed:', error);
+  }
+}
+
+/**
+ * Handle authentication logout
+ * Sprint 0: No-op since no authentication exists
+ */
+async function handleAuthLogout() {
+  try {
+    await authManager.logout();
+    console.log('[SIDEBAR] User logged out');
+    
+    const footerContainer = document.getElementById('sidebar-footer');
+    if (footerContainer) {
+      footerContainer.innerHTML = `
+        <div class="auth-info-message" style="background-color: #f3e5f5; border: 1px solid #ce93d8; border-radius: 4px; padding: 12px; color: #7b1fa2; font-size: 14px;">
+          Switched to guest mode - data saved locally.
+        </div>
+      `;
+    }
+    
+  } catch (error) {
+    console.error('[SIDEBAR] Logout failed:', error);
+  }
+}
+
+/**
+ * Handle manual sync request
+ * Sprint 0: Placeholder for future cloud sync
+ */
+async function handleAuthSync() {
+  try {
+    console.log('[SIDEBAR] Manual sync requested - will be implemented in Sprint 2');
+    
+    const footerContainer = document.getElementById('sidebar-footer');
+    if (footerContainer) {
+      footerContainer.innerHTML = `
+        <div class="auth-info-message" style="background-color: #fff3e0; border: 1px solid #ffcc02; border-radius: 4px; padding: 12px; color: #f57c00; font-size: 14px;">
+          Cloud sync will be available in Sprint 2 with backend integration.
+        </div>
+      `;
+    }
+    
+    // Future Sprint 2 implementation:
+    // - Sync local timetables to cloud
+    // - Download latest changes from cloud
+    // - Handle sync conflicts
+    
+  } catch (error) {
+    console.error('[SIDEBAR] Sync failed:', error);
+  }
+}
+
+/**
+ * Clean up authentication listeners
+ */
+function cleanupAuthentication() {
+  if (authUnsubscribe) {
+    authUnsubscribe();
+    authUnsubscribe = null;
+    console.log('[SIDEBAR] Authentication listeners cleaned up');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[SIDEBAR] DOMContentLoaded fired');
 
+  // Initialize authentication system (Sprint 0 infrastructure)
+  await initializeAuthentication();
+
   // Establish the connection to the background script
   connectToBackground();
+});
+
+// Clean up authentication when page unloads
+window.addEventListener('beforeunload', () => {
+  cleanupAuthentication();
 }); 

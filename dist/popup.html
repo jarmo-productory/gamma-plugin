@@ -3,13 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <title>Gamma Timetable Popup</title>
-  <style>body{font-family:sans-serif;padding:1em;min-width:200px;}</style>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+      min-width: 200px;
+    }
+    
+    .auth-section {
+      display: none; /* Hidden in Sprint 0 */
+      margin-bottom: 1em;
+      padding: 0.75em;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      background-color: #f8f9fa;
+    }
+    
+    .auth-status {
+      display: none; /* Hidden in Sprint 0 */
+      margin: 0.5em 0;
+      padding: 0.5em;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+    
+    .auth-status.authenticated {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .auth-status.unauthenticated {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .auth-buttons {
+      display: none; /* Hidden in Sprint 0 */
+      gap: 0.5em;
+    }
+    
+    .auth-button {
+      padding: 0.4em 0.8em;
+      border: 1px solid #007bff;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85em;
+    }
+    
+    .auth-button:hover {
+      background-color: #0056b3;
+    }
+    
+    .auth-button.secondary {
+      background-color: transparent;
+      color: #007bff;
+    }
+    
+    .auth-button.secondary:hover {
+      background-color: #f8f9fa;
+    }
+  </style>
 </head>
 <body>
   <h2>Gamma Timetable</h2>
+  
+  <!-- Authentication Section (Hidden in Sprint 0) -->
+  <div id="auth-section" class="auth-section">
+    <div id="auth-status" class="auth-status unauthenticated">
+      Guest Mode - <span id="auth-status-text">Not signed in</span>
+    </div>
+    
+    <div id="auth-buttons" class="auth-buttons">
+      <button id="login-btn" class="auth-button">Sign In</button>
+      <button id="logout-btn" class="auth-button secondary" style="display: none;">Sign Out</button>
+    </div>
+  </div>
+  
+  <!-- Main Content -->
   <p>Open the side panel to get started.</p>
   <button id="open-sidebar-btn">Open Side Panel</button>
   <div id="sidebar-status" style="color: red; margin-top: 0.5em;"></div>
+  
   <script type="module" src="popup/popup.js"></script>
 </body>
 </html> 
