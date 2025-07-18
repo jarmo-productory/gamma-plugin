@@ -46,17 +46,12 @@ This document is the single source of truth for all environment-specific setting
 ### Production
 
 - **Web Dashboard:** `https://productory-powerups.netlify.app`
-- **Supabase:** `https://<prod-project>.supabase.co`
+- **Supabase Project:** `productory-powerups` (dknqqcnnbcqujeffbmmb)
+- **Supabase URL:** `https://dknqqcnnbcqujeffbmmb.supabase.co`
 - **Clerk:** `https://dashboard.clerk.com` (prod environment)
-- **Example `.env.production` values:**
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=https://<prod-project>.supabase.co
-  NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
-  CLERK_SECRET_KEY=sk_live_...
-  NEXT_PUBLIC_APP_URL=https://productory-powerups.netlify.app
-  NEXT_PUBLIC_EXTENSION_ID=chrome-extension://<EXTENSION_ID>
-  ```
+- **Environment Variables:** Copy `.env.example` to `.env.local` and fill in actual values
+  
+  > **🚨 SECURITY**: Never commit actual API keys to the repository. Use `.env.local` (gitignored) for real values.
 
 ---
 
