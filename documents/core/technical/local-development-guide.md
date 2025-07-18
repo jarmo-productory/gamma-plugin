@@ -75,12 +75,25 @@ The project requires two main services to be running concurrently: the Supabase 
 
 ---
 
-## 5. Local SSL/HTTPS (TODO)
+## 5. Local SSL/HTTPS Setup
 
-For securely testing authentication flows that involve cross-domain communication (like OAuth callbacks), running the local development server over HTTPS is required. This section will be updated with instructions for setting up a local SSL certificate.
+For securely testing authentication flows that involve cross-domain communication (like OAuth callbacks), running the local development server over HTTPS is required.
 
-- [ ] Generate a local SSL certificate (e.g., using `mkcert`).
-- [ ] Configure `vite.config.js` to use the SSL certificate for the dev server.
+1.  **Install `mkcert`:**
+    This tool creates locally-trusted development certificates.
+    ```bash
+    brew install mkcert
+    mkcert -install
+    ```
+
+2.  **Generate Certificates:**
+    This command creates a `certs` directory and generates the key/certificate files.
+    ```bash
+    mkdir certs && mkcert -key-file certs/key.pem -cert-file certs/cert.pem localhost 127.0.0.1 ::1
+    ```
+
+3.  **Run the Dev Server:**
+    Vite is now configured to automatically use these certificates. When you run `npm run dev`, your site will be available at `https://localhost:5173`.
 
 ---
 

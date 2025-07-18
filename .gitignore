@@ -46,3 +46,6 @@ tasks/
 # IDE specific files
 .roomodes
 .windsurfrules 
+
+# Local secrets
+certs/ 

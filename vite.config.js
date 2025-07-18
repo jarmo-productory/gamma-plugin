@@ -88,10 +88,20 @@ const configs = {
   shared: sharedConfig
 };
 
-export default defineConfig({
-  ...configs[buildTarget],
-  define: {
-    '__APP_VERSION__': JSON.stringify(packageJson.version),
-    '__BUILD_TARGET__': JSON.stringify(buildTarget),
-  },
+export default defineConfig(({ command }) => {
+  const selectedConfig = configs[buildTarget];
+
+  return {
+    ...selectedConfig,
+    server: {
+      https: {
+        key: './certs/key.pem',
+        cert: './certs/cert.pem',
+      },
+    },
+    define: {
+      '__APP_VERSION__': JSON.stringify(packageJson.version),
+      '__BUILD_TARGET__': JSON.stringify(buildTarget),
+    },
+  };
 }); 
