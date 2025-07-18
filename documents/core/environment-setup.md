@@ -45,7 +45,7 @@ This document is the single source of truth for all environment-specific setting
 
 ### Production
 
-- **Web Dashboard:** `https://yourapp.netlify.app`
+- **Web Dashboard:** `https://productory-powerups.netlify.app`
 - **Supabase:** `https://<prod-project>.supabase.co`
 - **Clerk:** `https://dashboard.clerk.com` (prod environment)
 - **Example `.env.production` values:**
@@ -54,7 +54,7 @@ This document is the single source of truth for all environment-specific setting
   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
   CLERK_SECRET_KEY=sk_live_...
-  NEXT_PUBLIC_APP_URL=https://yourapp.netlify.app
+  NEXT_PUBLIC_APP_URL=https://productory-powerups.netlify.app
   NEXT_PUBLIC_EXTENSION_ID=chrome-extension://<EXTENSION_ID>
   ```
 
@@ -63,7 +63,7 @@ This document is the single source of truth for all environment-specific setting
 ## Service Providers
 
 ### Netlify
-- **Site:** `https://yourapp.netlify.app`
+- **Site:** `https://productory-powerups.netlify.app`
 - **Build command:** `npm run build:web`
 - **Publish directory:** `dist-web`
 - **Environment variables:** Set via Netlify UI for each environment
