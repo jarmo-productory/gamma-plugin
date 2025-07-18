@@ -40,14 +40,15 @@
 *Expected Time: 0.5-1 day*
 
 **Early Deployment Setup:**
-- [ ] Create Netlify account and connect GitHub repository
-- [ ] Set up automatic deployment from main branch
+- [x] Create Netlify account and connect GitHub repository
+- [x] Set up automatic deployment from main branch
 - [ ] Configure build settings and environment variables
-- [ ] Set up staging environment (preview deployments)
 - [ ] Configure custom domain and SSL certificates
 - [ ] Test deployment pipeline with minimal Next.js app
 - [ ] Set up build notifications and monitoring
 - [ ] Document deployment process and troubleshooting
+
+> **Note:** Staging/preview environments are not currently used. All deployments go directly from development to production. Staging will be added in the future as needed.
 
 **Benefits of Early Setup:**
 - ✅ Validate CI/CD pipeline early in development
