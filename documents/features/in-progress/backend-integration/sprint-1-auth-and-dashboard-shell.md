@@ -43,9 +43,9 @@
 - [x] Create Netlify account and connect GitHub repository
 - [x] Set up automatic deployment from main branch
 - [x] Configure build settings and environment variables
-- [ ] Configure custom domain and SSL certificates
+- [x] Configure custom domain and SSL certificates *(not needed - using Netlify subdomain)*
 - [x] Test deployment pipeline with minimal Vite app
-- [ ] Set up build notifications and monitoring
+- [x] Set up build notifications and monitoring *(not needed - email notifications already active)*
 - [x] Document deployment process and troubleshooting
 
 > **Note:** Staging/preview environments are not currently used. All deployments go directly from development to production. Staging will be added in the future as needed.
