@@ -51,12 +51,13 @@ const extensionConfig = {
 };
 
 const webConfig = {
+  root: 'packages/web/src',
   build: {
-    outDir: 'dist-web',
+    outDir: '../../../dist-web',
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: 'packages/web/src/index.html'
+        main: resolve(__dirname, 'packages/web/src/index.html')
       }
     }
   },
