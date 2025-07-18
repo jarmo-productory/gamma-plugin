@@ -10,6 +10,24 @@
 - ✅ TypeScript type definitions
 - ✅ UI preparations (disabled auth buttons)
 
+## Sprint 1 Prerequisites (Must Complete Before Development)
+
+### Infrastructure Setup
+- [ ] **Supabase Local Development Setup** - Database, API configuration, local environment
+- [ ] **Clerk Account & Environment Setup** - Dev/staging/prod environments, API keys, OAuth providers
+- [ ] **Local Development Environment Guide** - Complete setup from scratch including SSL, environment variables
+- [ ] **Database Schema Design** - User profiles, presentations, relationships, migrations
+
+### Design & UX Requirements  
+- [ ] **Authentication UI Mockups** - Extension popup/sidebar auth elements, loading states, error handling
+- [ ] **Web Dashboard Wireframes** - Landing page, dashboard layout, presentations list, responsive design
+- [ ] **User Flow Diagrams** - Authentication flow, onboarding sequence, error recovery
+
+### API & Security Specifications
+- [ ] **API Endpoints Design** - Authentication, user management, basic CRUD operations
+- [ ] **Security Architecture** - Token storage strategy, extension-web communication security
+- [ ] **Deployment Configuration** - Netlify/Vercel setup, environment variables, SSL certificates
+
 ## Core Principles
 - **Extension Independence**: Chrome extension continues to work without authentication
 - **Graceful Enhancement**: Auth features enhance but don't replace local functionality
@@ -18,8 +36,161 @@
 
 ## Deliverables
 
-### 1. **Clerk Integration in Extension**
-*   Update `src/lib/auth.js` to integrate with Clerk:
+### 1. **Netlify Setup & CI/CD Configuration**
+*Expected Time: 0.5-1 day*
+
+**Early Deployment Setup:**
+- [ ] Create Netlify account and connect GitHub repository
+- [ ] Set up automatic deployment from main branch
+- [ ] Configure build settings and environment variables
+- [ ] Set up staging environment (preview deployments)
+- [ ] Configure custom domain and SSL certificates
+- [ ] Test deployment pipeline with minimal Next.js app
+- [ ] Set up build notifications and monitoring
+- [ ] Document deployment process and troubleshooting
+
+**Benefits of Early Setup:**
+- ✅ Validate CI/CD pipeline early in development
+- ✅ Catch deployment issues before they become blockers
+- ✅ Enable continuous testing of authentication flows
+- ✅ Allow for early user feedback on staging environment
+- ✅ Establish proper environment variable management
+
+### 2. **Infrastructure Setup & Configuration**
+*Expected Time: 2-3 days*
+
+**Supabase Setup:**
+- [ ] Create Supabase project and configure local development
+- [ ] Set up database schema with user profiles and presentations tables
+- [ ] Configure Row Level Security (RLS) policies
+- [ ] Create database migrations and seeding scripts
+- [ ] Set up local environment with `.env.local` configuration
+
+**Clerk Configuration:**
+- [ ] Create Clerk application with development/production environments
+- [ ] Configure OAuth providers (Google, GitHub)
+- [ ] Set up webhooks for user events
+- [ ] Configure domain allowlisting and CORS settings
+- [ ] Generate and manage API keys for different environments
+
+**Local Development Environment:**
+- [ ] Create comprehensive setup guide with all prerequisites
+- [ ] Configure SSL certificates for local HTTPS development
+- [ ] Set up environment variable management
+- [ ] Configure database connection and testing procedures
+- [ ] Document troubleshooting common setup issues
+
+### 3. **Database Schema & API Design**
+*Expected Time: 1 day*
+
+**Design Decision: Atomic Presentation Operations**
+This design uses atomic operations on complete presentation objects, matching the current Chrome storage system which stores timetables with key pattern `timetable-{presentationUrl}` and maintains complete `timetable.items[]` arrays. This approach ensures perfect compatibility with the existing storage system and avoids complex slide-level synchronization.
+
+**Benefits of Atomic Approach:**
+- ✅ Zero breaking changes to existing storage system
+- ✅ Simple API with fewer endpoints to maintain
+- ✅ Eliminates complex conflict resolution at slide level
+- ✅ Matches current reconciliation logic in `sidebar.js:reconcileAndUpdate()`
+- ✅ Easier to implement and test
+- ✅ Better performance (single database operation vs. multiple)
+
+**Database Schema:**
+```sql
+-- Users table (managed by Clerk, replicated locally)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clerk_id VARCHAR UNIQUE NOT NULL,
+  email VARCHAR NOT NULL,
+  name VARCHAR,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Presentations table (atomic storage matching current system)
+CREATE TABLE presentations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR NOT NULL,
+  gamma_url VARCHAR UNIQUE NOT NULL, -- Original Gamma presentation URL (unique identifier)
+  start_time VARCHAR DEFAULT '09:00', -- Default start time
+  total_duration INTEGER DEFAULT 0, -- Total duration in minutes
+  timetable_data JSONB NOT NULL, -- Complete timetable object with items array
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_presentations_user_id ON presentations(user_id);
+CREATE INDEX idx_presentations_gamma_url ON presentations(gamma_url);
+```
+
+**API Endpoints:**
+
+*Authentication:*
+- [ ] `GET /api/auth/me` - Get current user information
+
+*Presentations (Atomic Operations):*
+- [ ] `POST /api/presentations` - Create new presentation with complete timetable
+- [ ] `GET /api/presentations` - List user presentations
+- [ ] `GET /api/presentations/:id` - Get complete presentation with timetable data
+- [ ] `PUT /api/presentations/:id` - Update complete presentation (atomic)
+- [ ] `DELETE /api/presentations/:id` - Delete presentation
+
+*Sync Operations:*
+- [ ] `POST /api/presentations/sync` - Sync presentation from extension (upsert by gamma_url)
+- [ ] `GET /api/presentations/conflicts` - Check for sync conflicts (future feature)
+
+### 4. **UI/UX Design Implementation**
+*Expected Time: 1-2 days*
+
+**Authentication UI in Extension:**
+- [ ] Design and implement sign-in button states
+- [ ] Create loading indicators for authentication process
+- [ ] Design user profile display with email and sign-out option
+- [ ] Implement error states and retry mechanisms
+- [ ] Create sync status indicators (connected/offline)
+
+**Web Dashboard Interface:**
+- [ ] Design landing page with clear value proposition
+- [ ] Create sign-in/sign-up pages with Clerk components
+- [ ] Design dashboard layout with navigation
+- [ ] Create presentations list view with CRUD operations
+- [ ] Implement responsive design for mobile devices
+
+### 5. **Security & Authentication Architecture**
+*Expected Time: 1 day*
+
+**Token Storage Strategy:**
+- [ ] Implement secure token storage in Chrome extension
+- [ ] Configure token refresh mechanisms
+- [ ] Set up session timeout and management
+- [ ] Implement CSRF protection for API calls
+
+**Extension-Web Communication Security:**
+- [ ] Configure CORS settings for extension-web communication
+- [ ] Implement secure message passing between extension and web
+- [ ] Set up Content Security Policy (CSP) for web dashboard
+- [ ] Configure SSL/HTTPS for all communications
+
+### 6. **Production Environment Configuration**
+*Expected Time: 0.5 day*
+
+**Database Production Setup:**
+- [ ] Set up Supabase production environment
+- [ ] Configure database connection pooling
+- [ ] Set up automated backups and monitoring
+- [ ] Configure database migrations for production
+
+**Final Deployment Configuration:**
+- [ ] Update Netlify environment variables for production
+- [ ] Configure production domain and SSL certificates
+- [ ] Set up monitoring and error tracking
+- [ ] Test production deployment pipeline
+
+### 7. **Clerk Integration in Extension**
+*Expected Time: 1-2 days*
+
+*   Update `packages/shared/auth/index.ts` to integrate with Clerk:
     ```javascript
     import { config } from '../config/index.js';
     
@@ -68,7 +239,8 @@
     }
     ```
 
-### 2. **Web Dashboard Setup (Next.js)**
+### 8. **Web Dashboard Setup (Next.js)**
+*Expected Time: 2-3 days*
 *   Initialize Next.js app in `/web` directory:
     ```bash
     npx create-next-app@latest web --typescript --tailwind --app
@@ -82,7 +254,8 @@
     - `/web/app/sign-up/page.tsx`
     - `/web/app/dashboard/page.tsx`
 
-### 3. **Extension UI Updates**
+### 9. **Extension UI Updates**
+*Expected Time: 1-2 days*
 *   Enable authentication UI in sidebar:
     ```javascript
     // sidebar.js updates
@@ -112,7 +285,8 @@
     };
     ```
 
-### 4. **Shared Type Definitions**
+### 10. **Shared Type Definitions**
+*Expected Time: 1 day*
 *   Create comprehensive types in `/shared/types/`:
     ```typescript
     // user.types.ts
@@ -131,15 +305,60 @@
       token: string | null;
     }
     
+    // presentation.types.ts
+    export interface Presentation {
+      id: string;
+      userId: string;
+      title: string;
+      gammaUrl: string; // Required unique identifier
+      startTime: string;
+      totalDuration: number;
+      timetableData: TimetableData; // Complete timetable object
+      createdAt: Date;
+      updatedAt: Date;
+    }
+    
+    export interface TimetableData {
+      startTime: string;
+      items: TimetableItem[];
+      totalDuration: number;
+    }
+    
+    export interface TimetableItem {
+      id: string;
+      title: string;
+      content: SlideContent[];
+      duration: number;
+      startTime: string;
+      endTime: string;
+      order?: number;
+      level?: number;
+    }
+    
+    export interface SlideContent {
+      type: 'paragraph' | 'image' | 'link' | 'list_item';
+      text: string;
+      subItems?: string[];
+    }
+    
     // sync.types.ts
     export interface SyncState {
       status: 'idle' | 'syncing' | 'error' | 'offline';
       lastSyncTime: Date | null;
       pendingChanges: number;
     }
+    
+    export interface SyncOperation {
+      type: 'create' | 'update' | 'delete';
+      entity: 'presentation';
+      entityId: string;
+      data?: TimetableData;
+      timestamp: Date;
+    }
     ```
 
-### 5. **Extension-to-Web Communication**
+### 11. **Extension-to-Web Communication**
+*Expected Time: 1-2 days*
 *   Implement post-authentication flow:
     ```javascript
     // background.js additions
@@ -157,7 +376,8 @@
     });
     ```
 
-### 6. **Web Dashboard Structure**
+### 12. **Web Dashboard Structure**
+*Expected Time: 1 day*
     ```
     /web/
       /app/
@@ -185,7 +405,8 @@
         # Static assets
     ```
 
-### 7. **Feature Flag Configuration**
+### 13. **Feature Flag Configuration**
+*Expected Time: 0.5 days*
 *   Update config for Sprint 1:
     ```javascript
     // src/config/index.js
@@ -203,7 +424,8 @@
     };
     ```
 
-### 8. **Build Process Updates**
+### 14. **Build Process Updates**
+*Expected Time: 1 day*
 *   Update package.json:
     ```json
     {
@@ -218,7 +440,8 @@
     }
     ```
 
-### 9. **Storage Manager Enhancement**
+### 15. **Storage Manager Enhancement**
+*Expected Time: 1 day*
 *   Prepare for future cloud sync:
     ```javascript
     // src/lib/storage.js updates
@@ -242,15 +465,21 @@
       }
       
       async queueForSync(key, data) {
-        // Placeholder for Sprint 3
+        // Placeholder for Sprint 3 - atomic presentation sync
         const queue = await loadData('sync-queue') || [];
-        queue.push({ key, data, timestamp: new Date() });
+        queue.push({ 
+          key, 
+          data, // Complete timetable object
+          timestamp: new Date(),
+          operation: 'upsert' // Atomic upsert by gamma_url
+        });
         await saveData('sync-queue', queue);
       }
     }
     ```
 
-### 10. **User Onboarding Flow**
+### 16. **User Onboarding Flow**
+*Expected Time: 1 day*
 *   Implement the flow from `app-flow-user-onboarding.md`:
     - Extension shows "Sign In" button when not authenticated
     - Clicking opens web dashboard in new tab
@@ -287,26 +516,117 @@ User Action → Extension → StorageManager
 - [ ] Feature flags control feature visibility
 - [ ] Clean separation between auth and core functionality
 
+## Technical Specifications
+
+### Environment Variables Required
+```bash
+# Clerk Configuration
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://...supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Application Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_EXTENSION_ID=chrome-extension://...
+```
+
+### Chrome Extension Manifest Updates
+```json
+{
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "downloads",
+    "sidePanel",
+    "tabs",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://gamma.app/*",
+    "https://localhost:3000/*",
+    "https://yourdomain.com/*"
+  ]
+}
+```
+
+### Security Headers Configuration
+```javascript
+// next.config.js
+const securityHeaders = [
+  {
+    key: 'X-Frame-Options',
+    value: 'DENY',
+  },
+  {
+    key: 'Content-Security-Policy',
+    value: "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'",
+  },
+  {
+    key: 'X-Content-Type-Options',
+    value: 'nosniff',
+  },
+];
+```
+
 ## Testing Strategy
 
-1. **Extension Testing**:
-   - Verify offline functionality remains intact
-   - Test auth flow from extension → web → extension
-   - Ensure graceful degradation without auth
+### 1. **Development Testing**
+- [ ] Unit tests for authentication functions
+- [ ] Integration tests for API endpoints
+- [ ] Extension functionality testing in Chrome
+- [ ] Cross-browser compatibility testing
 
-2. **Web Dashboard Testing**:
-   - Test Clerk authentication flows
-   - Verify protected routes work correctly
-   - Test responsive design
+### 2. **User Acceptance Testing**
+- [ ] Authentication flow from extension to web
+- [ ] Offline functionality validation
+- [ ] Data synchronization testing
+- [ ] Error handling and recovery testing
 
-3. **Integration Testing**:
-   - Test communication between extension and web
-   - Verify auth state synchronization
-   - Test feature flag toggles
+### 3. **Security Testing**
+- [ ] Token storage security validation
+- [ ] CSRF protection testing
+- [ ] XSS prevention validation
+- [ ] API endpoint security testing
+
+### 4. **Performance Testing**
+- [ ] Extension performance impact testing
+- [ ] Web dashboard loading speed testing
+- [ ] Database query performance testing
+- [ ] Memory usage optimization validation
+
+## Sprint 1 Timeline & Effort Estimation
+
+### Total Estimated Time: 15-19 days
+**Prerequisites Phase (before development):** 3-4 days
+**Development Phase:** 12-15 days
+
+### Prerequisites Timeline
+- **Day 1-2:** Infrastructure setup (Supabase, Clerk, local environment)
+- **Day 3:** Database schema design and API planning
+- **Day 4:** UI/UX mockups and security architecture
+
+### Development Timeline
+- **Day 1:** Netlify setup and CI/CD pipeline configuration
+- **Week 1 (Days 2-5):** Infrastructure implementation, database setup, basic authentication
+- **Week 2 (Days 6-10):** Web dashboard development, extension UI updates
+- **Week 3 (Days 11-15):** Integration testing, security implementation, production configuration
+- **Week 4 (Days 16+):** Final testing, bug fixes, documentation
+
+### Risk Mitigation
+- **Technical Risks:** Complex extension-web communication, token security
+- **Timeline Risks:** Underestimated Clerk integration complexity
+- **Mitigation:** Thorough prerequisites completion, regular testing, feature flag rollback capability
 
 ## Next Steps (Sprint 2 Preview)
 
 - Implement manual sync functionality
 - Add "Save to Cloud" / "Load from Cloud" buttons
 - Create presentation management UI in dashboard
-- Begin Supabase integration for data storage 
+- Begin advanced Supabase integration for data storage
+- Implement conflict resolution for data sync
+- Add user subscription management 
