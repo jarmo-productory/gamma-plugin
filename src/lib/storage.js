@@ -22,7 +22,7 @@ export function saveData(key, value) {
  */
 export function loadData(key) {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get(key, (result) => {
+    chrome.storage.local.get(key, result => {
       if (chrome.runtime.lastError) {
         return reject(chrome.runtime.lastError);
       }
@@ -38,10 +38,10 @@ export function loadData(key) {
  * @returns {Function}
  */
 export function debounce(func, delay) {
-    let timeout;
-    return function(...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), delay);
-    };
-} 
+  let timeout;
+  return function (...args) {
+    // Note: Simplified to avoid 'this' aliasing
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), delay);
+  };
+}

@@ -38,9 +38,20 @@ export interface UserProfile {
   id: string;
   email: string;
   name?: string;
-  subscription_tier: 'free' | 'pro' | 'team';
-  created_at: Date;
+  createdAt: string;
+  subscription_tier?: 'free' | 'pro' | 'team';
+  created_at?: Date;
   last_sync_at?: Date;
+  preferences?: UserPreferences;
+}
+
+export interface UserPreferences {
+  theme?: 'light' | 'dark' | 'auto';
+  autoSync?: boolean;
+  defaultDuration?: number;
+  syncInterval?: number; // in minutes
+  exportFormat?: 'xlsx' | 'csv';
+  notifications?: boolean;
 }
 
 export interface Presentation {
@@ -65,9 +76,11 @@ export interface ChromeMessage {
 
 // Export type guards and utilities
 export const isSlide = (obj: any): obj is Slide => {
-  return obj && typeof obj.id === 'string' && typeof obj.title === 'string' && Array.isArray(obj.content);
+  return (
+    obj && typeof obj.id === 'string' && typeof obj.title === 'string' && Array.isArray(obj.content)
+  );
 };
 
 export const isTimetableItem = (obj: any): obj is TimetableItem => {
   return obj && typeof obj.id === 'string' && typeof obj.duration === 'number';
-}; 
+};

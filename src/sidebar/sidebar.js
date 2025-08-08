@@ -15,9 +15,11 @@ import {
 import { saveData, loadData, debounce } from '../lib/storage.js';
 
 let connected = false;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let lastSlides = [];
 let currentTimetable = null;
 let port = null;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let currentTabId = null;
 let currentPresentationUrl = null; // Track the current presentation
 
@@ -38,6 +40,7 @@ function reconcileAndUpdate(newSlides) {
   console.log('[SIDEBAR] Reconciling new slide data with existing timetable.');
   const newItems = [];
   const existingItemsMap = new Map(currentTimetable.items.map(item => [item.id, item]));
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const newSlidesMap = new Map(newSlides.map(slide => [slide.id, slide]));
 
   // 1. Go through new slides to update existing items and add new ones
@@ -70,14 +73,20 @@ function reconcileAndUpdate(newSlides) {
 }
 
 const updateUIWithNewSlides = async (slides, tabId) => {
-  console.log(`[SIDEBAR] updateUIWithNewSlides called for tab ${tabId} with`, slides?.length || 0, 'slides');
+  console.log(
+    `[SIDEBAR] updateUIWithNewSlides called for tab ${tabId} with`,
+    slides?.length || 0,
+    'slides'
+  );
   currentTabId = tabId;
   lastSlides = slides || [];
 
   const footerContainer = document.getElementById('sidebar-footer');
   if (slides.length === 0) {
-    document.getElementById('sidebar-main').innerHTML = '<p>No slides detected in this Gamma presentation.</p>';
-    if (footerContainer) footerContainer.innerHTML = renderDebugInfo(slides, 'Received: slide-data (empty)');
+    document.getElementById('sidebar-main').innerHTML =
+      '<p>No slides detected in this Gamma presentation.</p>';
+    if (footerContainer)
+      footerContainer.innerHTML = renderDebugInfo(slides, 'Received: slide-data (empty)');
     return;
   }
 
@@ -86,9 +95,11 @@ const updateUIWithNewSlides = async (slides, tabId) => {
 
   // Check if we have switched to a new presentation
   if (presentationUrl !== currentPresentationUrl) {
-    console.log(`[SIDEBAR] Switched to new presentation: ${presentationUrl}. Loading from storage...`);
+    console.log(
+      `[SIDEBAR] Switched to new presentation: ${presentationUrl}. Loading from storage...`
+    );
     currentPresentationUrl = presentationUrl; // Update the current presentation tracker
-    
+
     const timetableKey = `timetable-${presentationUrl}`;
     const storedTimetable = await loadData(timetableKey);
 
@@ -131,10 +142,16 @@ function connectToBackground() {
   // DO NOT request slides immediately. Wait for the background script
   // to tell us which tab is active.
 
-  port.onMessage.addListener((msg) => {
+  port.onMessage.addListener(msg => {
     console.log('[SIDEBAR] Received message from background:', msg);
     if (msg.type === 'slide-data') {
-      console.log('[SIDEBAR] Received slide-data for tab', msg.tabId, 'with', msg.slides?.length || 0, 'slides');
+      console.log(
+        '[SIDEBAR] Received slide-data for tab',
+        msg.tabId,
+        'with',
+        msg.slides?.length || 0,
+        'slides'
+      );
       // This is the entry point for updates from the content script
       updateUIWithNewSlides(msg.slides, msg.tabId);
     } else if (msg.type === 'gamma-tab-activated') {
@@ -157,7 +174,8 @@ function connectToBackground() {
       }
     } else if (msg.type === 'error') {
       console.error('[SIDEBAR] Error from background:', msg.message);
-      document.getElementById('sidebar-main').innerHTML = `<p style="color: red;">${msg.message}</p>`;
+      document.getElementById('sidebar-main').innerHTML =
+        `<p style="color: red;">${msg.message}</p>`;
       const footerContainer = document.getElementById('sidebar-footer');
       if (footerContainer) {
         footerContainer.innerHTML = renderDebugInfo([], 'Error: ' + msg.message);
@@ -242,7 +260,7 @@ function createTimeInput(timetable, onTimeChange) {
   };
 
   const debouncedHandleTimeChange = debounce(handleTimeChange, 400);
-  
+
   hoursInput.addEventListener('input', () => {
     if (hoursInput.value.length >= 2) {
       hoursInput.value = hoursInput.value.slice(0, 2);
@@ -261,13 +279,13 @@ function createTimeInput(timetable, onTimeChange) {
   container.appendChild(hoursInput);
   container.appendChild(separator);
   container.appendChild(minutesInput);
-  
+
   return container;
 }
 
 function renderDebugInfo(slides = [], lastAction = 'none') {
   const slideCount = slides.length;
-  let firstSlide = slides[0] ? JSON.stringify(slides[0], null, 2) : 'N/A';
+  const firstSlide = slides[0] ? JSON.stringify(slides[0], null, 2) : 'N/A';
   return `
     <div class="debug-info">
       <strong>Debug Info (v${EXT_VERSION})</strong><br>
@@ -283,7 +301,7 @@ function renderTimetable(timetable) {
   currentTimetable = timetable;
   const mainContainer = document.getElementById('sidebar-main');
   if (!mainContainer) return;
-  
+
   const titleElement = document.getElementById('timetable-title');
   if (titleElement) {
     titleElement.textContent = timetable.items[0]?.title || 'Course Timetable';
@@ -304,13 +322,15 @@ function renderTimetable(timetable) {
   timeDisplaySection.className = 'time-display-section';
 
   // Prepend the time input to the time display section
-  timeDisplaySection.prepend(createTimeInput(timetable, (newStartTime) => {
-    currentTimetable.startTime = newStartTime;
-    const newTimetable = recalculateTimetable(currentTimetable);
-    renderTimetable(newTimetable);
-    debouncedSave();
-  }));
-  
+  timeDisplaySection.prepend(
+    createTimeInput(timetable, newStartTime => {
+      currentTimetable.startTime = newStartTime;
+      const newTimetable = recalculateTimetable(currentTimetable);
+      renderTimetable(newTimetable);
+      debouncedSave();
+    })
+  );
+
   toolbar.appendChild(timeDisplaySection);
 
   const exportOptionsContainer = document.createElement('div');
@@ -328,7 +348,7 @@ function renderTimetable(timetable) {
   exportCSVBtn.onclick = () => {
     if (!currentTimetable) return;
     const csv = generateCSV(currentTimetable);
-    const filename = `gamma-timetable-${new Date().toISOString().slice(0,10)}.csv`;
+    const filename = `gamma-timetable-${new Date().toISOString().slice(0, 10)}.csv`;
     downloadFile(filename, csv);
   };
 
@@ -336,7 +356,7 @@ function renderTimetable(timetable) {
   exportXLSXBtn.onclick = () => {
     if (!currentTimetable) return;
     const blob = generateXLSX(currentTimetable);
-    const filename = `gamma-timetable-${new Date().toISOString().slice(0,10)}.xlsx`;
+    const filename = `gamma-timetable-${new Date().toISOString().slice(0, 10)}.xlsx`;
     const url = URL.createObjectURL(blob);
     downloadFile(filename, url, true);
   };
@@ -346,8 +366,10 @@ function renderTimetable(timetable) {
     if (!currentTimetable) return;
     const csv = generateCSV(currentTimetable);
     copyToClipboard(csv).then(() => {
-        copyClipboardBtn.classList.add('copied');
-        setTimeout(() => { copyClipboardBtn.classList.remove('copied'); }, 2000);
+      copyClipboardBtn.classList.add('copied');
+      setTimeout(() => {
+        copyClipboardBtn.classList.remove('copied');
+      }, 2000);
     });
   };
 
@@ -380,12 +402,12 @@ function renderTimetable(timetable) {
 }
 
 const debouncedSave = debounce(async () => {
-    if (currentTimetable) {
-        // The presentation URL is now stored on the timetable object itself
-        const key = `timetable-${currentPresentationUrl}`;
-        saveData(key, currentTimetable);
-        console.log('Timetable saved.');
-    }
+  if (currentTimetable) {
+    // The presentation URL is now stored on the timetable object itself
+    const key = `timetable-${currentPresentationUrl}`;
+    saveData(key, currentTimetable);
+    console.log('Timetable saved.');
+  }
 }, 500);
 
 function handleSliderInput(event) {
@@ -399,7 +421,7 @@ function handleSliderInput(event) {
 function handleDurationChange(event) {
   const itemId = event.target.getAttribute('data-slide-id');
   const newDuration = parseInt(event.target.value, 10);
-  
+
   const item = currentTimetable.items.find(i => i.id === itemId);
   if (item) {
     item.duration = newDuration;
@@ -422,7 +444,7 @@ function handleDurationChange(event) {
  * @returns {object} The recalculated timetable object.
  */
 function recalculateTimetable(timetable) {
-  let currentTime = new Date(`1970-01-01T${timetable.startTime}:00`);
+  const currentTime = new Date(`1970-01-01T${timetable.startTime}:00`);
   let totalDuration = 0;
 
   const newItems = timetable.items.map(item => {
@@ -453,4 +475,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Establish the connection to the background script
   connectToBackground();
-}); 
+});

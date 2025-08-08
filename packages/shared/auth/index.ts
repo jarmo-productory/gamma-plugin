@@ -1,31 +1,13 @@
 /**
  * Authentication Manager
- * 
- * Sprint 0: Stub implementation that always returns unauthenticated state
- * Sprint 1: Will integrate with Clerk for actual authentication
- * 
- * This provides the infrastructure for future authentication without
- * requiring any user authentication in Sprint 0.
+ *
+ * Integrates with Clerk for authentication.
  */
-
+import { Clerk } from '@clerk/clerk-js';
 import { StorageManager } from '../storage';
+import { UserProfile, UserPreferences } from '../types/index';
 
 // TypeScript interfaces for user and session data
-export interface UserProfile {
-  id: string;
-  email: string;
-  name?: string;
-  createdAt: string;
-  preferences?: UserPreferences;
-}
-
-export interface UserPreferences {
-  theme?: 'light' | 'dark' | 'auto';
-  autoSync?: boolean;
-  syncInterval?: number; // in minutes
-  exportFormat?: 'xlsx' | 'csv';
-  notifications?: boolean;
-}
 
 export interface UserSession {
   userId: string;
@@ -45,105 +27,177 @@ export type AuthEventType = 'login' | 'logout' | 'session_expired' | 'auth_check
 
 export interface AuthEvent {
   type: AuthEventType;
-  user?: UserProfile;
+  user?: UserProfile | null;
   timestamp: string;
 }
 
 /**
  * AuthManager handles all authentication-related operations
- * 
- * Sprint 0: Always returns unauthenticated state
- * Sprint 1+: Integrates with Clerk for real authentication
  */
 export class AuthManager {
   private storage: StorageManager;
+  private clerk: Clerk | null = null;
   private listeners: Set<(event: AuthEvent) => void> = new Set();
+  private authState: AuthState = {
+    isAuthenticated: false,
+    user: null,
+    session: null,
+    lastChecked: new Date().toISOString(),
+  };
 
   constructor(storage?: StorageManager) {
     this.storage = storage || new StorageManager();
   }
 
-  /**
-   * Check if user is currently authenticated
-   * Sprint 0: Always returns false
-   * Sprint 1+: Checks with Clerk and validates session
-   */
-  async isAuthenticated(): Promise<boolean> {
-    // Sprint 0: Always return false (offline/unauthenticated mode)
-    return false;
+  async initialize(): Promise<void> {
+    console.log('[AuthManager] initialize() called');
+    const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+    if (!publishableKey) {
+      console.error('[AuthManager] Clerk publishable key not found.');
+      return;
+    }
+
+    try {
+      // Use full ClerkJS (with UI components) so we can open modal in the extension
+      this.clerk = new Clerk(publishableKey);
+      console.log('[AuthManager] Clerk instance created');
+      await this.clerk.load();
+      console.log('[AuthManager] Clerk loaded');
+
+      this.clerk.addListener(event => {
+        this.handleClerkStateChange(event);
+      });
+
+      // Set initial state
+      this.updateAuthState();
+      console.log('[AuthManager] Initialization complete');
+    } catch (error) {
+      console.error('[AuthManager] Failed to load Clerk:', error);
+      this.clerk = null;
+    }
   }
 
-  /**
-   * Get current user profile
-   * Sprint 0: Always returns null
-   * Sprint 1+: Returns user data from Clerk
-   */
-  async getCurrentUser(): Promise<UserProfile | null> {
-    // Sprint 0: Always return null (no user)
-    return null;
-  }
+  private updateAuthState() {
+    if (!this.clerk) return;
 
-  /**
-   * Get current authentication state
-   * Sprint 0: Always returns unauthenticated state
-   */
-  async getAuthState(): Promise<AuthState> {
-    return {
-      isAuthenticated: false,
-      user: null,
-      session: null,
-      lastChecked: new Date().toISOString()
+    const user = this.clerk.user;
+    const session = this.clerk.session;
+
+    this.authState = {
+      isAuthenticated: !!user && !!session,
+      user: user
+        ? {
+            id: user.id,
+            email: user.primaryEmailAddress?.emailAddress || '',
+            name: user.fullName || '',
+            createdAt: user.createdAt?.toISOString() || new Date().toISOString(),
+          }
+        : null,
+      session: session
+        ? {
+            userId: session.user.id,
+            token: session.lastActiveToken?.getRawString() || '',
+            expiresAt: session.expireAt.toISOString(),
+            isActive: session.status === 'active',
+          }
+        : null,
+      lastChecked: new Date().toISOString(),
     };
+
+    this.emitAuthEvent({
+      type: this.authState.isAuthenticated ? 'login' : 'logout',
+      user: this.authState.user,
+      timestamp: new Date().toISOString(),
+    });
   }
 
-  /**
-   * Initiate login process
-   * Sprint 0: Does nothing (no-op)
-   * Sprint 1+: Redirects to Clerk sign-in
-   */
+  private handleClerkStateChange(event: any) {
+    console.log('[AuthManager] Clerk state changed:', event);
+    this.updateAuthState();
+  }
+
+  async isAuthenticated(): Promise<boolean> {
+    return this.authState.isAuthenticated;
+  }
+
+  async getCurrentUser(): Promise<UserProfile | null> {
+    return this.authState.user;
+  }
+
+  async getAuthState(): Promise<AuthState> {
+    return { ...this.authState };
+  }
+
   async login(): Promise<void> {
-    // Sprint 0: No-op - don't show any auth UI
-    console.log('[AuthManager] Login called - Sprint 0 stub (no-op)');
+    if (!this.clerk) {
+      console.error(
+        '[AuthManager] Clerk not initialized. Set NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and ensure authManager.initialize() ran successfully.'
+      );
+      return;
+    }
+    try {
+      const anyClerk: any = this.clerk as any;
+      if (typeof anyClerk.openSignIn === 'function') {
+        await anyClerk.openSignIn({});
+        return;
+      }
+      // Fallback to redirect/open tab if modal API is unavailable
+      const redirectUrl = typeof window !== 'undefined' ? window.location.href : undefined;
+      if (typeof anyClerk.buildSignInUrl === 'function') {
+        const url = await anyClerk.buildSignInUrl({ redirectUrl });
+        if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+          chrome.tabs.create({ url });
+        } else if (typeof window !== 'undefined') {
+          window.open(url, '_blank');
+        } else {
+          await anyClerk.redirectToSignIn({ redirectUrl });
+        }
+      } else if (typeof anyClerk.redirectToSignIn === 'function') {
+        await anyClerk.redirectToSignIn({ redirectUrl });
+      }
+    } catch (error) {
+      console.error('[AuthManager] Error opening sign in:', error);
+    }
   }
 
-  /**
-   * Initiate logout process
-   * Sprint 0: Does nothing (no-op)
-   * Sprint 1+: Clears session with Clerk
-   */
   async logout(): Promise<void> {
-    // Sprint 0: No-op - nothing to log out from
-    console.log('[AuthManager] Logout called - Sprint 0 stub (no-op)');
+    if (!this.clerk) {
+      console.error('[AuthManager] Clerk not initialized.');
+      return;
+    }
+    try {
+      const anyClerk: any = this.clerk as any;
+      // In extensions, avoid navigating to an invalid page after sign out
+      // Redirect back to the side panel HTML if possible
+      const fallbackUrl =
+        typeof chrome !== 'undefined' && chrome.runtime?.getURL
+          ? chrome.runtime.getURL('sidebar.html')
+          : typeof window !== 'undefined'
+            ? window.location.href
+            : undefined;
+      if (typeof anyClerk.signOut === 'function') {
+        await anyClerk.signOut({ redirectUrl: fallbackUrl });
+      } else {
+        console.warn('[AuthManager] signOut function not available on Clerk instance');
+      }
+    } catch (error) {
+      console.error('[AuthManager] Error signing out:', error);
+    }
   }
 
-  /**
-   * Check for session changes (e.g., user logged in via web dashboard)
-   * Sprint 0: Always returns false
-   * Sprint 1+: Checks for cross-tab authentication via Clerk
-   */
-  async checkSessionStatus(): Promise<boolean> {
-    // Sprint 0: Always return false (no session changes)
-    return false;
-  }
-
-  /**
-   * Get user preferences (with defaults)
-   * Sprint 0: Returns default preferences for offline use
-   */
   async getUserPreferences(): Promise<UserPreferences> {
-    // Sprint 0: Return default preferences for current functionality
     const defaults: UserPreferences = {
       theme: 'auto',
-      autoSync: false, // Cloud sync disabled in Sprint 0
+      autoSync: false,
       syncInterval: 30,
-      exportFormat: 'xlsx', // Default to current Excel export
-      notifications: false
+      exportFormat: 'xlsx',
+      notifications: false,
     };
 
     try {
       const stored = await this.storage.load('user_preferences');
       if (stored && typeof stored === 'object') {
-        return { ...defaults, ...stored as UserPreferences };
+        return { ...defaults, ...(stored as UserPreferences) };
       }
     } catch (error) {
       console.warn('[AuthManager] Could not load user preferences:', error);
@@ -152,21 +206,15 @@ export class AuthManager {
     return defaults;
   }
 
-  /**
-   * Update user preferences
-   * Sprint 0: Stores locally only
-   * Sprint 1+: Syncs with backend
-   */
   async updateUserPreferences(preferences: Partial<UserPreferences>): Promise<void> {
     try {
       const current = await this.getUserPreferences();
       const updated = { ...current, ...preferences };
       await this.storage.save('user_preferences', updated);
-      
-      // Emit event for any listeners
+
       this.emitAuthEvent({
         type: 'auth_check',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error('[AuthManager] Could not update user preferences:', error);
@@ -174,23 +222,14 @@ export class AuthManager {
     }
   }
 
-  /**
-   * Add event listener for authentication state changes
-   */
   addEventListener(listener: (event: AuthEvent) => void): void {
     this.listeners.add(listener);
   }
 
-  /**
-   * Remove event listener
-   */
   removeEventListener(listener: (event: AuthEvent) => void): void {
     this.listeners.delete(listener);
   }
 
-  /**
-   * Emit authentication event to all listeners
-   */
   private emitAuthEvent(event: AuthEvent): void {
     this.listeners.forEach(listener => {
       try {
@@ -200,56 +239,7 @@ export class AuthManager {
       }
     });
   }
-
-  /**
-   * Initialize auth manager
-   * Sprint 0: Just sets up event listeners
-   * Sprint 1+: Initializes Clerk and checks existing session
-   */
-  async initialize(): Promise<void> {
-    console.log('[AuthManager] Initializing - Sprint 0 stub (offline mode)');
-    
-    // Emit initial auth check event
-    this.emitAuthEvent({
-      type: 'auth_check',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  /**
-   * Check if feature requires authentication
-   * Sprint 0: Returns false for all features (everything works offline)
-   * Sprint 1+: Returns true for cloud features
-   */
-  requiresAuth(feature: string): boolean {
-    // Sprint 0: No features require authentication
-    const authRequiredFeatures = [
-      'cloud_sync',
-      'real_time_sync', 
-      'shared_presentations',
-      'user_dashboard'
-    ];
-    
-    // Always return false in Sprint 0
-    return false;
-  }
-
-  /**
-   * Get authentication status for UI display
-   * Sprint 0: Always returns offline status
-   */
-  getUIAuthStatus(): {
-    status: 'offline' | 'authenticating' | 'authenticated' | 'error';
-    message: string;
-    showAuthUI: boolean;
-  } {
-    return {
-      status: 'offline',
-      message: 'Working offline',
-      showAuthUI: false // Never show auth UI in Sprint 0
-    };
-  }
 }
 
 // Export a default instance for easy use
-export const authManager = new AuthManager(); 
+export const authManager = new AuthManager();

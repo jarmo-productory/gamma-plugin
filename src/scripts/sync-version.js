@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 
@@ -18,4 +19,4 @@ try {
 } catch (error) {
   console.error('Failed to sync version:', error);
   process.exit(1);
-} 
+}

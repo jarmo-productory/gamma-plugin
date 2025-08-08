@@ -1,6 +1,6 @@
 {
   "name": "gamma-timetable-extension",
-  "version": "0.0.10",
+  "version": "0.0.21",
   "description": "Chrome extension that extracts slide content from Gamma presentations and generates customizable timetables",
   "keywords": [
     "chrome-extension",
@@ -22,17 +22,28 @@
     "package": "npm run build:extension && zip -r ../gamma-plugin-release.zip dist",
     "sync-version": "node packages/extension/scripts/sync-version.js",
     "type-check": "tsc --noEmit",
+    "lint": "eslint . --ext .js,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.ts,.tsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "quality": "npm run type-check && npm run lint && npm run format:check",
     "clean": "rm -rf dist dist-web dist-shared dist-types"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.326",
     "@types/node": "^24.0.14",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
     "archiver": "^5.3.1",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-static-copy": "^3.0.0"
   },
   "dependencies": {
+    "@clerk/clerk-js": "^5.81.0",
     "jspdf": "^3.0.1"
   }
 }

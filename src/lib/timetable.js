@@ -27,6 +27,8 @@
  * @param {Date} date
  * @returns {string}
  */
+// Currently unused but kept for future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function formatTime(date) {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -38,6 +40,8 @@ function formatTime(date) {
  * @param {string} timeString
  * @returns {Date}
  */
+// Currently unused but kept for future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function parseTime(timeString) {
   const [hours, minutes] = timeString.split(':').map(Number);
   const date = new Date();
@@ -57,18 +61,18 @@ export function generateTimetable(slides, options = {}) {
   const {
     startTime = '09:00',
     defaultDuration = 5,
-    breakAfter = 60,
-    breakDuration = 10,
-    existingItems = []
+    // Future use: breakAfter = 60,
+    // Future use: breakDuration = 10,
+    existingItems = [],
   } = options;
 
-  let currentTime = new Date(`1970-01-01T${startTime}:00`);
+  const currentTime = new Date(`1970-01-01T${startTime}:00`);
   let timeSinceLastBreak = 0;
 
   const items = slides.map(slide => {
     const existingItem = existingItems.find(item => item.id === slide.id);
     const itemDuration = existingItem ? existingItem.duration : defaultDuration;
-    
+
     // Logic for breaks can be added here later
     // For now, just add the item duration
 
@@ -155,8 +159,8 @@ export function generateXLSX(timetable) {
   // 4. Combine all parts into a single array of arrays.
   const sheetData = [
     [presentationTitle], // Row 1: Presentation Title in A1
-    headers,             // Row 2: Headers
-    ...dataRows          // Row 3 onwards: Data
+    headers, // Row 2: Headers
+    ...dataRows, // Row 3 onwards: Data
   ];
 
   // 5. Create the worksheet from the array of arrays.
@@ -183,4 +187,4 @@ export function generateXLSX(timetable) {
  */
 export function copyToClipboard(text) {
   return navigator.clipboard.writeText(text);
-} 
+}

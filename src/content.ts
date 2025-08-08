@@ -6,19 +6,22 @@
 console.log('[CONTENT] Script loaded on:', window.location.href);
 
 // Debounce function
-function debounce<F extends (...args: any[]) => any>(func: F, wait: number): (...args: Parameters<F>) => void {
+function debounce<F extends (...args: any[]) => any>(
+  func: F,
+  wait: number
+): (...args: Parameters<F>) => void {
   let timeout: number | undefined;
-  return function(this: any, ...args: Parameters<F>) {
-    const context = this;
+  return function (...args: Parameters<F>) {
+    // Note: Arrow function avoids 'this' aliasing issue
     clearTimeout(timeout);
-    timeout = window.setTimeout(() => func.apply(context, args), wait);
+    timeout = window.setTimeout(() => func(...args), wait);
   };
 }
 
 interface ContentItem {
-    type: 'paragraph' | 'image' | 'link' | 'list_item';
-    text: string;
-    subItems: string[];
+  type: 'paragraph' | 'image' | 'link' | 'list_item';
+  text: string;
+  subItems: string[];
 }
 
 interface SlideData {
@@ -34,49 +37,62 @@ function extractSlides(): SlideData[] {
   console.log('[CONTENT] extractSlides() called');
   const slides: SlideData[] = [];
   const seenIds = new Set<string>();
-  
+
   // Try multiple selectors to find slides
   const cardWrappers = document.querySelectorAll<HTMLDivElement>('div.card-wrapper[data-card-id]');
   console.log('[CONTENT] Found card wrappers with data-card-id:', cardWrappers.length);
-  
+
   // Alternative selectors if the first one doesn't work
   if (cardWrappers.length === 0) {
     console.log('[CONTENT] No card-wrapper elements found, trying alternative selectors...');
-    
+
     // Try looking for any element with data-card-id
     const anyCards = document.querySelectorAll('[data-card-id]');
     console.log('[CONTENT] Elements with data-card-id:', anyCards.length);
-    
+
     // Try looking for slide-like structures
-    const slideElements = document.querySelectorAll('.card, .slide, [class*="card"], [class*="slide"]');
+    const slideElements = document.querySelectorAll(
+      '.card, .slide, [class*="card"], [class*="slide"]'
+    );
     console.log('[CONTENT] Slide-like elements:', slideElements.length);
-    
+
     // Log some sample elements to understand the structure
     if (anyCards.length > 0) {
       console.log('[CONTENT] Sample card element:', anyCards[0]);
       console.log('[CONTENT] Sample card classes:', anyCards[0].className);
       console.log('[CONTENT] Sample card parent:', anyCards[0].parentElement);
     }
-    
+
     // Look at the DOM structure
     console.log('[CONTENT] Document body classes:', document.body.className);
     console.log('[CONTENT] Looking for gamma-specific selectors...');
-    
+
     // Try to find gamma-specific elements
-    const gammaElements = document.querySelectorAll('[class*="gamma"], [id*="gamma"], [data-*="gamma"]');
+    const gammaElements = document.querySelectorAll(
+      '[class*="gamma"], [id*="gamma"], [data-*="gamma"]'
+    );
     console.log('[CONTENT] Gamma-related elements:', gammaElements.length);
   }
-  
+
   console.log('[CONTENT] Document body:', document.body);
-  console.log('[CONTENT] All divs with data-card-id:', document.querySelectorAll('[data-card-id]').length);
-  console.log('[CONTENT] All elements with class card-wrapper:', document.querySelectorAll('.card-wrapper').length);
-  
+  console.log(
+    '[CONTENT] All divs with data-card-id:',
+    document.querySelectorAll('[data-card-id]').length
+  );
+  console.log(
+    '[CONTENT] All elements with class card-wrapper:',
+    document.querySelectorAll('.card-wrapper').length
+  );
+
   // Log the first few elements to see what's actually in the DOM
   if (cardWrappers.length === 0) {
     console.log('[CONTENT] No slides found. Let me check what IS in the DOM:');
-    console.log('[CONTENT] Body innerHTML (first 1000 chars):', document.body.innerHTML.substring(0, 1000));
+    console.log(
+      '[CONTENT] Body innerHTML (first 1000 chars):',
+      document.body.innerHTML.substring(0, 1000)
+    );
     console.log('[CONTENT] All iframes:', document.querySelectorAll('iframe'));
-    
+
     // Check if we're in an iframe
     if (window !== window.top) {
       console.log('[CONTENT] We are inside an iframe');
@@ -96,36 +112,44 @@ function extractSlides(): SlideData[] {
       seenIds.add(id);
 
       const level = parseInt(card.getAttribute('data-card-depth') || '0', 10);
-      const heading = card.querySelector('.node-heading .heading [data-node-view-content-inner="heading"]');
+      const heading = card.querySelector(
+        '.node-heading .heading [data-node-view-content-inner="heading"]'
+      );
       const title = heading ? heading.textContent?.trim() || '' : '';
-      
+
       const content: ContentItem[] = [];
-      card.querySelectorAll('.node-paragraph, .node-image, .node-link, .node-list').forEach(node => {
-        if (node.classList.contains('node-paragraph')) {
-          content.push({ type: 'paragraph', text: node.textContent?.trim() || '', subItems: [] });
-        } else if (node.classList.contains('node-image')) {
-          const img = node.querySelector('img');
-          if (img && img.src) content.push({ type: 'image', text: img.src, subItems: [] });
-        } else if (node.classList.contains('node-link')) {
-          const link = node.querySelector('a');
-          if (link && link.href) content.push({ type: 'link', text: link.href, subItems: [] });
-        } else if (node.classList.contains('node-list')) {
-            const listItems = node.querySelectorAll('div[data-node-view-content-inner="list-item"]');
+      card
+        .querySelectorAll('.node-paragraph, .node-image, .node-link, .node-list')
+        .forEach(node => {
+          if (node.classList.contains('node-paragraph')) {
+            content.push({ type: 'paragraph', text: node.textContent?.trim() || '', subItems: [] });
+          } else if (node.classList.contains('node-image')) {
+            const img = node.querySelector('img');
+            if (img && img.src) content.push({ type: 'image', text: img.src, subItems: [] });
+          } else if (node.classList.contains('node-link')) {
+            const link = node.querySelector('a');
+            if (link && link.href) content.push({ type: 'link', text: link.href, subItems: [] });
+          } else if (node.classList.contains('node-list')) {
+            const listItems = node.querySelectorAll(
+              'div[data-node-view-content-inner="list-item"]'
+            );
             listItems.forEach(li => {
-                const mainPoint = li.childNodes[0]?.textContent?.trim() || '';
-                const subPoints: string[] = [];
-                const nestedList = li.querySelector('div[data-node-view-content-inner="list"]');
-                if (nestedList) {
-                    nestedList.querySelectorAll('div[data-node-view-content-inner="list-item"]').forEach(subLi => {
-                        subPoints.push(subLi.textContent?.trim() || '');
-                    });
-                }
-                if(mainPoint) {
-                    content.push({ type: 'list_item', text: mainPoint, subItems: subPoints });
-                }
+              const mainPoint = li.childNodes[0]?.textContent?.trim() || '';
+              const subPoints: string[] = [];
+              const nestedList = li.querySelector('div[data-node-view-content-inner="list"]');
+              if (nestedList) {
+                nestedList
+                  .querySelectorAll('div[data-node-view-content-inner="list-item"]')
+                  .forEach(subLi => {
+                    subPoints.push(subLi.textContent?.trim() || '');
+                  });
+              }
+              if (mainPoint) {
+                content.push({ type: 'list_item', text: mainPoint, subItems: subPoints });
+              }
             });
-        }
-      });
+          }
+        });
 
       slides.push({ id, title, content, order: idx, level, presentationUrl: window.location.href });
     } catch (e) {
@@ -137,13 +161,13 @@ function extractSlides(): SlideData[] {
 
 function observeAndExtractSlides(sendSlidesFn: () => void) {
   console.log('[CONTENT] Setting up MutationObserver');
-  
+
   const processChanges = debounce(() => {
     console.log('[CONTENT] DOM change detected, re-sending slides.');
     sendSlidesFn();
   }, 250); // Debounce for 250ms to batch rapid changes
 
-  const observer = new MutationObserver((mutations) => {
+  const observer = new MutationObserver(_mutations => {
     // For simplicity and robustness, we'll just trigger on any change
     // without trying to be too clever about what changed.
     processChanges();
@@ -154,26 +178,26 @@ function observeAndExtractSlides(sendSlidesFn: () => void) {
     childList: true,
     subtree: true,
     attributes: true,
-    characterData: true
+    characterData: true,
   });
 }
 
 if (window.location.hostname.endsWith('gamma.app')) {
   console.log('[CONTENT] On gamma.app, initializing...');
-  
+
   let port: chrome.runtime.Port | null = null;
   let reconnectTimeout: number | undefined;
-  
+
   const connectToBackground = () => {
     try {
       port = chrome.runtime.connect({ name: 'content-script' });
       console.log('[CONTENT] Port created:', port);
-      
+
       // Add error handling for port
       port.onDisconnect.addListener(() => {
         console.error('[CONTENT] Disconnected from background:', chrome.runtime.lastError);
         port = null;
-        
+
         // Attempt to reconnect after a delay
         if (!reconnectTimeout) {
           reconnectTimeout = window.setTimeout(() => {
@@ -190,7 +214,7 @@ if (window.location.hostname.endsWith('gamma.app')) {
           console.error('[CONTENT] No port available, cannot send slides');
           return;
         }
-        
+
         const slides = extractSlides();
         console.log('[CONTENT] Sending slides to background:', slides.length, 'slides');
         try {
@@ -199,9 +223,9 @@ if (window.location.hostname.endsWith('gamma.app')) {
           console.error('[CONTENT] Error sending slides:', error);
         }
       };
-      
+
       // Listen for requests forwarded from the background script
-      port.onMessage.addListener((msg) => {
+      port.onMessage.addListener(msg => {
         console.log('[CONTENT] Received message from background:', msg);
         if (msg.type === 'get-slides') {
           console.log('[CONTENT] Content script received get-slides request from background.');
@@ -210,7 +234,7 @@ if (window.location.hostname.endsWith('gamma.app')) {
       });
 
       console.log('[CONTENT] Message listeners set up, connection established');
-      
+
       // Send initial slide data after a short delay
       setTimeout(() => {
         console.log('[CONTENT] Sending initial slide data...');
@@ -219,12 +243,11 @@ if (window.location.hostname.endsWith('gamma.app')) {
 
       // Start observing for DOM changes and pass the sender function
       observeAndExtractSlides(sendSlidesToBackground);
-      
     } catch (error) {
       console.error('[CONTENT] Failed to connect to background:', error);
     }
   };
-  
+
   // Initial connection
   connectToBackground();
 
@@ -234,17 +257,17 @@ if (window.location.hostname.endsWith('gamma.app')) {
     document.addEventListener('DOMContentLoaded', () => {
       console.log('[CONTENT] DOMContentLoaded fired');
       // The connection logic now handles the observer setup
-      // observeAndExtractSlides(); 
+      // observeAndExtractSlides();
     });
   } else {
     console.log('[CONTENT] Document already loaded');
     // The connection logic now handles the observer setup
     // observeAndExtractSlides();
   }
-  
+
   // Let's also do an initial extraction after a delay to see what's there
   setTimeout(() => {
     console.log('[CONTENT] Delayed extraction after 2 seconds:');
     extractSlides();
   }, 2000);
-} 
+}

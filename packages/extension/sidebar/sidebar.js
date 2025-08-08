@@ -7,15 +7,14 @@ const EXT_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '
 
 import {
   generateTimetable,
-  generateCSV,
+  // generateCSV, // Currently unused
   downloadFile,
   generateXLSX,
-  copyToClipboard,
+  // copyToClipboard, // Currently unused
 } from '../lib/timetable.js';
 import { saveData, loadData, debounce } from '../lib/storage.js';
 
-// Sprint 0: Import authentication and configuration infrastructure
-// These provide the foundation for future cloud sync capabilities
+// Import authentication and configuration infrastructure
 import { authManager } from '@shared/auth';
 import { configManager } from '@shared/config';
 
@@ -23,11 +22,13 @@ let connected = false;
 let lastSlides = [];
 let currentTimetable = null;
 let port = null;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let currentTabId = null;
 let currentPresentationUrl = null; // Track the current presentation
 
-// Sprint 0: Infrastructure state (authentication and configuration ready but inactive)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let authInitialized = false;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let configInitialized = false;
 
 /**
@@ -36,7 +37,6 @@ let configInitialized = false;
  */
 function reconcileAndUpdate(newSlides) {
   if (!currentTimetable) {
-    // If there's no timetable yet, generate a fresh one.
     console.log('[SIDEBAR] No current timetable, generating a new one.');
     const newTimetable = generateTimetable(newSlides);
     renderTimetable(newTimetable);
@@ -47,57 +47,54 @@ function reconcileAndUpdate(newSlides) {
   console.log('[SIDEBAR] Reconciling new slide data with existing timetable.');
   const newItems = [];
   const existingItemsMap = new Map(currentTimetable.items.map(item => [item.id, item]));
-  const newSlidesMap = new Map(newSlides.map(slide => [slide.id, slide]));
 
-  // 1. Go through new slides to update existing items and add new ones
   for (const slide of newSlides) {
     const existingItem = existingItemsMap.get(slide.id);
     if (existingItem) {
-      // This slide already exists. Update its content but keep the duration.
       newItems.push({
-        ...existingItem, // This keeps the user's duration
+        ...existingItem,
         title: slide.title,
         content: slide.content,
-        // order and level might be useful to update too if they change
       });
     } else {
-      // This is a new slide. Add it with a default duration.
       newItems.push({
         ...slide,
-        duration: 5, // Default duration for new slides
+        duration: 5,
       });
     }
   }
 
-  // 2. Update the timetable with the reconciled list of items.
   currentTimetable.items = newItems;
-
-  // 3. Recalculate all times and render the updated timetable.
   const recalculatedTimetable = recalculateTimetable(currentTimetable);
   renderTimetable(recalculatedTimetable);
   debouncedSave();
 }
 
 const updateUIWithNewSlides = async (slides, tabId) => {
-  console.log(`[SIDEBAR] updateUIWithNewSlides called for tab ${tabId} with`, slides?.length || 0, 'slides');
+  console.log(
+    `[SIDEBAR] updateUIWithNewSlides called for tab ${tabId} with`,
+    slides?.length || 0,
+    'slides'
+  );
   currentTabId = tabId;
   lastSlides = slides || [];
 
-  const footerContainer = document.getElementById('sidebar-footer');
   if (slides.length === 0) {
-    document.getElementById('sidebar-main').innerHTML = '<p>No slides detected in this Gamma presentation.</p>';
-    if (footerContainer) footerContainer.innerHTML = renderDebugInfo(slides, 'Received: slide-data (empty)');
+    document.getElementById('sidebar-main').innerHTML =
+      '<p>No slides detected in this Gamma presentation.</p>';
+    updateDebugInfo(slides, 'Received: slide-data (empty)');
     return;
   }
 
   const presentationUrl = slides[0]?.presentationUrl;
-  if (!presentationUrl) return; // Cannot proceed without a unique URL
+  if (!presentationUrl) return;
 
-  // Check if we have switched to a new presentation
   if (presentationUrl !== currentPresentationUrl) {
-    console.log(`[SIDEBAR] Switched to new presentation: ${presentationUrl}. Loading from storage...`);
-    currentPresentationUrl = presentationUrl; // Update the current presentation tracker
-    
+    console.log(
+      `[SIDEBAR] Switched to new presentation: ${presentationUrl}. Loading from storage...`
+    );
+    currentPresentationUrl = presentationUrl;
+
     const timetableKey = `timetable-${presentationUrl}`;
     const storedTimetable = await loadData(timetableKey);
 
@@ -110,13 +107,8 @@ const updateUIWithNewSlides = async (slides, tabId) => {
     }
   }
 
-  // With the correct timetable loaded (or created), reconcile the latest slide content.
-  // This function will use the `currentTimetable` which is now the single source of truth.
   reconcileAndUpdate(slides);
-
-  if (footerContainer) {
-    footerContainer.innerHTML = renderDebugInfo(slides, 'Rendered: slide-data');
-  }
+  updateDebugInfo(slides, 'Rendered: slide-data');
 };
 
 function connectToBackground() {
@@ -124,53 +116,32 @@ function connectToBackground() {
   port = chrome.runtime.connect({ name: 'sidebar' });
   console.log('[SIDEBAR] Connected to background');
 
-  // Add error handling for the port
   if (!port) {
     console.error('[SIDEBAR] Failed to create port connection');
     return;
   }
 
-  // Set connected status
   connected = true;
-  const footerContainer = document.getElementById('sidebar-footer');
-  if (footerContainer) {
-    footerContainer.innerHTML = renderDebugInfo([], 'Connected to background');
-  }
+  updateDebugInfo(lastSlides, 'Connected to background');
 
-  // DO NOT request slides immediately. Wait for the background script
-  // to tell us which tab is active.
-
-  port.onMessage.addListener((msg) => {
+  port.onMessage.addListener(msg => {
     console.log('[SIDEBAR] Received message from background:', msg);
     if (msg.type === 'slide-data') {
-      console.log('[SIDEBAR] Received slide-data for tab', msg.tabId, 'with', msg.slides?.length || 0, 'slides');
-      // This is the entry point for updates from the content script
       updateUIWithNewSlides(msg.slides, msg.tabId);
     } else if (msg.type === 'gamma-tab-activated') {
-      console.log(`[SIDEBAR] Gamma tab ${msg.tabId} activated. Requesting new slides.`);
       currentTabId = msg.tabId;
-      // Clear current content and show loading state
       document.getElementById('sidebar-main').innerHTML = '<p>Loading timetable...</p>';
       port.postMessage({ type: 'get-slides' });
     } else if (msg.type === 'show-message') {
-      console.log(`[SIDEBAR] Displaying message: ${msg.message}`);
       document.getElementById('sidebar-main').innerHTML = `<p>${msg.message}</p>`;
-      // also clear the header
       const titleElement = document.getElementById('timetable-title');
-      if (titleElement) {
-        titleElement.textContent = 'Gamma Timetable';
-      }
+      if (titleElement) titleElement.textContent = 'Gamma Timetable';
       const durationBadge = document.getElementById('duration-badge');
-      if (durationBadge) {
-        durationBadge.textContent = '0h 0m';
-      }
+      if (durationBadge) durationBadge.textContent = '0h 0m';
     } else if (msg.type === 'error') {
       console.error('[SIDEBAR] Error from background:', msg.message);
-      document.getElementById('sidebar-main').innerHTML = `<p style="color: red;">${msg.message}</p>`;
-      const footerContainer = document.getElementById('sidebar-footer');
-      if (footerContainer) {
-        footerContainer.innerHTML = renderDebugInfo([], 'Error: ' + msg.message);
-      }
+      document.getElementById('sidebar-main').innerHTML =
+        `<p style="color: red;">${msg.message}</p>`;
     }
   });
 
@@ -178,11 +149,7 @@ function connectToBackground() {
     port = null;
     connected = false;
     console.log('[SIDEBAR] Disconnected from background script.');
-    // Optionally show a disconnected state in the UI
-    const footerContainer = document.getElementById('sidebar-footer');
-    if (footerContainer) {
-      footerContainer.innerHTML = renderDebugInfo([], 'Disconnected');
-    }
+    updateDebugInfo(lastSlides, 'Disconnected');
   });
 }
 
@@ -241,17 +208,15 @@ function createTimeInput(timetable, onTimeChange) {
   const handleTimeChange = () => {
     const hours = hoursInput.value.padStart(2, '0');
     const minutes = minutesInput.value.padStart(2, '0');
-
     const h = parseInt(hours, 10);
     const m = parseInt(minutes, 10);
-
     if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
       onTimeChange(`${hours}:${minutes}`);
     }
   };
 
   const debouncedHandleTimeChange = debounce(handleTimeChange, 400);
-  
+
   hoursInput.addEventListener('input', () => {
     if (hoursInput.value.length >= 2) {
       hoursInput.value = hoursInput.value.slice(0, 2);
@@ -270,29 +235,81 @@ function createTimeInput(timetable, onTimeChange) {
   container.appendChild(hoursInput);
   container.appendChild(separator);
   container.appendChild(minutesInput);
-  
+
   return container;
 }
 
-function renderDebugInfo(slides = [], lastAction = 'none') {
+function getDebugInfoHTML(slides = [], lastAction = 'none', options = {}) {
+  const { authFeatureEnabled = false, isAuthenticated = false, userEmail = '' } = options;
+  const { debugMode = false } = options;
   const slideCount = slides.length;
-  let firstSlide = slides[0] ? JSON.stringify(slides[0], null, 2) : 'N/A';
+  const firstSlide = slides[0] ? JSON.stringify(slides[0], null, 2) : 'N/A';
+  const authFeatureFlag = authFeatureEnabled;
+  const authControls =
+    authFeatureFlag && debugMode
+      ? isAuthenticated
+        ? `<div style="margin-top:6px;"><span>Logged in as <strong>${userEmail || 'user'}</strong></span> <button id="debug-logout-btn" class="export-btn" style="margin-left:8px;">Logout</button></div>`
+        : `<div style="margin-top:6px;"><button id="debug-login-btn" class="export-btn">Login</button></div>`
+      : '';
+
   return `
-    <div class="debug-info">
-      <strong>Debug Info (v${EXT_VERSION})</strong><br>
-      Slides Detected: <strong>${slideCount}</strong><br>
-      Connection Status: <span style="color:${connected ? 'green' : 'red'};font-weight:bold;">${connected ? 'Connected' : 'Disconnected'}</span><br>
-      Last Action: <span style="font-family: monospace;">${lastAction}</span><br>
-      <details><summary>First Slide Preview</summary><pre>${firstSlide}</pre></details>
-    </div>
-  `;
+        <strong>Debug Info (v${EXT_VERSION})</strong><br>
+        Auth Feature: <strong style="color: ${authFeatureFlag ? 'green' : 'red'}">${authFeatureFlag ? 'ENABLED' : 'DISABLED'}</strong><br>
+        Slides Detected: <strong>${slideCount}</strong><br>
+        Connection Status: <span style="color:${connected ? 'green' : 'red'};font-weight:bold;">${connected ? 'Connected' : 'Disconnected'}</span><br>
+        Last Action: <span style="font-family: monospace;">${lastAction}</span><br>
+        ${authControls}
+        <details><summary>First Slide Preview</summary><pre>${firstSlide}</pre></details>
+    `;
+}
+
+async function updateDebugInfo(slides = [], lastAction = 'none') {
+  const debugInfoContainer = document.getElementById('debug-info');
+  if (!debugInfoContainer) return;
+
+  const authFeatureEnabled = configManager.isFeatureEnabled('authentication');
+  const debugMode = configManager.isFeatureEnabled('debugMode');
+  let isAuthed = false;
+  let email = '';
+  if (authFeatureEnabled) {
+    try {
+      isAuthed = await authManager.isAuthenticated();
+      const user = await authManager.getCurrentUser();
+      email = user?.email || '';
+    } catch {
+      // noop
+    }
+  }
+
+  debugInfoContainer.innerHTML = getDebugInfoHTML(slides, lastAction, {
+    authFeatureEnabled,
+    isAuthenticated: isAuthed,
+    userEmail: email,
+    debugMode,
+  });
+
+  // Wire login/logout buttons in debug box
+  const loginBtn = document.getElementById('debug-login-btn');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', async () => {
+      console.log('[SIDEBAR] Debug login button clicked');
+      await authManager.login();
+    });
+  }
+  const logoutBtn = document.getElementById('debug-logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      console.log('[SIDEBAR] Debug logout button clicked');
+      await authManager.logout();
+    });
+  }
 }
 
 function renderTimetable(timetable) {
   currentTimetable = timetable;
   const mainContainer = document.getElementById('sidebar-main');
   if (!mainContainer) return;
-  
+
   const titleElement = document.getElementById('timetable-title');
   if (titleElement) {
     titleElement.textContent = timetable.items[0]?.title || 'Course Timetable';
@@ -307,58 +324,63 @@ function renderTimetable(timetable) {
 
   const toolbar = document.getElementById('functions-toolbar');
   if (!toolbar) return;
-  toolbar.innerHTML = ''; // Clear previous content
+  toolbar.innerHTML = '';
 
   const timeDisplaySection = document.createElement('div');
   timeDisplaySection.className = 'time-display-section';
 
-  // Prepend the time input to the time display section
-  timeDisplaySection.prepend(createTimeInput(timetable, (newStartTime) => {
-    currentTimetable.startTime = newStartTime;
-    const newTimetable = recalculateTimetable(currentTimetable);
-    renderTimetable(newTimetable);
-    debouncedSave();
-  }));
-  
+  timeDisplaySection.prepend(
+    createTimeInput(timetable, newStartTime => {
+      currentTimetable.startTime = newStartTime;
+      const newTimetable = recalculateTimetable(currentTimetable);
+      renderTimetable(newTimetable);
+      debouncedSave();
+    })
+  );
+
   toolbar.appendChild(timeDisplaySection);
 
   const exportOptionsContainer = document.createElement('div');
   exportOptionsContainer.className = 'export-options';
   exportOptionsContainer.innerHTML = `
-    <button id="export-csv-btn" class="export-btn"><img src="/assets/csv.svg" alt="CSV">CSV</button>
     <button id="export-xlsx-btn" class="export-btn"><img src="/assets/xlsx.svg" alt="Excel">Excel</button>
-    <button id="copy-clipboard-btn" class="export-btn copy-btn-icon-only"><img src="/assets/copy.svg" alt="Copy"></button>
+    <button id="auth-login-toolbar-btn" class="export-btn"><span>🔐</span><span id="auth-toolbar-text">Login</span></button>
   `;
   toolbar.appendChild(exportOptionsContainer);
 
-  mainContainer.innerHTML = ''; // Clear previous content
+  mainContainer.innerHTML = '';
 
-  const exportCSVBtn = exportOptionsContainer.querySelector('#export-csv-btn');
-  exportCSVBtn.onclick = () => {
-    if (!currentTimetable) return;
-    const csv = generateCSV(currentTimetable);
-    const filename = `gamma-timetable-${new Date().toISOString().slice(0,10)}.csv`;
-    downloadFile(filename, csv);
-  };
-
-  const exportXLSXBtn = exportOptionsContainer.querySelector('#export-xlsx-btn');
-  exportXLSXBtn.onclick = () => {
+  exportOptionsContainer.querySelector('#export-xlsx-btn').onclick = () => {
     if (!currentTimetable) return;
     const blob = generateXLSX(currentTimetable);
-    const filename = `gamma-timetable-${new Date().toISOString().slice(0,10)}.xlsx`;
+    const filename = `gamma-timetable-${new Date().toISOString().slice(0, 10)}.xlsx`;
     const url = URL.createObjectURL(blob);
     downloadFile(filename, url, true);
   };
 
-  const copyClipboardBtn = exportOptionsContainer.querySelector('#copy-clipboard-btn');
-  copyClipboardBtn.onclick = () => {
-    if (!currentTimetable) return;
-    const csv = generateCSV(currentTimetable);
-    copyToClipboard(csv).then(() => {
-        copyClipboardBtn.classList.add('copied');
-        setTimeout(() => { copyClipboardBtn.classList.remove('copied'); }, 2000);
-    });
-  };
+  const loginToolbarBtn = exportOptionsContainer.querySelector('#auth-login-toolbar-btn');
+  const loginToolbarText = exportOptionsContainer.querySelector('#auth-toolbar-text');
+  if (loginToolbarBtn && loginToolbarText) {
+    const wireAuthAction = async () => {
+      const authed = await authManager.isAuthenticated();
+      if (authed) {
+        loginToolbarText.textContent = 'Logout';
+        loginToolbarBtn.onclick = async () => {
+          console.log('[SIDEBAR] Toolbar logout button clicked');
+          await authManager.logout();
+          await wireAuthAction();
+        };
+      } else {
+        loginToolbarText.textContent = 'Login';
+        loginToolbarBtn.onclick = async () => {
+          console.log('[SIDEBAR] Toolbar login button clicked');
+          await authManager.login();
+          await wireAuthAction();
+        };
+      }
+    };
+    wireAuthAction();
+  }
 
   timetable.items.forEach(item => {
     const itemDiv = document.createElement('div');
@@ -381,20 +403,18 @@ function renderTimetable(timetable) {
     mainContainer.appendChild(itemDiv);
   });
 
-  const durationSliders = mainContainer.querySelectorAll('.duration-slider');
-  durationSliders.forEach(slider => {
+  mainContainer.querySelectorAll('.duration-slider').forEach(slider => {
     slider.addEventListener('input', handleSliderInput);
     slider.addEventListener('change', handleDurationChange);
   });
 }
 
 const debouncedSave = debounce(async () => {
-    if (currentTimetable) {
-        // The presentation URL is now stored on the timetable object itself
-        const key = `timetable-${currentPresentationUrl}`;
-        saveData(key, currentTimetable);
-        console.log('Timetable saved.');
-    }
+  if (currentTimetable) {
+    const key = `timetable-${currentPresentationUrl}`;
+    saveData(key, currentTimetable);
+    console.log('Timetable saved.');
+  }
 }, 500);
 
 function handleSliderInput(event) {
@@ -408,7 +428,7 @@ function handleSliderInput(event) {
 function handleDurationChange(event) {
   const itemId = event.target.getAttribute('data-slide-id');
   const newDuration = parseInt(event.target.value, 10);
-  
+
   const item = currentTimetable.items.find(i => i.id === itemId);
   if (item) {
     item.duration = newDuration;
@@ -417,21 +437,14 @@ function handleDurationChange(event) {
     debouncedSave();
   }
 
-  // Update the displayed duration value
   const displaySpan = event.target.nextElementSibling;
   if (displaySpan) {
     displaySpan.textContent = `${newDuration} min`;
   }
 }
 
-/**
- * Recalculates all start and end times in a timetable based on the items' durations.
- * This should be called after a duration or start time changes.
- * @param {object} timetable The timetable object to recalculate.
- * @returns {object} The recalculated timetable object.
- */
 function recalculateTimetable(timetable) {
-  let currentTime = new Date(`1970-01-01T${timetable.startTime}:00`);
+  const currentTime = new Date(`1970-01-01T${timetable.startTime}:00`);
   let totalDuration = 0;
 
   const newItems = timetable.items.map(item => {
@@ -444,7 +457,7 @@ function recalculateTimetable(timetable) {
     totalDuration += itemDuration;
 
     return {
-      ...item, // Preserve id, title, content, etc.
+      ...item,
       startTime: itemStartTime.toTimeString().slice(0, 5),
       endTime: itemEndTime.toTimeString().slice(0, 5),
     };
@@ -459,152 +472,85 @@ function recalculateTimetable(timetable) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[SIDEBAR] DOMContentLoaded fired');
-
-  // Sprint 0: Initialize authentication and configuration infrastructure
   await initializeInfrastructure();
-
-  // Establish the connection to the background script
   connectToBackground();
 });
 
-/**
- * Initialize authentication and configuration managers
- * Sprint 0: Sets up infrastructure but keeps all cloud features disabled
- */
 async function initializeInfrastructure() {
   try {
-    console.log('[SIDEBAR] Initializing Sprint 0 infrastructure...');
-    
-    // Initialize configuration manager
+    console.log('[SIDEBAR] Initializing infrastructure...');
+
     await configManager.initialize();
     configInitialized = true;
     console.log('[SIDEBAR] ConfigManager initialized');
-    
-    // Initialize authentication manager  
+
     await authManager.initialize();
     authInitialized = true;
     console.log('[SIDEBAR] AuthManager initialized');
-    
-    // Apply user preferences for current functionality
-    await applyUserPreferences();
-    
-    // Set up event listeners for future UI (Sprint 1+)
-    setupInfrastructureEventListeners();
-    
-    console.log('[SIDEBAR] Sprint 0 infrastructure ready - working in offline mode');
-    
+    // Surface build-time Clerk key presence for debugging
+    // Note: value is inlined at build time
+    // Compile-time flag from Vite define
+    // eslint-disable-next-line no-undef
+    console.log(
+      '[SIDEBAR] Clerk key present at build:',
+      typeof __HAS_CLERK_KEY__ !== 'undefined' ? __HAS_CLERK_KEY__ : 'unknown'
+    );
+
+    await renderSidebar();
+
+    setupEventListeners();
+
+    updateDebugInfo([], 'Infrastructure ready');
+
+    console.log('[SIDEBAR] Infrastructure ready');
   } catch (error) {
     console.error('[SIDEBAR] Failed to initialize infrastructure:', error);
-    // Extension should continue working even if infrastructure fails
     console.log('[SIDEBAR] Continuing in fallback mode...');
   }
 }
 
-/**
- * Apply user preferences that affect current functionality
- * Sprint 0: Only handles export format preference
- */
-async function applyUserPreferences() {
-  try {
-    if (!authInitialized) return;
-    
-    const preferences = await authManager.getUserPreferences();
-    console.log('[SIDEBAR] Applied user preferences:', preferences);
-    
-    // Apply export format preference if available
-    // Future: This will control default export behavior
-    
-  } catch (error) {
-    console.warn('[SIDEBAR] Could not apply user preferences:', error);
-  }
+async function renderSidebar() {
+  await renderAuthSection();
+  // Other render functions can go here
 }
 
-/**
- * Set up event listeners for infrastructure UI elements
- * Sprint 0: Elements are hidden, but listeners are ready for Sprint 1
- */
-function setupInfrastructureEventListeners() {
-  // Auth status elements (hidden in Sprint 0)
-  const authLoginBtn = document.getElementById('auth-login-btn');
-  const authLogoutBtn = document.getElementById('auth-logout-btn');
-  
-  if (authLoginBtn) {
-    authLoginBtn.addEventListener('click', async () => {
-      console.log('[SIDEBAR] Login clicked - Sprint 0 stub');
-      await authManager.login(); // No-op in Sprint 0
-    });
+async function renderAuthSection() {
+  const authStatusBar = document.getElementById('auth-status-bar');
+  if (!authStatusBar) return;
+
+  const config = await configManager.getConfig();
+  if (!config.features.authentication) {
+    authStatusBar.style.display = 'none';
+    return;
   }
-  
-  if (authLogoutBtn) {
-    authLogoutBtn.addEventListener('click', async () => {
-      console.log('[SIDEBAR] Logout clicked - Sprint 0 stub');
-      await authManager.logout(); // No-op in Sprint 0
-    });
-  }
-  
-  // Settings elements (hidden in Sprint 0)
-  const settingsToggleBtn = document.getElementById('settings-toggle-btn');
-  const settingsCloseBtn = document.getElementById('settings-close-btn');
-  const settingsPanel = document.getElementById('settings-panel');
-  
-  if (settingsToggleBtn && settingsPanel) {
-    settingsToggleBtn.addEventListener('click', () => {
-      console.log('[SIDEBAR] Settings toggle - Sprint 0 stub');
-      // In Sprint 1: settingsPanel.style.display = 'block';
-    });
-  }
-  
-  if (settingsCloseBtn && settingsPanel) {
-    settingsCloseBtn.addEventListener('click', () => {
-      console.log('[SIDEBAR] Settings close - Sprint 0 stub');
-      // In Sprint 1: settingsPanel.style.display = 'none';
-    });
-  }
-  
-  // Export format preference (functional in Sprint 0)
-  const exportFormatSelect = document.getElementById('export-format-select');
-  if (exportFormatSelect) {
-    exportFormatSelect.addEventListener('change', async (e) => {
-      try {
-        await authManager.updateUserPreferences({ 
-          exportFormat: e.target.value 
-        });
-        console.log('[SIDEBAR] Export format preference updated:', e.target.value);
-      } catch (error) {
-        console.warn('[SIDEBAR] Could not save export preference:', error);
-      }
-    });
-  }
-  
-  // Development settings (hidden by default, can be shown via feature flags)
-  const debugModeCheckbox = document.getElementById('debug-mode-checkbox');
-  if (debugModeCheckbox) {
-    debugModeCheckbox.addEventListener('change', async (e) => {
-      try {
-        await configManager.updateFeatureFlags({ 
-          debugMode: e.target.checked 
-        });
-        console.log('[SIDEBAR] Debug mode:', e.target.checked);
-        
-        // Show/hide debug elements based on flag
-        updateDebugVisibility(e.target.checked);
-      } catch (error) {
-        console.warn('[SIDEBAR] Could not update debug mode:', error);
-      }
-    });
-  }
-  
-  console.log('[SIDEBAR] Infrastructure event listeners ready');
+
+  // Hide the top auth bar for now; toolbar button is the single source of truth for login
+  authStatusBar.style.display = 'none';
 }
 
-/**
- * Update visibility of debug elements based on debug mode
- */
-function updateDebugVisibility(debugMode) {
-  const devSettingsGroup = document.getElementById('dev-settings-group');
-  if (devSettingsGroup) {
-    devSettingsGroup.style.display = debugMode ? 'block' : 'none';
+function setupEventListeners() {
+  authManager.addEventListener(async event => {
+    console.log('[SIDEBAR] Auth state changed:', event.type);
+    await renderAuthSection();
+    updateDebugInfo(lastSlides, `Auth event: ${event.type}`);
+  });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function setupAuthButtons() {
+  const loginBtn = document.getElementById('auth-login-btn');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', async () => {
+      console.log('[SIDEBAR] Login button clicked');
+      await authManager.login();
+    });
   }
-  
-  // Future: Add more debug-specific UI elements here
-} 
+
+  const logoutBtn = document.getElementById('auth-logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      console.log('[SIDEBAR] Logout button clicked');
+      await authManager.logout();
+    });
+  }
+}

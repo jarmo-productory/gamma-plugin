@@ -35,15 +35,15 @@ export interface StorageConfig {
 
 // Default configuration
 export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
-  enableCloudSync: false,    // Disabled for Sprint 0
+  enableCloudSync: false, // Disabled for Sprint 0
   syncDebounceMs: 500,
   maxRetries: 3,
-  dataVersion: 1
+  dataVersion: 1,
 };
 
 /**
  * StorageManager - Wraps chrome.storage with additional capabilities
- * 
+ *
  * Features:
  * - Maintains identical API to existing storage.js
  * - Adds data versioning for future migrations
@@ -71,7 +71,7 @@ export class StorageManager implements IStorageManager {
         version: this.config.dataVersion,
         data,
         timestamp: new Date(),
-        presentation_url: this.extractPresentationUrl(key)
+        presentation_url: this.extractPresentationUrl(key),
       };
 
       // Save to chrome.storage (identical to current behavior)
@@ -81,7 +81,6 @@ export class StorageManager implements IStorageManager {
       if (this.config.enableCloudSync) {
         this.addToSyncQueue(key, data, 'save');
       }
-
     } catch (error) {
       console.error('[StorageManager] Save failed:', error);
       throw error;
@@ -96,7 +95,7 @@ export class StorageManager implements IStorageManager {
   async load(key: string): Promise<any> {
     try {
       const result = await this.chromeStorageLoad(key);
-      
+
       if (!result) {
         return undefined; // Maintain exact same behavior as original
       }
@@ -109,15 +108,16 @@ export class StorageManager implements IStorageManager {
 
       // Handle versioned data
       const storageItem = result as StorageItem;
-      
+
       // Future: Add migration logic here when needed
       if (storageItem.version !== this.config.dataVersion) {
-        console.log(`[StorageManager] Data version mismatch for key ${key}: ${storageItem.version} vs ${this.config.dataVersion}`);
+        console.log(
+          `[StorageManager] Data version mismatch for key ${key}: ${storageItem.version} vs ${this.config.dataVersion}`
+        );
         // For now, just return the data - migration logic will be added in future sprints
       }
 
       return storageItem.data; // Return unwrapped data
-
     } catch (error) {
       console.error('[StorageManager] Load failed:', error);
       throw error;
@@ -136,7 +136,6 @@ export class StorageManager implements IStorageManager {
       if (this.config.enableCloudSync) {
         this.addToSyncQueue(key, null, 'remove');
       }
-
     } catch (error) {
       console.error('[StorageManager] Remove failed:', error);
       throw error;
@@ -150,7 +149,6 @@ export class StorageManager implements IStorageManager {
     try {
       await this.chromeStorageClear();
       this.syncQueue = []; // Clear sync queue too
-
     } catch (error) {
       console.error('[StorageManager] Clear failed:', error);
       throw error;
@@ -178,7 +176,7 @@ export class StorageManager implements IStorageManager {
    */
   private chromeStorageLoad(key: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get(key, (result) => {
+      chrome.storage.local.get(key, result => {
         if (chrome.runtime.lastError) {
           return reject(chrome.runtime.lastError);
         }
@@ -219,11 +217,9 @@ export class StorageManager implements IStorageManager {
    * Check if data is versioned (has metadata wrapper)
    */
   private isVersionedData(data: any): boolean {
-    return data && 
-           typeof data === 'object' && 
-           'version' in data && 
-           'data' in data && 
-           'timestamp' in data;
+    return (
+      data && typeof data === 'object' && 'version' in data && 'data' in data && 'timestamp' in data
+    );
   }
 
   /**
@@ -243,7 +239,7 @@ export class StorageManager implements IStorageManager {
       data,
       operation,
       timestamp: new Date(),
-      attempts: 0
+      attempts: 0,
     };
 
     this.syncQueue.push(queueItem);
@@ -272,7 +268,7 @@ export class StorageManager implements IStorageManager {
     }
 
     console.log(`[StorageManager] Processing sync queue: ${this.syncQueue.length} items`);
-    
+
     // Placeholder: In future sprints, this will sync to cloud API
     // For now, just log the queue items
     for (const item of this.syncQueue) {
@@ -289,7 +285,7 @@ export class StorageManager implements IStorageManager {
   getSyncQueueStatus(): { count: number; items: SyncQueueItem[] } {
     return {
       count: this.syncQueue.length,
-      items: [...this.syncQueue]
+      items: [...this.syncQueue],
     };
   }
 
@@ -330,11 +326,13 @@ export function loadData(key: string): Promise<any> {
  * @param func Function to debounce
  * @param delay Delay in milliseconds
  */
-export function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout>;
-  return function(this: any, ...args: Parameters<T>) {
-    const context = this;
+  return function (...args: Parameters<T>) {
     clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(context, args), delay);
+    timeout = setTimeout(() => func(...args), delay);
   };
-} 
+}
