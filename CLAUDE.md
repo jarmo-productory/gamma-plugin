@@ -2,99 +2,287 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Important:** Track project state, progress, and tactical decisions in `PROJECT_STATE.md`. This file contains high-level mission, current sprint status, and detailed technical notes.
+
 ## Project Overview
 
-This is a Chrome extension called "Gamma Timetable Extension" that extracts slide content from Gamma presentations and generates customizable timetables. The extension uses a content script to parse slides, a background service worker for message routing, and a sidebar panel for user interaction.
+The Gamma Timetable Extension is a comprehensive full-stack application that transforms Gamma presentations into synchronized, cloud-enabled timetables. The project consists of multiple interconnected components:
+
+- **Chrome Extension** (MV3): Extracts slide content and generates timetables locally
+- **Web Dashboard** (Next.js): User authentication, presentation management, settings
+- **Backend Infrastructure** (Supabase + Netlify): Secure data persistence and API services
+- **Authentication System** (Clerk): User management and device pairing
+- **Shared Component Library**: Common utilities, types, and abstractions across platforms
+
+### Current Development Phase
+
+**Sprint 1: Authentication & Dashboard Shell** (In Progress)
+- Web-first authentication with device pairing flow
+- Extension remains fully functional offline
+- Foundation for cross-device synchronization
 
 ## Development Commands
 
 ```bash
-# Install dependencies
+# Install dependencies (root + all packages)
 npm install
 
-# Start development server with file watching
-npm run dev
+# Development (multi-target with file watching)
+npm run dev              # All targets: extension + web + shared
+npm run dev:extension    # Extension only
+npm run dev:web         # Web dashboard only
 
-# Build for production
-npm run build
+# Production builds
+npm run build           # All targets
+npm run build:extension # Extension only
+npm run build:web      # Web dashboard only
 
-# Package for distribution
-npm run package
+# Code quality
+npm run lint           # ESLint check
+npm run format         # Prettier formatting
+npm run quality        # Lint + format + type check
+
+# Extension packaging
+npm run package        # Create distributable ZIP
+
+# Local development server (device pairing API)
+node dev/pairing-api.js  # http://localhost:3000
 ```
 
 ## Architecture
 
+### Monorepo Structure
+
+```
+packages/
+├── extension/          # Chrome Extension (MV3)
+│   ├── src/background.js    # Service worker message broker
+│   ├── src/content.ts       # DOM extraction from gamma.app
+│   ├── src/sidebar/         # Main timetable UI
+│   └── src/popup/           # Extension launcher
+├── web/               # Web Dashboard (Next.js)
+│   ├── src/pages/          # Landing, auth, dashboard pages
+│   ├── src/components/     # React components
+│   └── src/api/            # API routes (Netlify functions)
+├── shared/            # Shared Component Library
+│   ├── auth/              # Device pairing & token management
+│   ├── config/            # Feature flags & environment
+│   ├── storage/           # Unified storage abstraction
+│   └── types/             # TypeScript definitions
+supabase/              # Database schema & migrations
+dev/                   # Local development tools
+```
+
 ### Core Components
 
-1. **Background Script** (`src/background.js`): Service worker that acts as a message broker between content scripts and the sidebar. Manages tab state and connection routing.
+#### Chrome Extension (`packages/extension/`)
 
-2. **Content Script** (`src/content.ts`): Injected into gamma.app pages to extract slide data using DOM selectors. Sends slide data to background script via Chrome runtime messaging.
+1. **Background Script** (`src/background.js`): MV3 service worker managing message routing between content scripts and sidebar, tab state coordination.
 
-3. **Sidebar** (`src/sidebar/sidebar.js`): Main UI component that displays timetables, handles user interactions, and manages export functionality.
+2. **Content Script** (`src/content.ts`): Injected into gamma.app pages to extract slide data using specific DOM selectors. Communicates via Chrome runtime messaging.
 
-4. **Popup** (`src/popup/popup.js`): Simple popup that opens the sidebar panel.
+3. **Sidebar** (`src/sidebar/sidebar.js`): Primary UI displaying timetables, user authentication state, export functionality, and sync controls.
+
+4. **Popup** (`src/popup/popup.js`): Simple launcher that opens the sidebar panel.
+
+#### Web Dashboard (`packages/web/`)
+
+1. **Landing Pages**: User onboarding and feature presentation
+2. **Authentication Flow**: Clerk-powered sign-in/sign-up with device pairing
+3. **Dashboard Shell**: Presentation management interface (Sprint 1)
+4. **API Routes**: Netlify functions for device pairing and data synchronization
+
+#### Backend Infrastructure
+
+1. **Database** (Supabase PostgreSQL):
+   - `users` table with Clerk integration
+   - `presentations` table with atomic timetable storage
+   - `devices` table for authentication pairing
+   - Row-Level Security (RLS) for data isolation
+
+2. **Authentication** (Clerk + Device Pairing):
+   - Web-first login flow
+   - Device registration and token exchange
+   - Extension-to-user account linking
+
+3. **API Layer** (Next.js on Netlify):
+   - `/api/devices/register` - Device registration
+   - `/api/devices/link` - User-device pairing
+   - `/api/devices/exchange` - Token exchange
+   - Future: presentation CRUD operations
 
 ### Data Flow
 
+#### Local (Offline-First)
 1. Content script extracts slides from gamma.app DOM
 2. Background script routes messages between content script and sidebar
 3. Sidebar receives slide data and generates/updates timetables
-4. User interactions (duration changes, exports) are handled in sidebar
-5. Timetable data is persisted using Chrome storage API
+4. User interactions (duration changes, exports) handled locally
+5. Timetable data persisted via Chrome storage API
 
-### Key Libraries
+#### Cloud Synchronization (Sprint 1+)
+1. Extension registers device on first run → gets pairing code
+2. User clicks "Sign In" → opens web dashboard with pairing code
+3. User authenticates via Clerk → device linked to user account
+4. Extension polls for authentication success → receives device token
+5. Future: Automatic sync of timetable data to Supabase
+6. Cross-device access via web dashboard and other extension instances
 
-- **SheetJS (XLSX)**: For Excel export functionality (`src/lib/xlsx.full.min.js`)
-- **jsPDF**: For PDF generation (via npm dependency)
-- **Vite**: Build tool with TypeScript support
+### Key Technologies
 
-### Storage
+#### Frontend
+- **Chrome Extension**: MV3 architecture, Vite build system
+- **Web Dashboard**: Next.js, React, Tailwind CSS (planned)
+- **Shared Library**: TypeScript with ESM/CJS dual builds
 
-- Uses Chrome storage API for persisting timetable data per presentation URL
-- Storage utilities in `src/lib/storage.js`
-- Timetables are keyed by presentation URL to maintain separate states
+#### Backend & Infrastructure
+- **Authentication**: Clerk (@clerk/clerk-js, @clerk/nextjs)
+- **Database**: Supabase PostgreSQL with RLS
+- **API**: Next.js API routes on Netlify
+- **Deployment**: Netlify CI/CD, Chrome Web Store
+
+#### Development Tools
+- **Build System**: Vite with multi-target support
+- **Code Quality**: ESLint + Prettier + TypeScript strict mode
+- **Export Libraries**: SheetJS (XLSX), jsPDF
+- **Local Dev**: SSL certificates, environment management
+
+#### Libraries
+- **SheetJS (XLSX)**: Excel export functionality (`packages/extension/src/lib/xlsx.full.min.js`)
+- **jsPDF**: PDF generation
+- **@clerk/clerk-js**: Extension authentication
+- **@clerk/nextjs**: Web dashboard authentication
+
+### Storage Architecture
+
+#### Local Storage (Chrome Extension)
+- **Chrome Storage API**: Offline timetable persistence per presentation URL
+- **Storage Abstraction**: `packages/shared/storage/` - unified interface
+- **Key Strategy**: Timetables keyed by presentation URL for isolation
+- **Authentication State**: Device tokens and pairing status
+
+#### Cloud Storage (Backend)
+- **Supabase PostgreSQL**: User accounts and synchronized presentations
+- **Row-Level Security**: Data isolation per user account
+- **Atomic Updates**: Presentation data stored as JSON with metadata
+- **Device Management**: Registration, pairing, and token lifecycle
 
 ### Build System
 
-- **Vite** configured for Chrome extension development
-- TypeScript compilation for content script
-- Static asset copying for manifest, icons, and libraries
-- Version synchronization script in `src/scripts/sync-version.js`
+#### Multi-Target Build (Vite)
+- **Extension Target**: Chrome MV3 with TypeScript compilation
+- **Web Target**: Next.js with React and API routes
+- **Shared Target**: Dual ESM/CJS builds for cross-platform compatibility
+- **Version Sync**: Automated across package.json and manifests
+
+#### Asset Management
+- **Static Assets**: Icons, libraries, manifest files
+- **TypeScript**: Strict mode with shared type definitions
+- **Development**: File watching across all packages
+- **Production**: Optimized builds with tree-shaking
 
 ## Development Notes
 
-### Slide Extraction
+### Sprint-Based Development
 
-The content script uses specific DOM selectors to extract slide content:
-- Main selector: `div.card-wrapper[data-card-id]`
-- Extracts title, content (paragraphs, images, links, lists), and metadata
-- Handles nested list structures with sub-items
+The project follows a structured sprint methodology tracked in `PROJECT_STATE.md`:
 
-### Message Passing
+- **High-level Mission**: Transform standalone extension into cloud-enabled service
+- **Current Sprint**: Sprint 1 (Authentication & Dashboard Shell)
+- **Sprint Planning**: Each sprint has specific deliverables and technical tasks
+- **Progress Tracking**: Detailed status updates and technical decisions documented
 
-Uses Chrome runtime messaging with named ports:
-- `content-script` port for content script connections
-- `sidebar` port for sidebar connections
-- Background script manages active tab state to prevent message conflicts
+### Authentication Strategy
+
+**Current Approach (Sprint 1)**: Web-first authentication with device pairing
+
+1. Extension generates device ID and pairing code on first run
+2. "Sign In" button opens web dashboard with pairing code
+3. User authenticates via Clerk on web → links device to account
+4. Extension polls for successful pairing → receives device token
+5. Device token enables API access for future sync operations
+
+**Security Model**:
+- Short-lived pairing codes (5 minutes, single-use)
+- Device tokens with limited scope (1 hour TTL, refresh endpoint)
+- Row-Level Security enforces user data boundaries
+
+### Slide Extraction (Extension)
+
+- **DOM Selectors**: `div.card-wrapper[data-card-id]` for slide containers
+- **Content Parsing**: Titles, paragraphs, images, links, nested lists
+- **Metadata Extraction**: Slide order, timestamps, presentation URL
+- **Change Detection**: Reconciliation preserves user duration settings
+
+### Message Passing Architecture
+
+**Chrome Runtime Messaging**:
+- `content-script` port: DOM extraction and slide updates
+- `sidebar` port: UI interactions and authentication state
+- Background script: Tab state management and message routing
+- `externally_connectable`: Web dashboard communication (planned)
 
 ### Timetable Generation
 
-- Default 5-minute duration per slide
-- User-adjustable durations via sliders (0-60 minutes)
-- Automatic time calculation based on start time and durations
-- Reconciliation system preserves user settings when slide content changes
+- **Default Duration**: 5 minutes per slide
+- **User Controls**: Sliders (0-60 minutes) with real-time updates
+- **Time Calculations**: Automatic start/end times based on sequence
+- **Persistence**: Local storage with future cloud sync capability
+- **Reconciliation**: Preserves user customizations during slide updates
 
-### Export Formats
+### Export Functionality
 
-- **CSV**: Simple comma-separated format
-- **Excel**: Uses SheetJS library with formatted headers
-- **Clipboard**: Copies CSV format to clipboard
-- **PDF**: Generated using jsPDF library
+- **CSV**: Comma-separated with configurable delimiters
+- **Excel**: SheetJS with formatted headers and styling
+- **PDF**: jsPDF with custom layout and branding
+- **Clipboard**: Direct CSV copy for quick sharing
+- **Future**: Cloud sharing and collaboration features
 
-### Testing
+### Feature Flag System
 
-No specific test framework is configured. Manual testing should focus on:
-- Slide extraction from various gamma.app presentations
-- Timetable generation and persistence
-- Export functionality across different formats
-- Tab switching and state management
+**Configuration Management** (`packages/shared/config/`):
+- Environment-based feature toggles
+- Development vs production API endpoints
+- Authentication system enabling/disabling
+- Gradual rollout capabilities
+
+### Local Development Setup
+
+**Multi-Service Development**:
+```bash
+# Terminal 1: Extension development
+npm run dev:extension
+
+# Terminal 2: Web dashboard (when implemented)
+npm run dev:web
+
+# Terminal 3: Local pairing API
+node dev/pairing-api.js
+```
+
+**Environment Configuration**:
+- SSL certificates for local HTTPS development
+- Clerk development instance with proper origins
+- Supabase local development database
+- Feature flags for development vs production
+
+### Testing Strategy
+
+**Current State**: Manual testing focused on:
+- Slide extraction across various Gamma presentations
+- Timetable generation and duration adjustments
+- Export functionality and format validation
+- Authentication flow and device pairing
+- Tab switching and state persistence
+
+**Future Recommendations**:
+- **Unit Tests**: Core timetable logic, storage abstractions, export functions
+- **Integration Tests**: Authentication flow, API endpoints, data synchronization
+- **E2E Tests**: Full user workflows across extension and web dashboard
+- **Framework Suggestion**: Vitest (Vite-native) or Jest with Chrome extension mocking
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

@@ -7,6 +7,7 @@ This guide details how to evolve the Gamma Timetable Extension from its current 
 ## Current State Analysis
 
 ### What We Have
+
 1. **Working Chrome Extension** (v0.0.5)
    - Content script extracts Gamma slides
    - Sidebar displays timetable with customizable durations
@@ -30,9 +31,11 @@ This guide details how to evolve the Gamma Timetable Extension from its current 
 ## Transition Strategy
 
 ### Phase 1: Foundation (Sprint 0)
+
 **Goal**: Add infrastructure without changing functionality
 
 #### 1. Storage Evolution
+
 ```javascript
 // Current: Direct chrome.storage usage
 await saveData(`timetable-${presentationUrl}`, timetable);
@@ -47,7 +50,7 @@ class StorageManager {
     // For now, just use local storage
     return saveData(key, data);
   }
-  
+
   // Future: Will add cloud sync
   async syncToCloud(key, data) {
     if (!this.isAuthenticated) return;
@@ -57,6 +60,7 @@ class StorageManager {
 ```
 
 #### 2. Authentication Preparation
+
 ```javascript
 // Add to sidebar.js
 import { AuthManager } from '../lib/auth.js';
@@ -67,24 +71,25 @@ const auth = new AuthManager();
 const isLoggedIn = await auth.isAuthenticated();
 
 // Update UI to show login option (disabled)
-const authButton = isLoggedIn 
+const authButton = isLoggedIn
   ? '<button disabled>👤 Account</button>'
   : '<button disabled>🔐 Sign In (Coming Soon)</button>';
 ```
 
 #### 3. Configuration System
+
 ```javascript
 // src/config/index.js
 export const config = {
   features: {
     cloudSync: false,
     authentication: false,
-    webDashboard: false
+    webDashboard: false,
   },
   version: {
     current: '0.0.5',
-    minimumForCloud: '0.1.0'
-  }
+    minimumForCloud: '0.1.0',
+  },
 };
 
 // Use in sidebar.js
@@ -97,6 +102,7 @@ if (config.features.cloudSync) {
 ### Phase 2: Authentication Integration (Sprint 1)
 
 #### 1. Clerk Integration
+
 ```javascript
 // src/lib/auth.js evolution
 import { getClerkToken } from './clerk-client.js';
@@ -106,14 +112,14 @@ export class AuthManager {
     // Check if user has existing session
     this.token = await getClerkToken();
   }
-  
+
   async signIn() {
     // Open web dashboard for login
-    chrome.tabs.create({ 
-      url: 'https://gamma-timetable.app/sign-in?from=extension' 
+    chrome.tabs.create({
+      url: 'https://gamma-timetable.app/sign-in?from=extension',
     });
   }
-  
+
   async isAuthenticated() {
     return !!this.token;
   }
@@ -121,17 +127,18 @@ export class AuthManager {
 ```
 
 #### 2. Graceful Degradation
+
 ```javascript
 // Enhanced storage manager
 class StorageManager {
   constructor(auth) {
     this.auth = auth;
   }
-  
+
   async save(key, data) {
     // Always save locally first
     await saveData(key, data);
-    
+
     // Try cloud sync if authenticated
     if (await this.auth.isAuthenticated()) {
       try {
@@ -149,6 +156,7 @@ class StorageManager {
 ### Phase 3: Web Dashboard (Sprint 2)
 
 #### 1. Shared Components
+
 ```typescript
 // shared/types/timetable.types.ts
 export interface Presentation {
@@ -169,6 +177,7 @@ export interface TimetableData {
 ```
 
 #### 2. Next.js App Structure
+
 ```
 /web/
   /pages/
@@ -184,6 +193,7 @@ export interface TimetableData {
 ### Phase 4: Data Synchronization (Sprint 3)
 
 #### 1. Sync Protocol
+
 ```javascript
 // src/lib/sync.js
 export class SyncManager {
@@ -192,21 +202,19 @@ export class SyncManager {
     this.auth = auth;
     this.syncQueue = [];
   }
-  
+
   async performSync() {
-    if (!navigator.onLine || !await this.auth.isAuthenticated()) {
+    if (!navigator.onLine || !(await this.auth.isAuthenticated())) {
       return;
     }
-    
+
     // Get local changes since last sync
     const changes = await this.getLocalChanges();
-    
+
     // Push to Supabase
     const supabase = await this.getSupabaseClient();
-    const { data, error } = await supabase
-      .from('timetables')
-      .upsert(changes);
-    
+    const { data, error } = await supabase.from('timetables').upsert(changes);
+
     if (!error) {
       await this.updateLastSyncTime();
     }
@@ -215,6 +223,7 @@ export class SyncManager {
 ```
 
 #### 2. Conflict Resolution
+
 ```javascript
 // Simple last-write-wins strategy
 async resolveConflict(local, remote) {
@@ -239,12 +248,13 @@ async resolveConflict(local, remote) {
 ### User Communication
 
 1. **In-Extension Messaging**
+
    ```javascript
    // Show non-intrusive update notice
    if (hasNewFeatures() && !user.hasSeenNotice) {
      showUpdateBanner({
-       message: "New: Cloud sync available! Sign in to access your timetables anywhere.",
-       actions: ['Learn More', 'Dismiss']
+       message: 'New: Cloud sync available! Sign in to access your timetables anywhere.',
+       actions: ['Learn More', 'Dismiss'],
      });
    }
    ```
@@ -257,9 +267,10 @@ async resolveConflict(local, remote) {
 ### Backward Compatibility
 
 1. **Data Format Versioning**
+
    ```javascript
    const TIMETABLE_VERSION = 2;
-   
+
    function migrateTimetableData(data) {
      if (!data.version || data.version < TIMETABLE_VERSION) {
        // Migrate old format
@@ -268,7 +279,7 @@ async resolveConflict(local, remote) {
          version: TIMETABLE_VERSION,
          // Add new fields with defaults
          syncEnabled: false,
-         lastSyncTime: null
+         lastSyncTime: null,
        };
      }
      return data;
@@ -320,4 +331,4 @@ async resolveConflict(local, remote) {
 2. Set up development environment
 3. Create feature flag system
 4. Start TypeScript migration for new files
-5. Document architecture decisions 
+5. Document architecture decisions

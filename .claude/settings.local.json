@@ -10,7 +10,17 @@
       "Bash(npm run build:extension:*)",
       "Bash(npm run build:web:*)",
       "Bash(npm run sync-version:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run quality:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run format:check:*)",
+      "Bash(npm run format:*)",
+      "Bash(npm run package:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run test:*)"
     ],
     "deny": []
   }

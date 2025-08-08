@@ -3,17 +3,8 @@
   "name": "Gamma Timetable Extension",
   "version": "0.0.5",
   "description": "Extracts slide content from Gamma presentations and generates customizable timetables.",
-  "permissions": [
-    "activeTab",
-    "scripting",
-    "storage",
-    "downloads",
-    "sidePanel",
-    "tabs"
-  ],
-  "host_permissions": [
-    "https://gamma.app/*"
-  ],
+  "permissions": ["activeTab", "scripting", "storage", "downloads", "sidePanel", "tabs"],
+  "host_permissions": ["https://gamma.app/*"],
   "background": {
     "service_worker": "background.js"
   },
@@ -27,13 +18,8 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://gamma.app/*",
-        "https://*.gamma.app/*"
-      ],
-      "js": [
-        "content.js"
-      ],
+      "matches": ["https://gamma.app/*", "https://*.gamma.app/*"],
+      "js": ["content.js"],
       "run_at": "document_start",
       "all_frames": true
     }

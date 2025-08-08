@@ -3,12 +3,14 @@
 ## 1. Design Overview
 
 ### Design Philosophy
+
 - **Minimalist**: Clean interface that doesn't overwhelm
 - **Intuitive**: Self-explanatory controls and flow
 - **Efficient**: Quick access to all features
 - **Consistent**: Follows Chrome extension patterns
 
 ### Visual Style
+
 - Modern, clean aesthetic
 - Matches Gamma's design language where appropriate
 - Support for light/dark themes
@@ -17,6 +19,7 @@
 ## 2. User Interface Components
 
 ### 2.1 Extension Icon
+
 ```
 States:
 - Default: Grey icon (inactive)
@@ -25,6 +28,7 @@ States:
 ```
 
 ### 2.2 Popup Menu
+
 ```
 ┌─────────────────────────┐
 │  Gamma Timetable        │
@@ -39,6 +43,7 @@ States:
 ```
 
 ### 2.3 Sidebar Panel
+
 ```
 ┌──────────────────────────────────────┐
 │  🕐 Course Timetable          [✕]   │
@@ -68,6 +73,7 @@ States:
 ## 3. User Flows
 
 ### 3.1 Primary Flow: Generate Timetable
+
 ```mermaid
 graph TD
     A[Open Gamma Presentation] --> B[Click Extension Icon]
@@ -79,6 +85,7 @@ graph TD
 ```
 
 ### 3.2 Time Adjustment Flow
+
 1. User clicks on duration field
 2. Input becomes editable
 3. User enters new duration
@@ -88,6 +95,7 @@ graph TD
 ## 4. Interactive Elements
 
 ### 4.1 Time Duration Controls
+
 ```
 Design Pattern: Inline Editable Fields
 - Click to edit
@@ -98,6 +106,7 @@ Design Pattern: Inline Editable Fields
 ```
 
 ### 4.2 Drag & Drop Reordering
+
 ```
 Interaction:
 - Hover shows grab cursor
@@ -107,6 +116,7 @@ Interaction:
 ```
 
 ### 4.3 Break Management
+
 ```
 Add Break Button:
 - Shows between any two items on hover
@@ -122,17 +132,18 @@ Break Item:
 ## 5. Visual Design System
 
 ### 5.1 Color Palette
+
 ```css
 /* Light Theme */
---primary: #2563eb;      /* Blue - Actions */
---secondary: #64748b;    /* Grey - Secondary text */
---success: #10b981;      /* Green - Success states */
---warning: #f59e0b;      /* Amber - Warnings */
---danger: #ef4444;       /* Red - Errors */
---background: #ffffff;   /* White - Main bg */
---surface: #f8fafc;      /* Light grey - Cards */
---text: #1e293b;         /* Dark - Primary text */
---border: #e2e8f0;       /* Light - Borders */
+--primary: #2563eb; /* Blue - Actions */
+--secondary: #64748b; /* Grey - Secondary text */
+--success: #10b981; /* Green - Success states */
+--warning: #f59e0b; /* Amber - Warnings */
+--danger: #ef4444; /* Red - Errors */
+--background: #ffffff; /* White - Main bg */
+--surface: #f8fafc; /* Light grey - Cards */
+--text: #1e293b; /* Dark - Primary text */
+--border: #e2e8f0; /* Light - Borders */
 
 /* Dark Theme */
 --primary-dark: #3b82f6;
@@ -143,33 +154,36 @@ Break Item:
 ```
 
 ### 5.2 Typography
+
 ```css
 /* Font Stack */
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 
-             Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+font-family:
+  -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 
 /* Type Scale */
---text-xs: 0.75rem;     /* 12px - Labels */
---text-sm: 0.875rem;    /* 14px - Body */
---text-base: 1rem;      /* 16px - Default */
---text-lg: 1.125rem;    /* 18px - Headings */
---text-xl: 1.25rem;     /* 20px - Title */
+--text-xs: 0.75rem; /* 12px - Labels */
+--text-sm: 0.875rem; /* 14px - Body */
+--text-base: 1rem; /* 16px - Default */
+--text-lg: 1.125rem; /* 18px - Headings */
+--text-xl: 1.25rem; /* 20px - Title */
 ```
 
 ### 5.3 Spacing System
+
 ```css
 /* Spacing Scale */
---space-1: 0.25rem;     /* 4px */
---space-2: 0.5rem;      /* 8px */
---space-3: 0.75rem;     /* 12px */
---space-4: 1rem;        /* 16px */
---space-5: 1.25rem;     /* 20px */
---space-6: 1.5rem;      /* 24px */
+--space-1: 0.25rem; /* 4px */
+--space-2: 0.5rem; /* 8px */
+--space-3: 0.75rem; /* 12px */
+--space-4: 1rem; /* 16px */
+--space-5: 1.25rem; /* 20px */
+--space-6: 1.5rem; /* 24px */
 ```
 
 ## 6. Component Specifications
 
 ### 6.1 Timetable Item Component
+
 ```html
 <div class="timetable-item" data-id="slide-1">
   <div class="time-column">
@@ -180,7 +194,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
     <p class="item-description">Overview of artificial intelligence concepts</p>
   </div>
   <div class="duration-column">
-    <input type="number" class="duration-input" value="10" min="1" max="180">
+    <input type="number" class="duration-input" value="10" min="1" max="180" />
     <span class="duration-unit">min</span>
   </div>
   <div class="actions-column">
@@ -190,11 +204,10 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
 ```
 
 ### 6.2 Export Menu Component
+
 ```html
 <div class="export-menu">
-  <button class="export-button">
-    Export <span class="arrow">▼</span>
-  </button>
+  <button class="export-button">Export <span class="arrow">▼</span></button>
   <div class="export-dropdown">
     <a href="#" class="export-option" data-format="csv">
       <span class="icon">📄</span> Export as CSV
@@ -205,7 +218,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
     <a href="#" class="export-option" data-format="pdf">
       <span class="icon">📑</span> Export as PDF
     </a>
-    <hr>
+    <hr />
     <a href="#" class="export-option" data-format="clipboard">
       <span class="icon">📋</span> Copy to Clipboard
     </a>
@@ -216,12 +229,14 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
 ## 7. Responsive Behavior
 
 ### 7.1 Sidebar Width Adaptation
+
 - Minimum width: 320px
 - Maximum width: 480px
 - Resizable by user (saved preference)
 - Content reflows appropriately
 
 ### 7.2 Scrolling Behavior
+
 - Fixed header with title and total duration
 - Fixed footer with action buttons
 - Middle section scrolls
@@ -231,6 +246,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
 ## 8. Accessibility Features
 
 ### 8.1 Keyboard Navigation
+
 - Tab through all interactive elements
 - Arrow keys for time adjustment
 - Space/Enter to activate buttons
@@ -238,12 +254,14 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
 - Focus indicators visible
 
 ### 8.2 Screen Reader Support
+
 - Proper ARIA labels
 - Role attributes
 - Live regions for updates
 - Descriptive button text
 
 ### 8.3 Visual Accessibility
+
 - 4.5:1 contrast ratio minimum
 - No color-only indicators
 - Clear focus states
@@ -252,6 +270,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
 ## 9. Micro-interactions
 
 ### 9.1 Loading States
+
 ```
 Extraction in progress:
 - Pulsing animation on icon
@@ -260,6 +279,7 @@ Extraction in progress:
 ```
 
 ### 9.2 Success Feedback
+
 ```
 After successful export:
 - Green checkmark animation
@@ -268,6 +288,7 @@ After successful export:
 ```
 
 ### 9.3 Error States
+
 ```
 When extraction fails:
 - Red error icon
@@ -279,6 +300,7 @@ When extraction fails:
 ## 10. Empty States
 
 ### 10.1 No Presentation Detected
+
 ```
 ┌──────────────────────────────────────┐
 │         No Presentation Found        │
@@ -293,6 +315,7 @@ When extraction fails:
 ```
 
 ### 10.2 No Slides Extracted
+
 ```
 ┌──────────────────────────────────────┐
 │         No Slides Detected           │
@@ -309,12 +332,14 @@ When extraction fails:
 ## 11. Animation Guidelines
 
 ### 11.1 Transition Durations
+
 - Micro animations: 150ms
 - Page transitions: 300ms
 - Loading animations: 500ms
 - Use ease-out curves
 
 ### 11.2 Animation Types
+
 - Fade in/out for overlays
 - Slide for panels
 - Scale for buttons
@@ -323,18 +348,21 @@ When extraction fails:
 ## 12. Design Patterns
 
 ### 12.1 Inline Editing Pattern
+
 - Single click to select
 - Double click to edit
 - Visual mode change
 - Clear save/cancel options
 
 ### 12.2 Progressive Disclosure
+
 - Basic settings visible
 - Advanced options collapsed
 - Clear expand/collapse indicators
 - Remember user preferences
 
 ### 12.3 Contextual Actions
+
 - Actions appear on hover
 - Right-click menus where appropriate
 - Tooltips for unclear icons
@@ -342,6 +370,6 @@ When extraction fails:
 
 ---
 
-*Document Version: 1.0*  
-*Last Updated: [Current Date]*  
-*Status: Draft* 
+_Document Version: 1.0_  
+_Last Updated: [Current Date]_  
+_Status: Draft_

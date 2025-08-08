@@ -16,6 +16,7 @@ import { saveData, loadData, debounce } from '../lib/storage.js';
 
 // Import authentication and configuration infrastructure
 import { authManager } from '@shared/auth';
+import { deviceAuth } from '@shared/auth/device';
 import { configManager } from '@shared/config';
 
 let connected = false;
@@ -373,9 +374,34 @@ function renderTimetable(timetable) {
       } else {
         loginToolbarText.textContent = 'Login';
         loginToolbarBtn.onclick = async () => {
-          console.log('[SIDEBAR] Toolbar login button clicked');
-          await authManager.login();
-          await wireAuthAction();
+          console.log('[SIDEBAR] Toolbar login button clicked (web-first pairing)');
+          try {
+            const cfg = configManager.getConfig();
+            const apiUrl = cfg.environment.apiBaseUrl || 'http://localhost:3000';
+            const webUrl = cfg.environment.webBaseUrl || 'http://localhost:3000';
+            const info = await deviceAuth.getOrRegisterDevice(apiUrl);
+            const url = deviceAuth.buildSignInUrl(webUrl, info.code);
+            if (chrome?.tabs?.create) {
+              chrome.tabs.create({ url });
+            } else if (window?.open) {
+              window.open(url, '_blank');
+            }
+            // Start polling for linkage
+            const token = await deviceAuth.pollExchangeUntilLinked(
+              apiUrl,
+              info.deviceId,
+              info.code
+            );
+            if (token) {
+              console.log('[SIDEBAR] Device linked; token stored.');
+              // Reflect authed state in UI immediately
+              await wireAuthAction();
+            } else {
+              console.warn('[SIDEBAR] Device linking timed out.');
+            }
+          } catch (err) {
+            console.error('[SIDEBAR] Web-first login failed:', err);
+          }
         };
       }
     };

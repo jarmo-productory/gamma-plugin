@@ -10,7 +10,7 @@ let sidebarPort = null; // There's only one sidebar.
 // Keep track of the last known active tab ID
 let activeTabId = null;
 
-chrome.runtime.onConnect.addListener((port) => {
+chrome.runtime.onConnect.addListener(port => {
   console.log('[BACKGROUND] New connection:', port.name, 'from:', port.sender);
 
   if (port.name === 'content-script') {
@@ -25,11 +25,14 @@ chrome.runtime.onConnect.addListener((port) => {
       });
 
       // Forward messages from content script to the single sidebar
-      port.onMessage.addListener((msg) => {
+      port.onMessage.addListener(msg => {
         if (sidebarPort) {
           // Only forward messages from the active tab to prevent flickering
           if (tabId === activeTabId) {
-            console.log(`[BACKGROUND] Forwarding message from active content script (tab ${tabId}) to sidebar:`, msg);
+            console.log(
+              `[BACKGROUND] Forwarding message from active content script (tab ${tabId}) to sidebar:`,
+              msg
+            );
             sidebarPort.postMessage({ ...msg, tabId });
           } else {
             console.log(`[BACKGROUND] Ignoring message from inactive tab ${tabId}.`);
@@ -47,16 +50,22 @@ chrome.runtime.onConnect.addListener((port) => {
     });
 
     // When the sidebar requests slides, forward it to the active content script
-    sidebarPort.onMessage.addListener((msg) => {
+    sidebarPort.onMessage.addListener(msg => {
       console.log('[BACKGROUND] Message from sidebar:', msg);
       if (msg.type === 'get-slides' && activeTabId) {
         const contentPort = contentScriptPorts[activeTabId];
         if (contentPort) {
-          console.log(`[BACKGROUND] Forwarding get-slides to content script for active tab ${activeTabId}.`);
+          console.log(
+            `[BACKGROUND] Forwarding get-slides to content script for active tab ${activeTabId}.`
+          );
           contentPort.postMessage(msg);
         } else {
           console.log(`[BACKGROUND] No content script for active tab ${activeTabId}.`);
-          sidebarPort.postMessage({ type: 'error', message: 'No content script connected for the active Gamma tab. Please refresh the page.' });
+          sidebarPort.postMessage({
+            type: 'error',
+            message:
+              'No content script connected for the active Gamma tab. Please refresh the page.',
+          });
         }
       }
     });
@@ -73,8 +82,8 @@ function triggerTabUpdate(tabId) {
     console.log('[BACKGROUND] No sidebar to update.');
     return;
   }
-  
-  chrome.tabs.get(tabId, (tab) => {
+
+  chrome.tabs.get(tabId, tab => {
     if (chrome.runtime.lastError) {
       console.error(`[BACKGROUND] Error getting tab info: ${chrome.runtime.lastError.message}`);
       sidebarPort.postMessage({ type: 'show-message', message: 'Error accessing tab.' });
@@ -86,7 +95,10 @@ function triggerTabUpdate(tabId) {
       sidebarPort.postMessage({ type: 'gamma-tab-activated', tabId: tabId });
     } else {
       console.log(`[BACKGROUND] Active tab is not a Gamma tab: ${tabId}`);
-      sidebarPort.postMessage({ type: 'show-message', message: 'This extension only works with presentations on Gamma.app.' });
+      sidebarPort.postMessage({
+        type: 'show-message',
+        message: 'This extension only works with presentations on Gamma.app.',
+      });
     }
   });
 }
@@ -100,7 +112,7 @@ chrome.tabs.onActivated.addListener(activeInfo => {
 
 // Also check the active tab when the extension is first installed or updated
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
     if (tabs.length > 0) {
       activeTabId = tabs[0].id;
       console.log(`[BACKGROUND] Extension installed/updated. Initial active tab: ${activeTabId}`);
@@ -117,4 +129,4 @@ setInterval(() => {
       contentPort.postMessage({ type: 'get-slides' });
     }
   }
-}, 5000); // every 5 seconds 
+}, 5000); // every 5 seconds

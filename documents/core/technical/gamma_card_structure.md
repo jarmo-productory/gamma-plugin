@@ -7,7 +7,7 @@ This document breaks down the HTML structure of a single "card" or slide as expo
 The most reliable way to uniquely identify and target a specific card is by its `data-card-id` attribute.
 
 - **Card ID**: `data-card-id` on the `.card-wrapper` element.
-  - *Example*: `data-card-id="qmpox6pls8j7jc2"`
+  - _Example_: `data-card-id="qmpox6pls8j7jc2"`
 
 ## Core Card Structure
 
@@ -15,24 +15,24 @@ The card is composed of several nested `div` elements. Here is the high-level hi
 
 ```html
 <div class="react-renderer node-card block block-card">
-    <div as="div" data-node-view-wrapper="">
-        <div data-card-id="..." class="card-wrapper card-expanded ...">
-            <div class="card-body ..." data-card-body="...">
-                <div class="card-body-background ..."></div>
-                <div data-theme="dark" class="card-layout ...">
-                    <!-- Toolbar and drag handle elements -->
-                    <div dir="ltr" class="card-content ...">
-                        <div data-node-view-content-inner="card">
-                            <!-- Content Blocks (headings, images, paragraphs, etc.) go here -->
-                        </div>
-                    </div>
-                </div>
+  <div as="div" data-node-view-wrapper="">
+    <div data-card-id="..." class="card-wrapper card-expanded ...">
+      <div class="card-body ..." data-card-body="...">
+        <div class="card-body-background ..."></div>
+        <div data-theme="dark" class="card-layout ...">
+          <!-- Toolbar and drag handle elements -->
+          <div dir="ltr" class="card-content ...">
+            <div data-node-view-content-inner="card">
+              <!-- Content Blocks (headings, images, paragraphs, etc.) go here -->
             </div>
-            <div data-theme="dark" contenteditable="false" class="card-divider ...">
-                <!-- "Add card" button group -->
-            </div>
+          </div>
         </div>
+      </div>
+      <div data-theme="dark" contenteditable="false" class="card-divider ...">
+        <!-- "Add card" button group -->
+      </div>
     </div>
+  </div>
 </div>
 ```
 
@@ -52,9 +52,9 @@ Within the `.card-content` element, the slide's content is structured into diffe
 - **Example**:
   ```html
   <div class="react-renderer node-heading ...">
-      <div ... class="heading ...">
-          <div data-node-view-content-inner="heading">Suured keelemudelid (LLMid)</div>
-      </div>
+    <div ... class="heading ...">
+      <div data-node-view-content-inner="heading">Suured keelemudelid (LLMid)</div>
+    </div>
   </div>
   ```
 
@@ -65,9 +65,9 @@ Within the `.card-content` element, the slide's content is structured into diffe
 - **Example**:
   ```html
   <div class="react-renderer node-image ...">
-      ...
-      <img alt="" class="chakra-image css-zec7a" src="https://imgproxy.gamma.app/...">
-      ...
+    ...
+    <img alt="" class="chakra-image css-zec7a" src="https://imgproxy.gamma.app/..." />
+    ...
   </div>
   ```
 
@@ -78,11 +78,11 @@ Within the `.card-content` element, the slide's content is structured into diffe
 - **Example**:
   ```html
   <div class="react-renderer node-paragraph ...">
-      ...
-      <div data-node-view-content-inner="paragraph">
-          Link: <span class="react-renderer node-link">...</span>
-      </div>
-      ...
+    ...
+    <div data-node-view-content-inner="paragraph">
+      Link: <span class="react-renderer node-link">...</span>
+    </div>
+    ...
   </div>
   ```
 
@@ -93,11 +93,11 @@ Within the `.card-content` element, the slide's content is structured into diffe
 - **Example**:
   ```html
   <span class="react-renderer node-link">
-      <a class="chakra-text link css-0" rel="noopener nofollow" href="https://artificialanalysis.ai/">
-          ...
-          <span data-node-view-content-inner="link">https://artificialanalysis.ai/</span>
-          ...
-      </a>
+    <a class="chakra-text link css-0" rel="noopener nofollow" href="https://artificialanalysis.ai/">
+      ...
+      <span data-node-view-content-inner="link">https://artificialanalysis.ai/</span>
+      ...
+    </a>
   </span>
   ```
 
@@ -109,4 +109,4 @@ To parse a Gamma HTML file, the general approach would be:
 2.  For each `card-wrapper`, extract its `data-card-id`.
 3.  Within each card, locate the `.card-content` `div`.
 4.  Iterate through the children of `.card-content` to find content blocks (`.node-heading`, `.node-image`, etc.).
-5.  Extract the relevant data (text, image URLs, links) from each content block. 
+5.  Extract the relevant data (text, image URLs, links) from each content block.

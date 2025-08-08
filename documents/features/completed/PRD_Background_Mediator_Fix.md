@@ -11,32 +11,36 @@ The extension consistently fails to establish a reliable communication channel b
 ## 3. Core Architectural Requirements
 
 ### FR1: Implement Background Script as Central Hub
--   The background script (`background.js`) must be refactored to act as a central message broker and state manager.
--   It will maintain a registry of active content script ports, mapping them to their corresponding tab IDs.
+
+- The background script (`background.js`) must be refactored to act as a central message broker and state manager.
+- It will maintain a registry of active content script ports, mapping them to their corresponding tab IDs.
 
 ### FR2: Refactor Content Script to Connect to Background
--   The content script (`content.ts`) must, upon loading, establish a long-lived connection (`chrome.runtime.connect`) to the background script.
--   It will announce its readiness and `tabId` to the background script.
--   It will no longer listen for direct connections from the sidebar. Instead, it will listen for messages forwarded from the background script (e.g., `get-slides`).
+
+- The content script (`content.ts`) must, upon loading, establish a long-lived connection (`chrome.runtime.connect`) to the background script.
+- It will announce its readiness and `tabId` to the background script.
+- It will no longer listen for direct connections from the sidebar. Instead, it will listen for messages forwarded from the background script (e.g., `get-slides`).
 
 ### FR3: Refactor Sidebar to Connect to Background
--   The sidebar script (`sidebar.js`) must, upon loading, establish a long-lived connection (`chrome.runtime.connect`) to the background script.
--   It will no longer attempt to connect directly to the content script.
--   To get slides, it will send a message to the background script, which will then proxy the request to the correct content script.
+
+- The sidebar script (`sidebar.js`) must, upon loading, establish a long-lived connection (`chrome.runtime.connect`) to the background script.
+- It will no longer attempt to connect directly to the content script.
+- To get slides, it will send a message to the background script, which will then proxy the request to the correct content script.
 
 ### FR4: Define a Clear Three-Way Communication Protocol
--   **Content Script -> Background:**
-    -   On load: `port.postMessage({ type: 'content-script-ready' })`
--   **Sidebar -> Background:**
-    -   On load: `port.postMessage({ type: 'get-slides' })`
--   **Background -> Content Script:**
-    -   Forwards the `get-slides` request.
--   **Content Script -> Background:**
-    -   Responds with `{ type: 'slide-data', slides: [...] }`
--   **Background -> Sidebar:**
-    -   Forwards the `slide-data` response.
+
+- **Content Script -> Background:**
+  - On load: `port.postMessage({ type: 'content-script-ready' })`
+- **Sidebar -> Background:**
+  - On load: `port.postMessage({ type: 'get-slides' })`
+- **Background -> Content Script:**
+  - Forwards the `get-slides` request.
+- **Content Script -> Background:**
+  - Responds with `{ type: 'slide-data', slides: [...] }`
+- **Background -> Sidebar:**
+  - Forwards the `slide-data` response.
 
 ## 4. Non-Functional Requirements
 
--   **NFR1 (Reliability):** The architecture must be resilient to page reloads, extension updates, and the opening/closing of the sidebar.
--   **NFR2 (Clarity):** The code in all three scripts (`background`, `content`, `sidebar`) must be clear, well-commented, and strictly follow this new mediated pattern. 
+- **NFR1 (Reliability):** The architecture must be resilient to page reloads, extension updates, and the opening/closing of the sidebar.
+- **NFR2 (Clarity):** The code in all three scripts (`background`, `content`, `sidebar`) must be clear, well-commented, and strictly follow this new mediated pattern.

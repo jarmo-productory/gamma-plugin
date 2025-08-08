@@ -5,6 +5,7 @@
  */
 import { Clerk } from '@clerk/clerk-js';
 import { StorageManager } from '../storage';
+import { deviceAuth } from './device';
 import { UserProfile, UserPreferences } from '../types/index';
 
 // TypeScript interfaces for user and session data
@@ -111,12 +112,15 @@ export class AuthManager {
     });
   }
 
-  private handleClerkStateChange(event: any) {
+  private handleClerkStateChange(event: unknown) {
     console.log('[AuthManager] Clerk state changed:', event);
     this.updateAuthState();
   }
 
   async isAuthenticated(): Promise<boolean> {
+    // Treat device token presence as authenticated in Sprint 1 pairing flow
+    const token = await deviceAuth.getStoredToken();
+    if (token && token.token) return true;
     return this.authState.isAuthenticated;
   }
 
@@ -129,60 +133,13 @@ export class AuthManager {
   }
 
   async login(): Promise<void> {
-    if (!this.clerk) {
-      console.error(
-        '[AuthManager] Clerk not initialized. Set NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and ensure authManager.initialize() ran successfully.'
-      );
-      return;
-    }
-    try {
-      const anyClerk: any = this.clerk as any;
-      if (typeof anyClerk.openSignIn === 'function') {
-        await anyClerk.openSignIn({});
-        return;
-      }
-      // Fallback to redirect/open tab if modal API is unavailable
-      const redirectUrl = typeof window !== 'undefined' ? window.location.href : undefined;
-      if (typeof anyClerk.buildSignInUrl === 'function') {
-        const url = await anyClerk.buildSignInUrl({ redirectUrl });
-        if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
-          chrome.tabs.create({ url });
-        } else if (typeof window !== 'undefined') {
-          window.open(url, '_blank');
-        } else {
-          await anyClerk.redirectToSignIn({ redirectUrl });
-        }
-      } else if (typeof anyClerk.redirectToSignIn === 'function') {
-        await anyClerk.redirectToSignIn({ redirectUrl });
-      }
-    } catch (error) {
-      console.error('[AuthManager] Error opening sign in:', error);
-    }
+    // No-op in Sprint 1; sidebar handles web-first flow via DeviceAuth
+    console.log('[AuthManager] login() delegated to sidebar pairing flow.');
   }
 
   async logout(): Promise<void> {
-    if (!this.clerk) {
-      console.error('[AuthManager] Clerk not initialized.');
-      return;
-    }
-    try {
-      const anyClerk: any = this.clerk as any;
-      // In extensions, avoid navigating to an invalid page after sign out
-      // Redirect back to the side panel HTML if possible
-      const fallbackUrl =
-        typeof chrome !== 'undefined' && chrome.runtime?.getURL
-          ? chrome.runtime.getURL('sidebar.html')
-          : typeof window !== 'undefined'
-            ? window.location.href
-            : undefined;
-      if (typeof anyClerk.signOut === 'function') {
-        await anyClerk.signOut({ redirectUrl: fallbackUrl });
-      } else {
-        console.warn('[AuthManager] signOut function not available on Clerk instance');
-      }
-    } catch (error) {
-      console.error('[AuthManager] Error signing out:', error);
-    }
+    await deviceAuth.clearToken();
+    this.updateAuthState();
   }
 
   async getUserPreferences(): Promise<UserPreferences> {

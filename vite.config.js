@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import packageJson from './package.json';
@@ -16,7 +16,7 @@ const extensionConfig = {
         background: 'packages/extension/background.js',
         content: 'packages/extension/content.ts',
         'popup/popup': 'packages/extension/popup/popup.js',
-        'sidebar/sidebar': 'packages/extension/sidebar/sidebar.js'
+        'sidebar/sidebar': 'packages/extension/sidebar/sidebar.js',
       },
       output: {
         entryFileNames: `[name].js`,
@@ -27,8 +27,8 @@ const extensionConfig = {
           }
           return 'assets/[name][extname]';
         },
-      }
-    }
+      },
+    },
   },
   plugins: [
     viteStaticCopy({
@@ -38,7 +38,7 @@ const extensionConfig = {
         { src: 'packages/extension/lib/xlsx.full.min.js', dest: 'lib/' },
         { src: 'packages/extension/popup/popup.html', dest: '.' },
         { src: 'packages/extension/sidebar/sidebar.html', dest: '.' },
-        { src: 'packages/extension/sidebar/sidebar.css', dest: '.' }
+        { src: 'packages/extension/sidebar/sidebar.css', dest: '.' },
       ],
     }),
   ],
@@ -46,8 +46,8 @@ const extensionConfig = {
     alias: {
       '@shared': resolve(__dirname, 'packages/shared'),
       '@extension': resolve(__dirname, 'packages/extension'),
-    }
-  }
+    },
+  },
 };
 
 const webConfig = {
@@ -57,16 +57,16 @@ const webConfig = {
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'packages/web/src/index.html')
-      }
-    }
+        main: resolve(__dirname, 'packages/web/src/index.html'),
+      },
+    },
   },
   resolve: {
     alias: {
       '@shared': resolve(__dirname, 'packages/shared'),
       '@web': resolve(__dirname, 'packages/web'),
-    }
-  }
+    },
+  },
 };
 
 const sharedConfig = {
@@ -76,19 +76,22 @@ const sharedConfig = {
     lib: {
       entry: resolve(__dirname, 'packages/shared/index.ts'),
       name: 'SharedComponents',
-      fileName: 'shared'
-    }
-  }
+      fileName: 'shared',
+    },
+  },
 };
 
 // Select configuration based on build target
 const configs = {
   extension: extensionConfig,
   web: webConfig,
-  shared: sharedConfig
+  shared: sharedConfig,
 };
 
-export default defineConfig(({ command }) => {
+export default defineConfig(({ mode }) => {
+  // Load env file based on mode (e.g. 'development', 'production')
+  const env = loadEnv(mode, process.cwd(), '');
+
   const selectedConfig = configs[buildTarget];
 
   return {
@@ -100,8 +103,12 @@ export default defineConfig(({ command }) => {
       },
     },
     define: {
-      '__APP_VERSION__': JSON.stringify(packageJson.version),
-      '__BUILD_TARGET__': JSON.stringify(buildTarget),
+      __APP_VERSION__: JSON.stringify(packageJson.version),
+      __BUILD_TARGET__: JSON.stringify(buildTarget),
+      'process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY': JSON.stringify(
+        env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+      ),
+      __HAS_CLERK_KEY__: JSON.stringify(Boolean(env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)),
     },
   };
-}); 
+});

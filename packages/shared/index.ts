@@ -15,4 +15,4 @@ export const SHARED_VERSION = '0.0.5';
 // Placeholder exports for future development
 export const initializeShared = () => {
   console.log('Shared package initialized');
-}; 
+};

@@ -5,6 +5,7 @@
 This document outlines the complete user flow for account creation and login across the two main clients: the **Web Dashboard** and the **Chrome Extension**. The primary goal is to create a seamless, unified authentication experience managed by **Clerk**.
 
 The key principles of this flow are:
+
 - **Centralized Sign-Up:** New user registration occurs **exclusively** on the Web Dashboard to provide a consistent and controlled onboarding experience.
 - **Unified Session:** A user who logs into one client is automatically authenticated on the other within the same browser, creating a frictionless journey between the app and the extension.
 
@@ -43,7 +44,7 @@ graph TD
     %% --- New User Flow ---
     Ext_CreateLink -- "1a. Clicks Link" --> WebApp_SignUp;
     WebApp_SignUp -- "2. User interacts" --> Clerk_UI;
-    
+
     %% --- Returning User Flow ---
     Ext_LoginBtn -- "1c. Clicks Button" --> Clerk_UI;
     WebApp_SignIn -- "1b. User interacts" --> Clerk_UI;
@@ -72,10 +73,12 @@ This flow begins when a user who does not have an account wants to join.
 This flow applies to existing users and can be initiated from either the Web Dashboard or the Chrome Extension.
 
 #### Path A: Login from the Web Dashboard
+
 1.  **Trigger:** A logged-out user visits the `/sign-in` page on the Web Dashboard.
 2.  **Authentication & Success:** The user logs in via the Clerk component and is redirected to the `/dashboard`. The extension automatically reflects the new session.
 
 #### Path B: Login from the Chrome Extension
+
 1.  **Trigger:** The user clicks the **"Login"** button within the Chrome Extension's **Logged Out View**.
 2.  **Authentication (Clerk):** The Clerk sign-in component is presented to the user.
 3.  **Success & Unified Session:** Upon successful login, the extension's UI immediately switches to the `Logged In View`. The session is now active for the entire browser.
@@ -83,7 +86,8 @@ This flow applies to existing users and can be initiated from either the Web Das
 ### 2.4. Logged-In Extension View
 
 Once authenticated, the user is presented with the core functionality of the extension:
+
 - A list of their presentations, fetched from the backend.
 - Controls to manually or automatically sync their data ("Save to Cloud", "Load from Cloud", etc.).
 - A "Logout" button to securely end their session.
-- A convenient link to open their full Web Dashboard in a new tab. 
+- A convenient link to open their full Web Dashboard in a new tab.

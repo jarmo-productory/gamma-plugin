@@ -49,3 +49,4 @@ tasks/
 
 # Local secrets
 certs/ 
+.early.coverage

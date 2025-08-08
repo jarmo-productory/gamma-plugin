@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const app = document.getElementById('app');
   if (app) {
     const statusDiv = document.createElement('div');
-    statusDiv.style.cssText = 'padding: 20px; background: #f0f0f0; margin: 20px; border-radius: 8px;';
+    statusDiv.style.cssText =
+      'padding: 20px; background: #f0f0f0; margin: 20px; border-radius: 8px;';
     statusDiv.innerHTML = `
       <h2>Development Status</h2>
       <ul>
@@ -22,4 +23,4 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     app.appendChild(statusDiv);
   }
-}); 
+});

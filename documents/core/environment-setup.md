@@ -50,7 +50,7 @@ This document is the single source of truth for all environment-specific setting
 - **Supabase URL:** `https://dknqqcnnbcqujeffbmmb.supabase.co`
 - **Clerk:** `https://dashboard.clerk.com` (prod environment)
 - **Environment Variables:** Copy `.env.example` to `.env.local` and fill in actual values
-  
+
   > **🚨 SECURITY**: Never commit actual API keys to the repository. Use `.env.local` (gitignored) for real values.
 
 ---
@@ -58,17 +58,20 @@ This document is the single source of truth for all environment-specific setting
 ## Service Providers
 
 ### Netlify
+
 - **Site:** `https://productory-powerups.netlify.app`
 - **Build command:** `npm run build:web`
 - **Publish directory:** `dist-web`
 - **Environment variables:** Set via Netlify UI for each environment
 
 ### Supabase
+
 - **Project URL:** `https://<project>.supabase.co`
 - **API Key variable:** `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - **Service Role Key variable:** `SUPABASE_SERVICE_ROLE_KEY` (never expose in frontend)
 
 ### Clerk
+
 - **Dashboard:** `https://dashboard.clerk.com`
 - **Publishable Key:** `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - **Secret Key:** `CLERK_SECRET_KEY` (backend only)
@@ -77,15 +80,15 @@ This document is the single source of truth for all environment-specific setting
 
 ## Environment Variable Reference
 
-| Variable Name                    | Description                | Used In      | Example Value         |
-|----------------------------------|----------------------------|--------------|----------------------|
-| NEXT_PUBLIC_SUPABASE_URL         | Supabase project URL       | All          | https://...supabase.co|
-| NEXT_PUBLIC_SUPABASE_ANON_KEY    | Supabase anon key          | All          | eyJ...               |
-| SUPABASE_SERVICE_ROLE_KEY        | Supabase service key       | Backend      | eyJ...               |
-| NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY| Clerk public key           | All          | pk_test_...          |
-| CLERK_SECRET_KEY                 | Clerk secret key           | Backend      | sk_test_...          |
-| NEXT_PUBLIC_APP_URL              | App base URL               | All          | http://localhost:3000|
-| NEXT_PUBLIC_EXTENSION_ID         | Chrome extension ID        | All          | chrome-extension://...|
+| Variable Name                     | Description          | Used In | Example Value          |
+| --------------------------------- | -------------------- | ------- | ---------------------- |
+| NEXT_PUBLIC_SUPABASE_URL          | Supabase project URL | All     | https://...supabase.co |
+| NEXT_PUBLIC_SUPABASE_ANON_KEY     | Supabase anon key    | All     | eyJ...                 |
+| SUPABASE_SERVICE_ROLE_KEY         | Supabase service key | Backend | eyJ...                 |
+| NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY | Clerk public key     | All     | pk*test*...            |
+| CLERK_SECRET_KEY                  | Clerk secret key     | Backend | sk*test*...            |
+| NEXT_PUBLIC_APP_URL               | App base URL         | All     | http://localhost:3000  |
+| NEXT_PUBLIC_EXTENSION_ID          | Chrome extension ID  | All     | chrome-extension://... |
 
 ---
 
@@ -104,4 +107,4 @@ This document is the single source of truth for all environment-specific setting
 
 ---
 
-> **Note:** Never commit actual secret values to the repository. Only variable names and example values should appear in this document. 
+> **Note:** Never commit actual secret values to the repository. Only variable names and example values should appear in this document.

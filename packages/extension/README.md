@@ -17,4 +17,4 @@ This Chrome extension extracts slide content from Gamma presentations and genera
 2. Build the extension (see `package.json` scripts)
 3. Load the `src/` directory as an unpacked extension in Chrome
 
-See the documentation for more details. 
+See the documentation for more details.

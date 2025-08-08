@@ -3,17 +3,21 @@
 ## 1. Project Overview
 
 ### Project Name
+
 Gamma Timetable Chrome Extension
 
 ### Project Description
+
 A Chrome browser extension that extracts slide content from Gamma presentations and generates customizable timetables for educators, trainers, and presenters.
 
 ### Development Timeline
+
 - **Phase 1 (MVP)**: 4-6 weeks
 - **Phase 2 (v1.1)**: 2-3 weeks
 - **Phase 3 (Future)**: Ongoing
 
 ### Tech Stack
+
 - **Frontend**: HTML5, CSS3, JavaScript/TypeScript
 - **Framework**: Vanilla JS or lightweight framework (Preact/Alpine.js)
 - **Build Tools**: Webpack/Vite, TypeScript compiler
@@ -80,13 +84,13 @@ interface SlideData {
 
 class GammaExtractor {
   private slides: SlideData[] = [];
-  
+
   extractSlides(): SlideData[] {
     // DOM parsing logic
     const slideElements = document.querySelectorAll('[data-slide-id]');
     return Array.from(slideElements).map(this.parseSlide);
   }
-  
+
   private parseSlide(element: Element): SlideData {
     // Extract title, content, hierarchy
     return {
@@ -94,7 +98,7 @@ class GammaExtractor {
       title: this.extractTitle(element),
       content: this.extractContent(element),
       order: this.getSlideOrder(element),
-      level: this.getHierarchyLevel(element)
+      level: this.getHierarchyLevel(element),
     };
   }
 }
@@ -107,17 +111,17 @@ class GammaExtractor {
 class TimetableUI {
   private container: HTMLElement;
   private items: TimetableItem[] = [];
-  
+
   constructor(container: HTMLElement) {
     this.container = container;
     this.initializeUI();
   }
-  
+
   renderTimetable(slides: SlideData[]): void {
     this.items = slides.map(slide => new TimetableItem(slide));
     this.updateDisplay();
   }
-  
+
   private initializeUI(): void {
     // Create UI structure
     this.container.innerHTML = `
@@ -169,18 +173,21 @@ interface TimetableSettings {
 ### Phase 1: MVP Development (Weeks 1-6)
 
 #### Week 1-2: Foundation
+
 - [ ] Project setup and configuration
 - [ ] Manifest V3 implementation
 - [ ] Basic content script structure
 - [ ] Communication pipeline setup
 
 #### Week 3-4: Core Features
+
 - [ ] DOM extraction algorithm
 - [ ] Sidebar UI implementation
 - [ ] Time calculation logic
 - [ ] Basic CSV export
 
 #### Week 5-6: Integration & Testing
+
 - [ ] Component integration
 - [ ] Error handling
 - [ ] Performance optimization
@@ -189,12 +196,14 @@ interface TimetableSettings {
 ### Phase 2: Enhanced Features (Weeks 7-9)
 
 #### Week 7-8: Additional Features
+
 - [ ] Break management
 - [ ] Multiple export formats
 - [ ] Time templates
 - [ ] UI improvements
 
 #### Week 9: Polish & Release
+
 - [ ] Bug fixes from beta feedback
 - [ ] Documentation
 - [ ] Chrome Web Store submission
@@ -203,22 +212,28 @@ interface TimetableSettings {
 ## 5. Technical Challenges & Solutions
 
 ### Challenge 1: DOM Structure Variations
+
 **Problem**: Gamma may update their DOM structure
-**Solution**: 
+**Solution**:
+
 - Implement flexible selectors
 - Use multiple fallback strategies
 - Add DOM structure detection
 
 ### Challenge 2: Performance with Large Presentations
+
 **Problem**: Extracting 100+ slides may be slow
 **Solution**:
+
 - Implement lazy loading
 - Use web workers for processing
 - Chunk extraction process
 
 ### Challenge 3: Sidebar Space Constraints
+
 **Problem**: Limited width for complex UI
 **Solution**:
+
 - Collapsible sections
 - Compact time controls
 - Tooltip information
@@ -226,6 +241,7 @@ interface TimetableSettings {
 ## 6. Testing Strategy
 
 ### 6.1 Unit Testing
+
 ```javascript
 // Example test for time calculator
 describe('TimeCalculator', () => {
@@ -238,12 +254,14 @@ describe('TimeCalculator', () => {
 ```
 
 ### 6.2 Integration Testing
+
 - Test with sample Gamma presentations
 - Verify extraction accuracy
 - Test export functionality
 - Performance benchmarks
 
 ### 6.3 User Testing
+
 - Beta group of 20-30 users
 - Feedback surveys
 - Usage analytics
@@ -252,20 +270,16 @@ describe('TimeCalculator', () => {
 ## 7. Security Considerations
 
 ### Permissions Required
+
 ```json
 {
-  "permissions": [
-    "activeTab",
-    "storage",
-    "downloads"
-  ],
-  "host_permissions": [
-    "https://gamma.app/*"
-  ]
+  "permissions": ["activeTab", "storage", "downloads"],
+  "host_permissions": ["https://gamma.app/*"]
 }
 ```
 
 ### Security Measures
+
 - Content Security Policy implementation
 - Input sanitization
 - No external API calls
@@ -274,12 +288,14 @@ describe('TimeCalculator', () => {
 ## 8. Performance Optimization
 
 ### Extraction Optimization
+
 - Batch DOM queries
 - Use efficient selectors
 - Minimize reflows
 - Cache extracted data
 
 ### UI Optimization
+
 - Virtual scrolling for long lists
 - Debounced input handlers
 - Efficient re-rendering
@@ -288,6 +304,7 @@ describe('TimeCalculator', () => {
 ## 9. Deployment Strategy
 
 ### Chrome Web Store Submission
+
 1. **Preparation**
    - Privacy policy creation
    - Store listing content
@@ -300,6 +317,7 @@ describe('TimeCalculator', () => {
    - Version updates
 
 ### Version Management
+
 - Semantic versioning (MAJOR.MINOR.PATCH)
 - Automated build process
 - Release notes generation
@@ -308,18 +326,21 @@ describe('TimeCalculator', () => {
 ## 10. Post-Launch Plan
 
 ### Monitoring
+
 - Error tracking (Sentry integration)
 - Usage analytics (privacy-respecting)
 - Performance monitoring
 - User feedback collection
 
 ### Maintenance
+
 - Regular compatibility checks
 - Bug fix releases
 - Feature updates based on feedback
 - Documentation updates
 
 ### Growth Strategy
+
 - Content marketing (tutorials, blog posts)
 - Community engagement
 - Feature request tracking
@@ -328,12 +349,14 @@ describe('TimeCalculator', () => {
 ## 11. Resource Requirements
 
 ### Development Team
+
 - **Lead Developer**: Full-stack JavaScript
 - **UI/UX Designer**: Extension interface design
 - **QA Tester**: Testing and feedback
 - **Technical Writer**: Documentation
 
 ### Tools & Services
+
 - GitHub repository
 - Chrome Developer account ($5 one-time)
 - Testing devices/VMs
@@ -342,21 +365,23 @@ describe('TimeCalculator', () => {
 ## 12. Risk Mitigation
 
 ### Technical Risks
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Gamma DOM changes | High | Robust selectors, quick updates |
-| Performance issues | Medium | Optimization, lazy loading |
-| Browser API changes | Low | Stay updated with Chrome docs |
+
+| Risk                | Impact | Mitigation                      |
+| ------------------- | ------ | ------------------------------- |
+| Gamma DOM changes   | High   | Robust selectors, quick updates |
+| Performance issues  | Medium | Optimization, lazy loading      |
+| Browser API changes | Low    | Stay updated with Chrome docs   |
 
 ### Business Risks
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Low adoption | Medium | Marketing, user education |
-| Competition | Low | Unique features, fast iteration |
-| Support burden | Medium | Good documentation, FAQ |
+
+| Risk           | Impact | Mitigation                      |
+| -------------- | ------ | ------------------------------- |
+| Low adoption   | Medium | Marketing, user education       |
+| Competition    | Low    | Unique features, fast iteration |
+| Support burden | Medium | Good documentation, FAQ         |
 
 ---
 
-*Document Version: 1.0*  
-*Last Updated: [Current Date]*  
-*Status: Draft* 
+_Document Version: 1.0_  
+_Last Updated: [Current Date]_  
+_Status: Draft_

@@ -3,7 +3,7 @@
     /* Language and Environment */
     "target": "es2020",
     "lib": ["es2020", "dom", "dom.iterable"],
-    
+
     /* Modules */
     "module": "es2020",
     "moduleResolution": "node",
@@ -13,29 +13,25 @@
       "@extension/*": ["packages/extension/*"],
       "@web/*": ["packages/web/*"]
     },
-    "rootDirs": [
-      "packages/shared",
-      "packages/extension", 
-      "packages/web"
-    ],
-    
+    "rootDirs": ["packages/shared", "packages/extension", "packages/web"],
+
     /* JavaScript Support */
     "allowJs": true,
     "checkJs": false,
-    
+
     /* Emit */
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist-types",
     "removeComments": false,
-    
+
     /* Interop Constraints */
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    
+
     /* Type Checking */
     "strict": true,
     "noImplicitAny": true,
@@ -45,22 +41,13 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    
+
     /* Completeness */
     "skipLibCheck": true,
-    
+
     /* Chrome Extension specific */
     "types": ["chrome", "node"]
   },
-  "include": [
-    "packages/**/*",
-    "types/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "dist-*",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ]
+  "include": ["packages/**/*", "types/**/*"],
+  "exclude": ["node_modules", "dist", "dist-*", "**/*.test.ts", "**/*.spec.ts"]
 }

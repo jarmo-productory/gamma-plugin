@@ -5,7 +5,11 @@
  */
 
 // Import from shared StorageManager
-import { saveData as sharedSaveData, loadData as sharedLoadData, debounce as sharedDebounce } from '@shared/storage';
+import {
+  saveData as sharedSaveData,
+  loadData as sharedLoadData,
+  debounce as sharedDebounce,
+} from '@shared/storage';
 
 /**
  * Saves data to chrome.storage.local.
@@ -37,4 +41,4 @@ export function debounce(func, delay) {
 }
 
 // Legacy support: Also export the original functions for compatibility
-export { saveData as saveDataLegacy, loadData as loadDataLegacy, debounce as debounceLegacy }; 
+export { saveData as saveDataLegacy, loadData as loadDataLegacy, debounce as debounceLegacy };

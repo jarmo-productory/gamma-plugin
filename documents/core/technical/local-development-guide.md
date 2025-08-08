@@ -22,6 +22,7 @@ Before you begin, ensure you have the following software installed on your machi
 ## 2. Initial Project Setup
 
 1.  **Clone the Repository:**
+
     ```bash
     git clone https://github.com/jarmo-productory/gamma-plugin.git
     cd gamma-plugin
@@ -40,13 +41,13 @@ API keys and environment-specific settings are managed in a `.env.local` file, w
 
 1.  **Create the Environment File:**
     Copy the template file to create your local configuration.
+
     ```bash
     cp .env.example .env.local
     ```
 
 2.  **Fill in the Values:**
     Open `.env.local` and populate it with the correct values.
-
     - **`NEXT_PUBLIC_SUPABASE_URL`**: Get this after running `supabase start`.
     - **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**: Get this after running `supabase start`.
     - **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`**: Get this from your Clerk Dashboard.
@@ -61,9 +62,11 @@ The project requires two main services to be running concurrently: the Supabase 
 
 1.  **Start Supabase Services:**
     First, ensure Docker Desktop is running. Then, start the local Supabase instance.
+
     ```bash
     supabase start
     ```
+
     This will spin up the database, authentication, and storage services. It will also provide you with the local API URL and anon key for your `.env.local` file.
 
 2.  **Start the Frontend Application:**
@@ -81,6 +84,7 @@ For securely testing authentication flows that involve cross-domain communicatio
 
 1.  **Install `mkcert`:**
     This tool creates locally-trusted development certificates.
+
     ```bash
     brew install mkcert
     mkcert -install
@@ -88,6 +92,7 @@ For securely testing authentication flows that involve cross-domain communicatio
 
 2.  **Generate Certificates:**
     This command creates a `certs` directory and generates the key/certificate files.
+
     ```bash
     mkdir certs && mkcert -key-file certs/key.pem -cert-file certs/cert.pem localhost 127.0.0.1 ::1
     ```
@@ -100,6 +105,7 @@ For securely testing authentication flows that involve cross-domain communicatio
 ## 6. Troubleshooting
 
 ### Supabase Port Conflict
+
 - **Error**: `Bind for 0.0.0.0:54322 failed: port is already allocated`
 - **Cause**: Another project (Docker container) is already using the default Supabase database port.
 - **Solution**: Stop the other running Supabase instance. You can find its project ID in the error message.
@@ -109,4 +115,5 @@ For securely testing authentication flows that involve cross-domain communicatio
   ```
 
 ### General Issues
-- If you encounter issues, try stopping all services (`supabase stop` and Ctrl+C in the Vite terminal), running `npm install` again, and restarting. 
+
+- If you encounter issues, try stopping all services (`supabase stop` and Ctrl+C in the Vite terminal), running `npm install` again, and restarting.
