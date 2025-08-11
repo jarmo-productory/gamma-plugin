@@ -1,6 +1,6 @@
 # Project State & Mission: Gamma Timetable Extension
 
-**Last Updated:** 2025-08-11T11:10:00Z by Cursor Agent
+**Last Updated:** 2025-08-11T12:30:00Z by Cursor Agent
 
 ---
 
@@ -56,10 +56,10 @@ Active
 
 Milestone (Next)
 - [ ] M1: Deploy production-ready pairing backend
-  - [ ] Netlify Functions: register/link/exchange/refresh/protected-ping
-  - [ ] Supabase: `devices` table + RLS + migrations applied (local+remote)
-  - [ ] Config: Env vars on Netlify (SUPABASE_URL/SERVICE_ROLE, JWT_SECRET; Clerk later)
-  - [ ] Extension: switch `apiBaseUrl` to Netlify preview; verify e2e flow
+  - [~] Netlify Functions: register/link/exchange/refresh/protected-ping (local verified on `netlify dev`; deploy pending)
+  - [x] Supabase: `devices` table + RLS + migrations applied (remote linked: `dknqqcnnbcqujeffbmmb`)
+  - [x] Config: Env vars on Netlify dev (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, JWT_SECRET); prod later
+  - [x] Extension: default `apiBaseUrl` → `http://localhost:8888` (Netlify dev)
 
 Completed
 - [x] `task-s1-01`: Netlify CI/CD pipeline configured for web dashboard
@@ -270,52 +270,36 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
 
 ### Handoff (Current)
 
-- **What’s implemented today**
-  - Web‑first pairing flow scaffold
-    - `packages/shared/auth/device.ts`: register/exchange/poll, token storage, clearToken
-    - `packages/shared/config/index.ts`: added `apiBaseUrl`, `webBaseUrl` with localhost defaults
-    - `packages/extension/sidebar/sidebar.js`: Login opens `${WEB_URL}/sign-in?source=extension&code=<code>`, polls `exchange`, stores device token, flips button to Logout
-    - `packages/shared/auth/index.ts`: treats device token presence as authenticated; Logout clears token
-  - Minimal local dev API (in‑memory) and sign‑in stub
-    - File: `dev/pairing-api.js`
-    - Endpoints: `POST /api/devices/register | link | exchange`
-    - Page: `GET /sign-in?code=...` with a "Log in" button that calls `link`
-  - Build/version
-    - Version bumped to `0.0.22`, manifest synced
-    - Extension builds clean; lint passes
+Today
+- Linked Netlify site (`9652d33b-9bc4-4c79-8d8f-702cf4dbe787`) and installed function deps
+- Implemented Netlify Functions: `devices-register|link|exchange|refresh`, `protected-ping`
+- Linked Supabase project `dknqqcnnbcqujeffbmmb` and pushed `devices` migration (with RLS)
+- Set dev envs: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`
+- Verified flow locally (Netlify dev): register → link → exchange → protected ping OK
+- Switched extension default `apiBaseUrl` to `http://localhost:8888`
 
-- **How to run (local)**
-  - Start dev pairing API: `npm run dev:pairing-api` (serves on http://localhost:3000)
-  - Build extension: `npm run build:extension` and reload unpacked extension
-  - Login flow:
-    1. Click Login in sidebar → opens `http://localhost:3000/sign-in?source=extension&code=<CODE>`
-    2. Click "Log in" on the page → pairs device
-    3. Sidebar console logs: `Device linked; token stored.` and button changes to Logout
-    4. Logout from toolbar clears device token and flips back to Login
+Tomorrow Plan
+- Integrate real Clerk SignIn page (dashboard) and make it call `/api/devices/link` after auth
+- Replace `x-dev-user-id` with Clerk session verification in functions
+- Point extension sign-in URL to dashboard sign-in; validate full auth+pairing
+- Add rate-limiting/logs to functions; add negative-path tests
+- Prepare deploy preview and update extension `apiBaseUrl` to preview URL for QA
 
-- **What works**
-  - Pairing code generation and storage in extension
-  - Opening web sign‑in page with the code
-  - Linking via stub page and polling `exchange` until token is received
-  - Device token persisted; UI toggles Login/Logout accordingly
+Quick start (local)
+```bash
+# 1) Supabase + migrations
+supabase start
+supabase db reset
 
-- **Known gaps / next steps (Monday)**
-  1. Backend API hardening (still in-memory)
-     - Implement `POST /api/devices/refresh` and token rotation
-     - Add basic rate limiting and logs; convert token to signed JWT (HS256) for dev
-     - Unit tests for register/link/exchange/refresh negative paths
-  2. Dashboard integration
-     - Replace stub `/sign-in` page with real Clerk SignIn page that calls `/api/devices/link { code }` after auth
-     - Success page: “You are now logged in and can close this page.” (kept)
-  3. Extension integration
-     - Add a minimal protected API call using the saved device token to prove authorization path
-     - Persist and surface basic user state (email) once available from web side
-  4. Data model & persistence
-     - Migrate dev API to Netlify/Next.js route with `devices` table (`device_id`, `code_hash`, `code_expires_at`, `user_id`, `linked_at`, timestamps)
-     - Store `code` as hash; TTL ~5m; single-use
-  5. Production prep
-     - Stabilize CRX ID for dev and record Chrome Web Store ID for prod; update Clerk `allowed_origins`
-     - Env wiring for Netlify (JWT secret, Clerk keys)
+# 2) Netlify functions (port 8888)
+netlify dev
+
+# 3) Smoke test
+curl -s -X POST http://localhost:8888/.netlify/functions/devices-register
+curl -s -X POST http://localhost:8888/.netlify/functions/devices-link -H 'Content-Type: application/json' -H 'x-dev-user-id: dev-user' -d '{"code":"<CODE>"}'
+curl -s -X POST http://localhost:8888/.netlify/functions/devices-exchange -H 'Content-Type: application/json' -d '{"deviceId":"<DEVICE_ID>","code":"<CODE>"}'
+curl -s http://localhost:8888/.netlify/functions/protected-ping -H "Authorization: Bearer <TOKEN>"
+```
 
 - **Testing checklist**
   - [ ] Fresh code → Login → link → token saved (console confirms)
