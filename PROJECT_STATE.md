@@ -1,8 +1,26 @@
 # Project State & Mission: Gamma Timetable Extension
 
-**Last Updated:** 2025-08-11T09:20:00Z by Cursor Agent
+**Last Updated:** 2025-08-11T10:00:00Z by Cursor Agent
 
 ---
+
+## How to use this document (Operating System for the project)
+
+This file is the single source of truth for planning and status. It is organized top → down:
+
+- Key/Legend
+  - [ ] = To do
+  - [~] = In progress
+  - [x] = Done
+  - [>] = Deferred
+- High-level Mission (why we build)
+- Mid-level OKRs (what success looks like this quarter)
+- Tactical Sprint Board (what we are doing now)
+- Technical Plans (how we do it)
+- Ops Runbook (commands, environments)
+- Changelog & Agent Notes (what changed and when)
+
+Update policy: Keep this file current after every meaningful change (code, plan, or environment). Prefer concise checklists and links to code over prose.
 
 ## 🎯 High-Level Mission
 
@@ -29,14 +47,17 @@ Our mission is to transform the Gamma Timetable Extension from a standalone brow
 
 **Goal:** Build upon Sprint 0's foundation to implement live user authentication with Clerk and create the initial web dashboard shell. The extension must remain fully functional in offline mode.
 
-### Tasks:
+### Sprint Board
 
-- **[Completed]** `task-s1-01`: Configure Netlify CI/CD pipeline for the web dashboard.
-- **[Completed]** `task-s1-02`: Set up Supabase & Clerk infrastructure, including local dev environment and configurations.
-- **[Completed]** `task-s1-03`: Design and migrate the core database schema for `users` and `presentations`.
-- **[In Progress]** `task-s1-04`: Implement the authentication UI in the extension's sidebar to reflect user state (signed in/out).
-- **[Not Started]** `task-s1-05`: Implement the full web dashboard UI (landing page, sign-in pages, dashboard shell).
-- **[Not Started]** `task-s1-06`: Implement the token storage strategy and secure extension-to-web communication.
+Active
+- [~] `task-s1-04`: Implement authentication UI in the extension sidebar (web-first pairing working; token in storage; toolbar toggles Login/Logout; protected ping OK)
+- [ ] `task-s1-05`: Implement web dashboard UI (landing, Clerk SignIn, dashboard shell)
+- [ ] `task-s1-06`: Token storage strategy and secure extension↔web communication (device JWT refresh/rotation in backend; minimal user state display)
+
+Completed
+- [x] `task-s1-01`: Netlify CI/CD pipeline configured for web dashboard
+- [x] `task-s1-02`: Supabase & Clerk infrastructure baseline (local dev configs)
+- [x] `task-s1-03`: Core DB schema for `users` and `presentations`
 
 ---
 
@@ -44,7 +65,7 @@ Our mission is to transform the Gamma Timetable Extension from a standalone brow
 
 ### Clerk Chrome Extension Integration (In Progress)
 
-**Version:** v0.0.21
+**Version:** v0.0.24
 **Status:** Code quality infrastructure complete, authentication popup appears but Google login button is non-functional
 
 **Progress Made:**
@@ -213,6 +234,12 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
   - Clerk: add `allowed_origins` for `http://localhost:3000` and (if needed) `chrome-extension://<DEV_ID>` via API
   - Optional: set consistent CRX ID for dev to stabilize `<DEV_ID>`
   - Run: `netlify dev` (APIs) + Next dev + extension loaded unpacked
+  - Supabase local (Studio + DB) via CLI:
+    - `supabase start` → start local stack (DB at 54322, Studio at 54323)
+    - `supabase db reset` → reset + apply migrations + seed
+    - `supabase db push` → apply migrations to the linked remote project
+    - `supabase link --project-ref <ref>` → link this repo to a remote project
+    - `supabase db diff --use-migra -f <name>` → generate new migration from local changes
 
 - **Production**
   - Publish extension → stable `<STORE_ID>`; update Clerk `allowed_origins` with `chrome-extension://<STORE_ID>` and add redirect URLs if used
