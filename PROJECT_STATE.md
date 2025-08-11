@@ -1,6 +1,6 @@
 # Project State & Mission: Gamma Timetable Extension
 
-**Last Updated:** 2025-08-11T10:00:00Z by Cursor Agent
+**Last Updated:** 2025-08-11T11:10:00Z by Cursor Agent
 
 ---
 
@@ -53,6 +53,13 @@ Active
 - [~] `task-s1-04`: Implement authentication UI in the extension sidebar (web-first pairing working; token in storage; toolbar toggles Login/Logout; protected ping OK)
 - [ ] `task-s1-05`: Implement web dashboard UI (landing, Clerk SignIn, dashboard shell)
 - [ ] `task-s1-06`: Token storage strategy and secure extension↔web communication (device JWT refresh/rotation in backend; minimal user state display)
+
+Milestone (Next)
+- [ ] M1: Deploy production-ready pairing backend
+  - [ ] Netlify Functions: register/link/exchange/refresh/protected-ping
+  - [ ] Supabase: `devices` table + RLS + migrations applied (local+remote)
+  - [ ] Config: Env vars on Netlify (SUPABASE_URL/SERVICE_ROLE, JWT_SECRET; Clerk later)
+  - [ ] Extension: switch `apiBaseUrl` to Netlify preview; verify e2e flow
 
 Completed
 - [x] `task-s1-01`: Netlify CI/CD pipeline configured for web dashboard
