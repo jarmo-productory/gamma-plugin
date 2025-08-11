@@ -346,6 +346,7 @@ function renderTimetable(timetable) {
   exportOptionsContainer.innerHTML = `
     <button id="export-xlsx-btn" class="export-btn"><img src="/assets/xlsx.svg" alt="Excel">Excel</button>
     <button id="auth-login-toolbar-btn" class="export-btn"><span>🔐</span><span id="auth-toolbar-text">Login</span></button>
+    <button id="test-api-btn" class="export-btn">Test API</button>
   `;
   toolbar.appendChild(exportOptionsContainer);
 
@@ -361,6 +362,7 @@ function renderTimetable(timetable) {
 
   const loginToolbarBtn = exportOptionsContainer.querySelector('#auth-login-toolbar-btn');
   const loginToolbarText = exportOptionsContainer.querySelector('#auth-toolbar-text');
+  const testApiBtn = exportOptionsContainer.querySelector('#test-api-btn');
   if (loginToolbarBtn && loginToolbarText) {
     const wireAuthAction = async () => {
       const authed = await authManager.isAuthenticated();
@@ -406,6 +408,25 @@ function renderTimetable(timetable) {
       }
     };
     wireAuthAction();
+  }
+
+  if (testApiBtn) {
+    testApiBtn.onclick = async () => {
+      try {
+        const cfg = configManager.getConfig();
+        const apiUrl = cfg.environment.apiBaseUrl || 'http://localhost:3000';
+        const res = await deviceAuth.authorizedFetch(apiUrl, '/api/protected/ping', {
+          method: 'GET',
+        });
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const data = await res.json();
+        console.log('[SIDEBAR] Protected ping OK:', data);
+        updateDebugInfo(lastSlides, 'Protected ping OK');
+      } catch (err) {
+        console.error('[SIDEBAR] Protected ping failed:', err);
+        updateDebugInfo(lastSlides, 'Protected ping failed');
+      }
+    };
   }
 
   timetable.items.forEach(item => {
@@ -516,8 +537,7 @@ async function initializeInfrastructure() {
     // Surface build-time Clerk key presence for debugging
     // Note: value is inlined at build time
     // Compile-time flag from Vite define
-    // eslint-disable-next-line no-undef
-    console.log(
+  console.log(
       '[SIDEBAR] Clerk key present at build:',
       typeof __HAS_CLERK_KEY__ !== 'undefined' ? __HAS_CLERK_KEY__ : 'unknown'
     );

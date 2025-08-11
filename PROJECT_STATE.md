@@ -1,6 +1,6 @@
 # Project State & Mission: Gamma Timetable Extension
 
-**Last Updated:** 2025-08-08T18:15:00Z by Claude Code
+**Last Updated:** 2025-08-11T09:00:00Z by Cursor Agent
 
 ---
 
@@ -166,6 +166,13 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
 - **2025-08-07:** **Sprint 0: Foundation & Architecture Enhancement - COMPLETE.** Successfully refactored the codebase into a monorepo structure, introduced abstraction layers for storage/auth/config, and prepared the project for backend integration with zero user-facing changes.
 - **2025-08-07:** Initialized `PROJECT_STATE.md` to track mission, OKRs, and sprint progress.
 - **2025-08-08:** Web‑first login + pairing (initial slice): added device pairing module, sidebar wiring to open web sign-in and poll token, local dev API with register/link/exchange + stub sign-in page; bumped extension to v0.0.22 and verified builds/lints.
+
+- **2025-08-11:** Backend hardening (local dev):
+  - Added JWT signing/verification (HS256) to `dev/pairing-api.js`
+  - Implemented `POST /api/devices/refresh` and `GET /api/protected/ping`
+  - Extended `packages/shared/auth/device.ts` with token refresh + `authorizedFetch`
+  - Sidebar: added "Test API" button to hit protected endpoint and confirm auth path
+  - Bumped version to `0.0.23` and built extension successfully
 
 ### Build Plan: Web‑first Login + Pairing
 

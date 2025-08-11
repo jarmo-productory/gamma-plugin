@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // Minimal local dev API + page for device pairing (in-memory)
 // Endpoints:
 //  - GET  /sign-in?code=XYZ -> simple page to "Log in" and link code
@@ -6,11 +7,13 @@
 //  - POST /api/devices/exchange -> { deviceId, code } -> { token, expiresAt } when linked
 
 const http = require('http');
-const { randomBytes } = require('crypto');
+const { randomBytes, createHmac } = require('crypto');
+const { Buffer } = require('buffer');
 
 const PORT = 3000;
 const CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const JWT_SECRET = process.env.DEV_JWT_SECRET || 'dev-secret';
 
 /** @type {Record<string, { deviceId: string; code: string; codeExpiresAt: number; linked: boolean; userId?: string }>} */
 const codeStore = {};
@@ -20,8 +23,8 @@ function json(res, status, body, headers = {}) {
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     ...headers,
   });
   res.end(payload);
@@ -34,8 +37,8 @@ function notFound(res) {
 function noContent(res) {
   res.writeHead(204, {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   });
   res.end();
 }
@@ -65,6 +68,46 @@ function newCode() {
 
 function now() {
   return Date.now();
+}
+
+// --- JWT helpers (HS256) ---
+function base64url(input) {
+  return Buffer.from(input)
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function signHS256(data, secret) {
+  return createHmac('sha256', secret).update(data).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+function signJWT(payloadObj, secret, ttlMs) {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const nowSec = Math.floor(now() / 1000);
+  const expSec = nowSec + Math.floor((ttlMs || TOKEN_TTL_MS) / 1000);
+  const payload = { ...payloadObj, iat: nowSec, exp: expSec };
+  const headerB64 = base64url(JSON.stringify(header));
+  const payloadB64 = base64url(JSON.stringify(payload));
+  const toSign = `${headerB64}.${payloadB64}`;
+  const sig = signHS256(toSign, secret);
+  return `${toSign}.${sig}`;
+}
+
+function verifyJWT(token, secret) {
+  try {
+    const [h, p, s] = token.split('.');
+    if (!h || !p || !s) return { ok: false, error: 'malformed' };
+    const expected = signHS256(`${h}.${p}`, secret);
+    if (expected !== s) return { ok: false, error: 'bad_signature' };
+    const payload = JSON.parse(Buffer.from(p, 'base64').toString('utf8'));
+    if (!payload.exp || typeof payload.exp !== 'number') return { ok: false, error: 'no_exp' };
+    if (payload.exp * 1000 < now()) return { ok: false, error: 'expired' };
+    return { ok: true, payload };
+  } catch {
+    return { ok: false, error: 'invalid_token' };
+  }
 }
 
 const server = http.createServer(async (req, res) => {
@@ -113,6 +156,17 @@ const server = http.createServer(async (req, res) => {
     return res.end(html);
   }
 
+  // Protected ping (dev): verify token
+  if (method === 'GET' && url === '/api/protected/ping') {
+    const auth = req.headers['authorization'] || '';
+    const parts = Array.isArray(auth) ? auth[0] : auth;
+    const token = parts.startsWith('Bearer ') ? parts.slice(7) : '';
+    if (!token) return json(res, 401, { error: 'missing_token' });
+    const v = verifyJWT(token, JWT_SECRET);
+    if (!v.ok) return json(res, 401, { error: v.error });
+    return json(res, 200, { ok: true, deviceId: v.payload.deviceId, userId: v.payload.userId });
+  }
+
   if (method !== 'POST') return notFound(res);
 
   if (url === '/api/devices/register') {
@@ -146,18 +200,28 @@ const server = http.createServer(async (req, res) => {
     if (rec.codeExpiresAt < now()) return json(res, 410, { error: 'code_expired' });
     if (!rec.linked || !rec.userId) return json(res, 425, { error: 'not_ready' });
     const expiresAt = now() + TOKEN_TTL_MS;
-    // Minimal dev token (not a real JWT)
-    const token = `dev.${Buffer.from(
-      JSON.stringify({ deviceId, userId: rec.userId, exp: Math.floor(expiresAt / 1000) })
-    ).toString('base64url')}`;
+    const token = signJWT({ deviceId, userId: rec.userId }, JWT_SECRET, TOKEN_TTL_MS);
     return json(res, 200, { token, expiresAt: new Date(expiresAt).toISOString() });
+  }
+
+  if (url === '/api/devices/refresh') {
+    const auth = req.headers['authorization'] || '';
+    const parts = Array.isArray(auth) ? auth[0] : auth;
+    const token = parts.startsWith('Bearer ') ? parts.slice(7) : '';
+    if (!token) return json(res, 401, { error: 'missing_token' });
+    const v = verifyJWT(token, JWT_SECRET);
+    if (!v.ok) return json(res, 401, { error: v.error });
+    const { deviceId, userId } = v.payload || {};
+    if (!deviceId || !userId) return json(res, 400, { error: 'invalid_claims' });
+    const expiresAt = now() + TOKEN_TTL_MS;
+    const newToken = signJWT({ deviceId, userId }, JWT_SECRET, TOKEN_TTL_MS);
+    return json(res, 200, { token: newToken, expiresAt: new Date(expiresAt).toISOString() });
   }
 
   return notFound(res);
 });
 
 server.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`[pairing-api] listening on http://localhost:${PORT}`);
 });
 

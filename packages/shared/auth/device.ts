@@ -1,4 +1,5 @@
 import { StorageManager } from '../storage';
+/* global fetch, Headers, Response, RequestInit */
 
 export interface DeviceInfo {
   deviceId: string;
@@ -54,6 +55,25 @@ export class DeviceAuth {
     await this.storage.save(STORAGE_KEYS.deviceToken, null as unknown as DeviceToken);
   }
 
+  private isExpired(iso: string): boolean {
+    const exp = Date.parse(iso);
+    if (Number.isNaN(exp)) return true;
+    return Date.now() >= exp - 5_000; // treat as expired if within 5s
+  }
+
+  async getValidTokenOrRefresh(apiBaseUrl: string): Promise<DeviceToken | null> {
+    const existing = await this.getStoredToken();
+    if (!existing) return null;
+    if (!this.isExpired(existing.expiresAt)) return existing;
+    try {
+      const refreshed = await this.refresh(apiBaseUrl, existing.token);
+      if (refreshed) return refreshed;
+    } catch (err) {
+      console.warn('[DeviceAuth] token refresh failed:', err);
+    }
+    return null;
+  }
+
   async registerDevice(apiBaseUrl: string): Promise<DeviceInfo> {
     const res = await fetch(`${apiBaseUrl}/api/devices/register`, {
       method: 'POST',
@@ -105,6 +125,35 @@ export class DeviceAuth {
     return data;
   }
 
+  async refresh(apiBaseUrl: string, bearerToken: string): Promise<DeviceToken | null> {
+    const res = await fetch(`${apiBaseUrl}/api/devices/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${bearerToken}`,
+      },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as DeviceToken;
+    await this.saveToken(data);
+    return data;
+  }
+
+  async authorizedFetch(
+    apiBaseUrl: string,
+    path: string,
+    init?: RequestInit
+  ): Promise<Response> {
+    const token = await this.getValidTokenOrRefresh(apiBaseUrl);
+    if (!token) throw new Error('not_authenticated');
+    const url = path.startsWith('http') ? path : `${apiBaseUrl.replace(/\/$/, '')}${path}`;
+    const headers = new Headers(init?.headers || {});
+    headers.set('Authorization', `Bearer ${token.token}`);
+    headers.set('Content-Type', headers.get('Content-Type') || 'application/json');
+    return fetch(url, { ...init, headers });
+  }
+
   async pollExchangeUntilLinked(
     apiBaseUrl: string,
     deviceId: string,
@@ -114,15 +163,14 @@ export class DeviceAuth {
     const interval = options?.intervalMs ?? DEFAULT_POLL_INTERVAL_MS;
     const maxWait = options?.maxWaitMs ?? DEFAULT_MAX_WAIT_MS;
     const start = Date.now();
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    // polling loop with timeout
+    for (;;) {
       if (Date.now() - start > maxWait) return null;
       try {
         const token = await this.exchange(apiBaseUrl, deviceId, code);
         if (token) return token;
       } catch (err) {
         // Log and continue polling
-        // eslint-disable-next-line no-console
         console.warn('[DeviceAuth] exchange error (will retry):', err);
       }
       await new Promise(r => setTimeout(r, interval));
