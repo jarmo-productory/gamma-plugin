@@ -381,7 +381,8 @@ function renderTimetable(timetable) {
             const cfg = configManager.getConfig();
             const apiUrl = cfg.environment.apiBaseUrl || 'http://localhost:3000';
             const webUrl = cfg.environment.webBaseUrl || 'http://localhost:3000';
-            const info = await deviceAuth.getOrRegisterDevice(apiUrl);
+            // Always register a fresh code to avoid stale codes if the dev server restarted
+            const info = await deviceAuth.registerDevice(apiUrl);
             const url = deviceAuth.buildSignInUrl(webUrl, info.code);
             if (chrome?.tabs?.create) {
               chrome.tabs.create({ url });

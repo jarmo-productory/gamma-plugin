@@ -1,6 +1,6 @@
 # Project State & Mission: Gamma Timetable Extension
 
-**Last Updated:** 2025-08-11T09:00:00Z by Cursor Agent
+**Last Updated:** 2025-08-11T09:20:00Z by Cursor Agent
 
 ---
 
@@ -173,6 +173,8 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
   - Extended `packages/shared/auth/device.ts` with token refresh + `authorizedFetch`
   - Sidebar: added "Test API" button to hit protected endpoint and confirm auth path
   - Bumped version to `0.0.23` and built extension successfully
+  - Updated login flow to always register a fresh pairing code to avoid stale codes after dev server restarts
+  - Verified end-to-end: "Protected ping OK" with `deviceId` and `userId` in sidebar console
 
 ### Build Plan: Web‑first Login + Pairing
 
