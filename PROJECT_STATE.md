@@ -261,7 +261,7 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
 
 ---
 
-### Handoff Notes (2025-08-08)
+### Handoff (Current)
 
 - **What’s implemented today**
   - Web‑first pairing flow scaffold
@@ -323,106 +323,10 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
 
 ---
 
-## 📋 Monday Handoff Summary (2025-08-08 Weekend)
+## Archive (historical handoffs; likely outdated but retained for context)
 
-### 🎯 **Current Status - Ready for Sprint 1 Continuation**
+This section contains previous handoff summaries and notes that are not current. Useful for archaeology; do not treat as source of truth for active work.
 
-**What's Complete Today:**
-- ✅ **Unit Testing Infrastructure** (89 tests, all passing)
-- ✅ **CLAUDE.md Documentation** (complete full-stack architecture)
-- ✅ **Web-first Authentication Flow** (device pairing scaffold working)
-- ✅ **Code Quality Pipeline** (ESLint, Prettier, TypeScript strict mode)
+### Monday Handoff Summary (2025-08-08 Weekend)
 
-**Extension Version:** v0.0.22 (builds clean, pairing flow functional)
-
-### 🚀 **Priority Tasks for Monday Resumption**
-
-**High Priority (Sprint 1 completion):**
-1. **Backend API Hardening** - Convert in-memory dev API to production-ready Next.js routes with JWT tokens
-2. **Clerk Integration** - Replace stub sign-in page with real Clerk authentication + device pairing 
-3. **Extension Protected API** - Add authenticated API call to prove end-to-end token flow
-4. **Supabase Integration** - Migrate to `devices` table with proper hashing and TTL
-
-**Medium Priority (Sprint 1+):**
-1. **Web Dashboard Shell** - Implement basic presentation management UI
-2. **Timetable Logic Tests** - Extend unit tests to cover slide processing algorithms  
-3. **Export Function Tests** - Add tests for CSV/Excel/PDF generation functionality
-
-### 🔧 **Development Environment - Ready to Go**
-
-**Local Setup Commands:**
-```bash
-# Start dev environment (3 terminals)
-npm run dev:pairing-api     # Backend API (port 3000)
-npm run build:extension     # Extension build
-npm run test               # Run all unit tests
-
-# Code quality
-npm run quality            # Lint + format + type check
-npm run test:ui           # Interactive test runner
-```
-
-**Authentication Flow Working:**
-1. Click Login in sidebar → opens web page with pairing code
-2. Click "Log in" on page → device links to user  
-3. Extension polls and receives token → UI updates to Logout
-4. Logout clears token and resets to Login state
-
-### 📊 **Test Coverage - Solid Foundation**
-
-**89 tests across core modules:**
-- **Configuration System** (28 tests): Sprint-based feature flags, environment security, user preferences
-- **Authentication System** (31 tests): Device registration, token exchange, polling with timers, error handling  
-- **Storage Abstraction** (30 tests): Chrome storage wrapper, versioning, legacy compatibility, sync queue
-
-**Testing Strategy Applied:**
-1. Pure functions first (highest ROI)
-2. Business logic with mocked dependencies  
-3. Integration points with controlled time
-4. Edge cases and error boundaries
-
-### 🎨 **Architecture - Well-Documented**
-
-**CLAUDE.md Updated with:**
-- Complete monorepo structure documentation
-- Web-first authentication strategy explanation
-- Sprint-based development methodology
-- Backend infrastructure (Supabase + Netlify) 
-- Full-stack data flow diagrams
-- Testing recommendations for each component
-
-**PROJECT_STATE.md Tracking:**
-- High-level mission and OKRs
-- Sprint 1 task breakdown with completion status
-- Technical implementation details
-- Handoff notes for seamless continuation
-
-### ⚠️ **Known Issues & Next Steps**
-
-**Current Blockers Resolved:**
-- ✅ Unit testing framework operational
-- ✅ Authentication pairing flow working
-- ✅ Code quality pipeline functional
-- ✅ Documentation up to date
-
-**Monday Focus Areas:**
-1. **JWT Implementation** - Replace simple tokens with signed JWTs for security
-2. **Database Persistence** - Move from in-memory to Supabase `devices` table
-3. **Real Authentication** - Integrate Clerk SDK in web dashboard
-4. **Protected Routes** - Add token validation for API endpoints
-5. **Rate Limiting** - Add basic DDoS protection to device registration
-
-**Testing Gaps to Fill Monday:**
-- Timetable generation algorithms (duration calculations, reconciliation)
-- Export functionality (CSV/Excel/PDF generation)
-- API endpoint integration tests with database
-
-### 🏁 **Success Criteria for Next Sprint Completion**
-
-- [ ] Full authentication flow: Extension → Web (Clerk) → Token → Protected API
-- [ ] Backend API deployed to Netlify with Supabase integration
-- [ ] JWT token rotation and validation working
-- [ ] Web dashboard shell displaying user state
-- [ ] Unit tests extended to timetable and export logic (target: 120+ tests)
-
-**Project is in excellent state for Monday resumption. All foundations solid, clear next steps identified, comprehensive documentation and testing in place.**
+... [content preserved above in version control; omitted here for brevity] ...
