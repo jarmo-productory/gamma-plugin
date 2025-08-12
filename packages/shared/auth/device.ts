@@ -1,5 +1,5 @@
 import { StorageManager } from '../storage';
-/* global fetch, Headers, Response, RequestInit */
+/* global Headers, Response, RequestInit */
 
 export interface DeviceInfo {
   deviceId: string;

@@ -3,14 +3,43 @@
   functions = "netlify/functions"
 
 [dev]
-  framework = "#custom"
-  targetPort = 3000
-  port = 8888
+  framework = "#static"
+  port = 3000
   autoLaunch = false
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/devices/register"
+  to = "/.netlify/functions/devices-register"
+  status = 200
+
+[[redirects]]
+  from = "/api/devices/link"
+  to = "/.netlify/functions/devices-link"
+  status = 200
+
+[[redirects]]
+  from = "/api/devices/exchange"
+  to = "/.netlify/functions/devices-exchange"
+  status = 200
+
+[[redirects]]
+  from = "/api/devices/refresh"
+  to = "/.netlify/functions/devices-refresh"
+  status = 200
+
+[[redirects]]
+  from = "/api/protected/ping"
+  to = "/.netlify/functions/protected-ping"
+  status = 200
+
+[[redirects]]
+  from = "/sign-in"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/"
+  to = "/index.html"
   status = 200
 
 

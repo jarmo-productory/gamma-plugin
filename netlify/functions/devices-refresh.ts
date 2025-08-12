@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import crypto from 'crypto';
+import { json, getClientIp, rateLimit, log } from './_utils';
 
 function signHS256(data: string, secret: string): string {
   return crypto.createHmac('sha256', secret).update(data).digest('base64url');
@@ -38,19 +39,22 @@ const TOKEN_TTL_MS = 60 * 60 * 1000;
 
 export const handler: Handler = async (event) => {
   try {
-    if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
+    if (event.httpMethod !== 'POST') return json(405, 'Method Not Allowed');
+    const rl = rateLimit('refresh', getClientIp(event), 120, 60_000);
+    if (!rl.allowed) return json(429, { error: 'rate_limited', retryAfter: rl.retryAfter });
     const auth = event.headers.authorization || '';
     const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!bearer) return { statusCode: 401, body: JSON.stringify({ error: 'missing_token' }) };
+    if (!bearer) return json(401, { error: 'missing_token' });
     const secret = process.env.JWT_SECRET as string;
     const v = verifyJWT(bearer, secret);
-    if (!v.ok) return { statusCode: 401, body: JSON.stringify({ error: 'invalid_token' }) };
+    if (!v.ok) return json(401, { error: 'invalid_token' });
     const { deviceId, userId } = v.payload;
     const token = signJWT({ deviceId, userId }, secret, TOKEN_TTL_MS);
     const expiresAt = new Date(Date.now() + TOKEN_TTL_MS).toISOString();
-    return { statusCode: 200, body: JSON.stringify({ token, expiresAt }) };
+    log(event, 'device_token_refreshed', { deviceId, userId, ip: getClientIp(event) });
+    return json(200, { token, expiresAt });
   } catch (err: any) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'server_error', details: err?.message }) };
+    return json(500, { error: 'server_error', details: err?.message });
   }
 };
 

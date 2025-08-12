@@ -1,6 +1,6 @@
 # Project State & Mission: Gamma Timetable Extension
 
-**Last Updated:** 2025-08-11T12:30:00Z by Cursor Agent
+**Last Updated:** 2025-08-12T01:10:00Z by Cursor Agent
 
 ---
 
@@ -72,8 +72,8 @@ Completed
 
 ### Clerk Chrome Extension Integration (In Progress)
 
-**Version:** v0.0.24
-**Status:** Code quality infrastructure complete, authentication popup appears but Google login button is non-functional
+**Version:** v0.0.26
+**Status:** Web-first pairing path progressing. Added Clerk verification hook on backend with local-dev bypass; dashboard sign-in shell working. Extension login opens web and pairs successfully in dev (E2E).
 
 **Progress Made:**
 
@@ -99,8 +99,8 @@ Completed
 
 **Next Steps for Resolution:**
 
-1. **Reload extension** and test Google button again
-2. **Check sidebar console** for blocked popup/cookie messages
+1. **Implement real Clerk SignIn** (replace dev stub) and verify session on backend
+2. **Keep dev bypass gated to local only**; ensure production path requires Clerk
 3. **Verify Clerk Dashboard Configuration:**
    - Native Application mode enabled
    - OAuth providers (Google, GitHub) configured and enabled
@@ -203,6 +203,20 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
   - Bumped version to `0.0.23` and built extension successfully
   - Updated login flow to always register a fresh pairing code to avoid stale codes after dev server restarts
   - Verified end-to-end: "Protected ping OK" with `deviceId` and `userId` in sidebar console
+
+- **2025-08-12:** Web-first auth E2E (local) PASSED
+  - Fixed API redirects in `netlify.toml` for `/api/devices/*`
+  - Added local-dev bypass in `devices-link` (accepts `Bearer dev-session-token` when `NETLIFY_LOCAL=true`)
+  - Sign-in page at `/sign-in` links device using pairing `code`; sidebar completes polling and shows authed state
+  - Added structured logs + simple in-memory rate limiting to device functions
+  - Clerk SignIn integrated in web (auto-mounts if publishable key present) with dev fallback
+  - Version `0.0.26` built (extension/web/shared)
+
+- **2025-08-12:** Web-first auth integration
+  - Added Clerk session verification to `netlify/functions/devices-link.ts` (uses `CLERK_SECRET_KEY`; falls back to dev header locally)
+  - Web dashboard: implemented `/sign-in` page in `packages/web/src/main.js` to accept `?code=` and call `/api/devices/link`
+  - Netlify: added redirect for `/sign-in` to `index.html`; set default `webBaseUrl` to `http://localhost:8888` for dev
+  - Version bumped to `0.0.25`; built extension, web, and shared targets successfully
 
 ### Build Plan: Web‑first Login + Pairing
 

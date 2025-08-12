@@ -1,6 +1,7 @@
 import type { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { json, getClientIp, rateLimit, log } from './_utils';
 
 function randomId(bytes = 8): string {
   return crypto.randomBytes(bytes).toString('hex');
@@ -12,12 +13,17 @@ function hashCode(code: string): string {
 
 const CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-export const handler: Handler = async () => {
+export const handler: Handler = async (event) => {
   try {
+    // Basic rate limit per IP
+    const ip = getClientIp(event);
+    const rl = rateLimit('register', ip, 30, 60_000);
+    if (!rl.allowed) return json(429, { error: 'rate_limited', retryAfter: rl.retryAfter });
+
     const supabaseUrl = process.env.SUPABASE_URL as string;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
     if (!supabaseUrl || !supabaseKey) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'supabase_env_missing' }) };
+      return json(500, { error: 'supabase_env_missing' });
     }
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -31,17 +37,12 @@ export const handler: Handler = async () => {
       code_hash: codeHash,
       code_expires_at: expiresAt,
     });
-    if (error) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'insert_failed', details: error.message }) };
-    }
+    if (error) return json(500, { error: 'insert_failed', details: error.message });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ deviceId, code, expiresAt }),
-      headers: { 'Content-Type': 'application/json' },
-    };
+    log(event, 'device_registered', { deviceId, ip });
+    return json(200, { deviceId, code, expiresAt });
   } catch (err: any) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'server_error', details: err?.message }) };
+    return json(500, { error: 'server_error', details: err?.message });
   }
 };
 

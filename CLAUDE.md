@@ -27,15 +27,16 @@ The Gamma Timetable Extension is a comprehensive full-stack application that tra
 # Install dependencies (root + all packages)
 npm install
 
-# Development (multi-target with file watching)
-npm run dev              # All targets: extension + web + shared
-npm run dev:extension    # Extension only
-npm run dev:web         # Web dashboard only
+# Development (streamlined workflow)
+npm run dev              # Extension development only
+npm run dev:web         # Full-stack web app with Netlify functions (port 3000)
 
 # Production builds
-npm run build           # All targets
-npm run build:extension # Extension only
-npm run build:web      # Web dashboard only
+npm run build           # Extension build
+npm run build:extension # Extension build (same as above)
+npm run build:web      # Web dashboard build
+npm run build:shared   # Shared library build
+npm run build:all      # All targets
 
 # Code quality
 npm run lint           # ESLint check
@@ -44,9 +45,6 @@ npm run quality        # Lint + format + type check
 
 # Extension packaging
 npm run package        # Create distributable ZIP
-
-# Local development server (device pairing API)
-node dev/pairing-api.js  # http://localhost:3000
 ```
 
 ## Architecture
@@ -248,36 +246,65 @@ The project follows a structured sprint methodology tracked in `PROJECT_STATE.md
 
 ### Local Development Setup
 
-**Multi-Service Development**:
+**Required: Run Both Servers Simultaneously**
+
 ```bash
-# Terminal 1: Extension development
-npm run dev:extension
+# Terminal 1: Extension Development Server
+npm run dev
+# → Builds extension to dist/ folder
+# → Watches for changes and rebuilds automatically  
+# → Load extension from dist/ in Chrome
 
-# Terminal 2: Web dashboard (when implemented)
+# Terminal 2: Full-Stack Web Application  
 npm run dev:web
-
-# Terminal 3: Local pairing API
-node dev/pairing-api.js
+# → Builds web app and serves with Netlify functions
+# → http://localhost:3000 (web app + API endpoints)
+# → All 6 functions loaded and working
 ```
 
+**Extension Setup in Chrome:**
+1. Go to `chrome://extensions`
+2. Enable "Developer mode" 
+3. Click "Load unpacked" → Select `dist/` folder
+4. **Important:** Reload extension after any code changes
+
 **Environment Configuration**:
-- SSL certificates for local HTTPS development
-- Clerk development instance with proper origins
-- Supabase local development database
+- All environment variables automatically injected by Netlify dev
+- SSL certificates managed by Netlify dev server  
+- Supabase connection via environment variables
 - Feature flags for development vs production
 
 ### Testing Strategy
 
-**Current State**: Manual testing focused on:
-- Slide extraction across various Gamma presentations
-- Timetable generation and duration adjustments
-- Export functionality and format validation
-- Authentication flow and device pairing
-- Tab switching and state persistence
+**Manual Testing Workflow**:
+```bash
+# 1. Start both development servers
+npm run dev       # Extension (dist/ folder)
+npm run dev:web   # Web app (http://localhost:3000)
 
-**Future Recommendations**:
+# 2. Load extension in Chrome from dist/ folder
+
+# 3. Test complete authentication flow:
+#    a) Click "Login" in extension sidebar
+#    b) Extension opens http://localhost:3000/sign-in?code=XXXXXX  
+#    c) Click "Sign in with Clerk" (mock auth)
+#    d) Device should auto-link and show success
+#    e) Extension should show "authenticated" state
+#    f) "Test API" button should return 200 OK
+
+# 4. Test timetable functionality on gamma.app
+```
+
+**Current API Endpoints Working**:
+- ✅ `POST /api/devices/register` - Device registration
+- ✅ `POST /api/devices/link` - Device pairing with authentication  
+- ✅ `POST /api/devices/exchange` - JWT token issuance
+- ✅ `GET /api/protected/ping` - Authenticated API access
+- ✅ Web authentication flow with mock Clerk integration
+
+**Future Test Automation**:
 - **Unit Tests**: Core timetable logic, storage abstractions, export functions
-- **Integration Tests**: Authentication flow, API endpoints, data synchronization
+- **Integration Tests**: Authentication flow, API endpoints, data synchronization  
 - **E2E Tests**: Full user workflows across extension and web dashboard
 - **Framework Suggestion**: Vitest (Vite-native) or Jest with Chrome extension mocking
 

@@ -25,6 +25,7 @@ export default [
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         setInterval: 'readonly',
+        clearInterval: 'readonly',
         navigator: 'readonly',
         process: 'readonly',
         __dirname: 'readonly',
@@ -34,6 +35,10 @@ export default [
         MutationObserver: 'readonly',
         Blob: 'readonly',
         URL: 'readonly',
+        Buffer: 'readonly',
+        fetch: 'readonly',
+        localStorage: 'readonly',
+        location: 'readonly',
       },
     },
     plugins: {
@@ -56,7 +61,35 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'dist-*/**', 'node_modules/**', '**/*.min.js', 'src/lib/xlsx.full.min.js'],
+    files: ['**/*.test.ts', 'test/**/*.ts'],
+    languageOptions: {
+      globals: {
+        global: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
+      'no-undef': 'off',
+    },
+  },
+  {
+    ignores: [
+      'dist/**',
+      'dist-*/**',
+      'dist-web/**',
+      'dist-shared/**',
+      '.netlify/**',
+      'node_modules/**',
+      '**/*.min.js',
+      'src/lib/xlsx.full.min.js',
+    ],
   },
   prettier,
 ];

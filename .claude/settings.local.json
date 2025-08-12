@@ -20,7 +20,17 @@
       "Bash(npm run package:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(npm run dev:web:*)",
+      "Bash(npm run:*)",
+      "Bash(BUILD_TARGET=web npm run dev)",
+      "Bash(BUILD_TARGET=web npm run build)",
+      "Bash(grep:*)",
+      "Bash(npx netlify:*)",
+      "Bash(pkill:*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:localhost)"
     ],
     "deny": []
   }

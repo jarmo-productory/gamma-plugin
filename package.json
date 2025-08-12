@@ -1,6 +1,6 @@
 {
   "name": "gamma-timetable-extension",
-  "version": "0.0.24",
+  "version": "0.0.26",
   "description": "Chrome extension that extracts slide content from Gamma presentations and generates customizable timetables",
   "keywords": [
     "chrome-extension",
@@ -32,9 +32,13 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "clean": "rm -rf dist dist-web dist-shared dist-types",
-    "dev:pairing-api": "node dev/pairing-api.js"
+    "dev:web": "npm run build:web && npx netlify dev --dir=dist-web",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
+    "@netlify/functions": "^4.2.1",
+    "@playwright/test": "^1.54.2",
     "@types/chrome": "^0.0.326",
     "@types/node": "^24.0.14",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
@@ -44,6 +48,7 @@
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^18.0.1",
+    "playwright": "^1.54.2",
     "prettier": "^3.6.2",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
@@ -52,6 +57,7 @@
   },
   "dependencies": {
     "@clerk/clerk-js": "^5.81.0",
+    "@supabase/supabase-js": "^2.54.0",
     "jspdf": "^3.0.1"
   }
 }

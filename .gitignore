@@ -50,3 +50,5 @@ tasks/
 # Local secrets
 certs/ 
 .early.coverage
+# Local Netlify folder
+.netlify
