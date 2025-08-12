@@ -50,11 +50,11 @@ export const handler: Handler = async (event) => {
           body: JSON.stringify({ token: bearer }),
         });
         if (!res.ok) return json(401, { error: 'clerk_verify_failed' });
-        const verified: any = await res.json();
+        const verified: { user_id?: string; sub?: string } = await res.json();
         userId = verified?.user_id || verified?.sub || null;
         if (!userId) return json(401, { error: 'clerk_user_missing' });
-      } catch (e: any) {
-        return json(401, { error: 'clerk_error', details: e?.message });
+      } catch (e: unknown) {
+        return json(401, { error: 'clerk_error', details: e instanceof Error ? e.message : 'Unknown error' });
       }
     }
 
@@ -88,8 +88,8 @@ export const handler: Handler = async (event) => {
     if (upErr) return json(500, { error: 'link_failed', details: upErr.message });
     log(event, 'device_linked', { deviceId: data.device_id, userId, ip });
     return json(200, { ok: true });
-  } catch (err: any) {
-    return json(500, { error: 'server_error', details: err?.message });
+  } catch (err: unknown) {
+    return json(500, { error: 'server_error', details: err instanceof Error ? err.message : 'Unknown error' });
   }
 };
 

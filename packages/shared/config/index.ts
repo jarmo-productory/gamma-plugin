@@ -332,11 +332,11 @@ export class ConfigManager {
   /**
    * Get configuration for specific component/feature
    */
-  getFeatureConfig<T = any>(feature: string): T | null {
+  getFeatureConfig<T = unknown>(feature: string): T | null {
     const config = this.getConfig();
 
     // Define feature-specific config mappings
-    const featureConfigs: { [key: string]: any } = {
+    const featureConfigs: Record<string, unknown> = {
       storage: {
         maxSize: config.environment.maxStorageSize,
         enableSync: config.features.cloudSync,
@@ -425,7 +425,7 @@ export class ConfigManager {
     }
   }
 
-  private isValidConfig(config: any): config is AppConfig {
+  private isValidConfig(config: unknown): config is AppConfig {
     return (
       config &&
       typeof config === 'object' &&
