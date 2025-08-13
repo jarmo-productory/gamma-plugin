@@ -29,29 +29,33 @@ This document is the single source of truth for all environment-specific setting
 
 ### Development
 
-- **Web Dashboard:** `http://localhost:3000`
-- **Extension:** `chrome-extension://<EXTENSION_ID>`
-- **Supabase:** `https://<dev-project>.supabase.co`
-- **Clerk:** `https://dashboard.clerk.dev` (dev environment)
-- **Example `.env` values:**
+- **Web Dashboard & App URL:** `http://localhost:8888` (via Netlify Dev)
+- **Extension:** `chrome-extension://<DEVELOPMENT_EXTENSION_ID>`
+- **Supabase:** Local instance run via Docker. URL is provided by the `supabase start` command (e.g., `http://localhost:54321`).
+- **Clerk:** Development instance from `dashboard.clerk.dev`.
+- **Example `.env.local` values:**
   ```env
-  NEXT_PUBLIC_SUPABASE_URL=https://<dev-project>.supabase.co
+  # Provided by `supabase start`
+  NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+
+  # From your Clerk development instance
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
   CLERK_SECRET_KEY=sk_test_...
-  NEXT_PUBLIC_APP_URL=http://localhost:3000
-  NEXT_PUBLIC_EXTENSION_ID=chrome-extension://<EXTENSION_ID>
+
+  # Corresponds to the Netlify Dev server
+  NEXT_PUBLIC_APP_URL=http://localhost:8888
   ```
 
 ### Production
 
 - **Web Dashboard:** `https://productory-powerups.netlify.app`
-- **Supabase Project:** `productory-powerups` (dknqqcnnbcqujeffbmmb)
+- **Supabase Project:** `productory-powerups` (ID: `dknqqcnnbcqujeffbmmb`)
 - **Supabase URL:** `https://dknqqcnnbcqujeffbmmb.supabase.co`
-- **Clerk:** `https://dashboard.clerk.com` (prod environment)
-- **Environment Variables:** Copy `.env.example` to `.env.local` and fill in actual values
+- **Clerk:** Production instance from `dashboard.clerk.com`.
+- **Environment Variables:** These must be set in the Netlify UI for the production environment.
 
-  > **🚨 SECURITY**: Never commit actual API keys to the repository. Use `.env.local` (gitignored) for real values.
+> **🚨 SECURITY**: Never commit `.env.local` or files containing secrets to the repository.
 
 ---
 
@@ -59,16 +63,16 @@ This document is the single source of truth for all environment-specific setting
 
 ### Netlify
 
-- **Site:** `https://productory-powerups.netlify.app`
+- **Production Site:** `https://productory-powerups.netlify.app`
 - **Build command:** `npm run build:web`
 - **Publish directory:** `dist-web`
-- **Environment variables:** Set via Netlify UI for each environment
+- **Environment variables:** Set via Netlify UI. For local development, Netlify Dev sources them from `.env.local`.
 
 ### Supabase
 
-- **Project URL:** `https://<project>.supabase.co`
+- **Project URL (Production):** `https://dknqqcnnbcqujeffbmmb.supabase.co`
 - **API Key variable:** `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- **Service Role Key variable:** `SUPABASE_SERVICE_ROLE_KEY` (never expose in frontend)
+- **Service Role Key variable:** `SUPABASE_SERVICE_ROLE_KEY` (backend only, never expose in frontend)
 
 ### Clerk
 
@@ -80,30 +84,33 @@ This document is the single source of truth for all environment-specific setting
 
 ## Environment Variable Reference
 
-| Variable Name                     | Description          | Used In | Example Value          |
-| --------------------------------- | -------------------- | ------- | ---------------------- |
-| NEXT_PUBLIC_SUPABASE_URL          | Supabase project URL | All     | https://...supabase.co |
-| NEXT_PUBLIC_SUPABASE_ANON_KEY     | Supabase anon key    | All     | eyJ...                 |
-| SUPABASE_SERVICE_ROLE_KEY         | Supabase service key | Backend | eyJ...                 |
-| NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY | Clerk public key     | All     | pk*test*...            |
-| CLERK_SECRET_KEY                  | Clerk secret key     | Backend | sk*test*...            |
-| NEXT_PUBLIC_APP_URL               | App base URL         | All     | http://localhost:3000  |
-| NEXT_PUBLIC_EXTENSION_ID          | Chrome extension ID  | All     | chrome-extension://... |
+| Variable Name                     | Description                               | Used In | Example Value (Local)          |
+| --------------------------------- | ----------------------------------------- | ------- | ------------------------------ |
+| NEXT_PUBLIC_SUPABASE_URL          | Supabase project URL                      | All     | http://localhost:54321         |
+| NEXT_PUBLIC_SUPABASE_ANON_KEY     | Supabase anon key                         | All     | eyJ...                         |
+| SUPABASE_SERVICE_ROLE_KEY         | Supabase service key for admin tasks      | Backend | eyJ...                         |
+| NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY | Clerk public-facing key for the frontend  | All     | pk_test_...                    |
+| CLERK_SECRET_KEY                  | Clerk secret key for backend verification | Backend | sk_test_...                    |
+| NEXT_PUBLIC_APP_URL               | Base URL of the web application           | All     | http://localhost:8888          |
+| JWT_SECRET                        | Secret for signing device tokens          | Backend | (A long, random string)        |
+
 
 ---
 
 ## Setup Instructions
 
-1. **Update environment variables**
-   - For local development, copy `.env.example` to `.env` and fill in the values.
-   - For production, set variables in Netlify’s UI under Site Settings > Environment Variables.
-2. **Adding new environments**
-   - Duplicate the relevant section above and update URLs/keys as needed.
-3. **Rotating secrets**
-   - Update the value in the provider dashboard (Supabase, Clerk, etc.)
-   - Update the value in all relevant `.env` files and Netlify settings.
-4. **Adding new providers**
-   - Add a new section under Service Providers and update the variable reference table.
+1.  **Create Local Environment File:**
+    - For local development, copy `.env.example` to `.env.local`. This file is ignored by Git.
+    - Fill in the values using the guidance above. You will get secrets from your Clerk dashboard and the `supabase start` command.
+
+2.  **Configure Production Environment:**
+    - For production, set the equivalent environment variables in Netlify’s UI under Site Settings > Build & deploy > Environment.
+
+3.  **Adding New Variables:**
+    - Add the new variable to `.env.example` with a placeholder value.
+    - Add it to your local `.env.local` file.
+    - Add it to the Netlify UI for production.
+    - Update the "Environment Variable Reference" table in this document.
 
 ---
 

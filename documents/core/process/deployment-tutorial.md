@@ -1,64 +1,77 @@
-# Chrome Extension Development & Deployment Tutorial
+# Deployment Tutorial: Gamma Timetable Extension & Cloud Services
 
-## Best Development Flow for Chrome Extensions
-
-### 1. Project Structure & Source Control
-
-- Organize your code (e.g., `src/`, `manifest.json`, `assets/`, etc.).
-- Use Git for version control and GitHub for remote backup/collaboration.
-
-### 2. Development Workflow
-
-- Edit your code and assets as needed.
-- Use a build tool (like Vite, Webpack, or plain TypeScript compiler) if your extension uses TypeScript, JSX, or needs bundling.
-- Output the build to a `dist/` or `build/` directory.
-
-### 3. Local Deployment & Immediate Testing
-
-#### A. Build/Prepare the Extension
-
-- If using a build tool: run `npm run build` (or equivalent) to generate the latest output.
-- If not, ensure all files are up to date in your source directory.
-
-#### B. Load the Extension in Chrome
-
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable **Developer mode** (toggle in the top right).
-3. Click **Load unpacked**.
-4. Select your extension's output directory (e.g., `dist/`, `build/`, or your project root if unbundled).
-5. The extension will appear in your extension list and be immediately usable.
-
-#### C. Test and Iterate
-
-- Make code changes.
-- Rebuild if necessary (`npm run build`).
-- In `chrome://extensions/`, click the **Reload** button (⟳) on your extension.
-- Refresh the target tab or open your extension's popup/sidebar to see changes.
-
-### 4. Debugging
-
-- Use Chrome DevTools:
-  - Right-click your extension's popup/sidebar and select "Inspect".
-  - For content scripts, inspect the target page and look for your script in the Sources panel.
-- Check the "Errors" and "Warnings" in `chrome://extensions/` for manifest or runtime issues.
-
-### 5. Automated Testing
-
-- Use Jest, Mocha, or similar for unit tests.
-- Use Puppeteer or Playwright for end-to-end testing of extension behavior.
-
-### 6. Production Build & Publishing
-
-- When ready, run a production build.
-- Zip the output directory.
-- Submit to the Chrome Web Store via the [Chrome Developer Dashboard](https://chrome.google.com/webstore/devconsole).
+This project has two main components that need to be deployed separately:
+1.  **The Web Dashboard and Backend Functions**: Hosted on Netlify.
+2.  **The Chrome Extension**: Published to the Chrome Web Store.
 
 ---
 
-## Quick Reference: Local Deployment Steps
+## 1. Deploying the Web Dashboard & Backend
 
-1. **Build or update your extension files.**
-2. **Go to `chrome://extensions/` in Chrome.**
-3. **Enable Developer mode.**
-4. **Click "Load unpacked" and select your build/output directory.**
-5. **After changes, click "Reload" on your extension in the extensions page.**
+The web dashboard and the Netlify Functions are deployed together. We use a continuous deployment model where pushes to the `main` branch automatically trigger a production deploy on Netlify.
+
+### Production Deployment (via Git Push)
+
+1.  **Merge to Main**: Ensure all new features and fixes are tested and merged into the `main` branch.
+2.  **Automatic Deployment**: Netlify automatically detects the push, builds the web application, and deploys the functions.
+    -   **Build Command**: `npm run build:web`
+    -   **Publish Directory**: `dist-web`
+    -   **Functions Directory**: `netlify/functions`
+3.  **Monitor the Deploy**: You can watch the build and deployment progress in the [Netlify dashboard](https://app.netlify.com/).
+
+### Manual Deployment
+
+For hotfixes or specific rollouts, you can trigger a manual deploy:
+
+1.  **Install Netlify CLI**:
+    ```bash
+    npm install -g netlify-cli
+    ```
+2.  **Login**:
+    ```bash
+    netlify login
+    ```
+3.  **Deploy to Production**:
+    ```bash
+    netlify deploy --prod
+    ```
+    This command will build the project locally and deploy the result to production.
+
+### Environment Variables
+
+All secrets (API keys for Supabase, Clerk, JWT secret) must be configured in the Netlify UI under **Site settings > Build & deploy > Environment**.
+
+---
+
+## 2. Deploying the Chrome Extension
+
+The Chrome Extension is manually packaged and uploaded to the Chrome Web Store.
+
+### Step 1: Prepare for Packaging
+
+1.  **Sync Version Number**: Ensure the version in `package.json` is correct, then sync it with the manifest file.
+    ```bash
+    npm run sync-version
+    ```
+2.  **Update Production URLs**: Before building, ensure the `apiBaseUrl` and `webBaseUrl` in `packages/shared/config/index.ts` are pointing to the production Netlify URLs, not `localhost`.
+3.  **Build the Extension**: Create a production-ready build of the extension.
+    ```bash
+    npm run build:extension
+    ```
+    This command cleans the `dist` directory and creates a fresh build with all necessary files.
+
+### Step 2: Package the Extension
+
+1.  **Create a ZIP file**: The Chrome Web Store requires a `.zip` file for uploads.
+    ```bash
+    npm run package
+    ```
+    This command runs the build and then creates a `gamma-plugin-release.zip` file in the parent directory.
+
+### Step 3: Upload to the Chrome Web Store
+
+1.  **Go to the Developer Dashboard**: Open the [Chrome Developer Dashboard](https://chrome.google.com/webstore/devconsole).
+2.  **Select the Item**: Find the "Gamma Timetable Extension" in your list of items.
+3.  **Upload the New Package**: Go to the "Package" tab and upload the `gamma-plugin-release.zip` file.
+4.  **Update Store Listing**: Update the description, screenshots, and any other required information if there are new features.
+5.  **Submit for Review**: Submit the new version for review by Google. The review process can take anywhere from a few hours to several days.

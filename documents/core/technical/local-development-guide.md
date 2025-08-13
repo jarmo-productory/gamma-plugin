@@ -52,55 +52,61 @@ API keys and environment-specific settings are managed in a `.env.local` file, w
     - **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**: Get this after running `supabase start`.
     - **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`**: Get this from your Clerk Dashboard.
     - **`CLERK_SECRET_KEY`**: Get this from your Clerk Dashboard.
-    - **`NEXT_PUBLIC_APP_URL`**: Should be `http://localhost:5173` (or your Vite dev server port).
+    - **`NEXT_PUBLIC_APP_URL`**: Should be `http://localhost:8888` (the Netlify dev server port).
 
 ---
 
 ## 4. Running the Development Environment
 
-The project requires two main services to be running concurrently: the Supabase backend and the Vite frontend server.
+The project's local environment is composed of three key services that must be run concurrently:
+
+1.  **Supabase (Backend Database):** Provides the PostgreSQL database, authentication, and storage.
+2.  **Netlify Dev (Backend Functions):** Runs the serverless functions that handle API logic (e.g., device pairing, data sync).
+3.  **Vite (Frontend Server):** Serves the web dashboard and provides hot-reloading for development.
+
+Follow these steps to launch the full stack:
 
 1.  **Start Supabase Services:**
-    First, ensure Docker Desktop is running. Then, start the local Supabase instance.
+    First, ensure Docker Desktop is running. Then, start the local Supabase instance. This command also resets the local database to ensure a clean state.
 
     ```bash
-    supabase start
+    supabase start && supabase db reset
     ```
 
-    This will spin up the database, authentication, and storage services. It will also provide you with the local API URL and anon key for your `.env.local` file.
+    After it starts, Supabase will output the `SUPABASE_URL` and `SUPABASE_ANON_KEY`. Add these to your `.env.local` file.
 
-2.  **Start the Frontend Application:**
-    In a separate terminal, run the Vite development server.
+2.  **Start the Backend and Frontend Servers:**
+    In a separate terminal, run the `dev:web` script. This single command builds the web application and then starts both the Netlify Dev server (for backend functions) and the Vite server (for the frontend).
+
     ```bash
-    npm run dev
+    npm run dev:web
     ```
-    This will start the web dashboard, typically available at `http://localhost:5173`.
+
+    - The **Netlify server** will run on **`http://localhost:8888`**. This is the main URL you should use for the application, as it proxies requests to both the frontend and the backend functions.
+    - The **Vite server** will typically run on `http://localhost:5173`. You do not need to access this URL directly.
 
 ---
 
-## 5. Local SSL/HTTPS Setup
+## 5. Loading the Extension in Chrome
 
-For securely testing authentication flows that involve cross-domain communication (like OAuth callbacks), running the local development server over HTTPS is required.
+To test the full functionality, you need to load the extension into your browser:
 
-1.  **Install `mkcert`:**
-    This tool creates locally-trusted development certificates.
-
+1.  **Build the Extension:**
     ```bash
-    brew install mkcert
-    mkcert -install
+    npm run build:extension
     ```
+    This command compiles the extension code into the `dist` directory.
 
-2.  **Generate Certificates:**
-    This command creates a `certs` directory and generates the key/certificate files.
+2.  **Load in Chrome:**
+    - Open Chrome and navigate to `chrome://extensions`.
+    - Enable "Developer mode" (top right).
+    - Click "Load unpacked".
+    - Select the `dist` folder from the root of this project.
 
-    ```bash
-    mkdir certs && mkcert -key-file certs/key.pem -cert-file certs/cert.pem localhost 127.0.0.1 ::1
-    ```
-
-3.  **Run the Dev Server:**
-    Vite is now configured to automatically use these certificates. When you run `npm run dev`, your site will be available at `https://localhost:5173`.
+The extension is now installed and will be automatically updated whenever you run the build command again.
 
 ---
+
 
 ## 6. Troubleshooting
 

@@ -8,149 +8,149 @@ The Gamma Timetable Chrome Extension is a browser add-on that automatically extr
 
 ### Value Proposition
 
-- **Time-saving**: Automatically generates timetables from existing presentations
-- **Flexible**: Allows manual adjustment of timing and content
-- **Integrated**: Works directly within the Gamma web interface
-- **Exportable**: Provides multiple export formats for easy sharing
+- **Time-saving**: Automatically generates timetables from existing presentations.
+- **Cloud-Enabled**: Securely sync your timetables across multiple devices.
+- **Accessible**: Access and manage your presentations from anywhere via a web dashboard.
+- **Flexible**: Allows manual adjustment of timing and content.
+- **Integrated**: Works directly within the Gamma web interface.
+- **Exportable**: Provides multiple export formats for easy sharing.
 
 ## 2. Problem Statement
 
 ### Current Challenges
 
-1. **Manual Process**: Currently, creating timetables from presentations requires manual copying and time estimation
-2. **Time Estimation**: Difficult to accurately estimate time needed for each slide/section
-3. **Format Conversion**: No easy way to convert presentation structure into a timetable format
-4. **Lack of Integration**: Existing tools don't integrate with Gamma's interface
+1.  **Manual Process**: Creating timetables from presentations requires manual copying and time estimation.
+2.  **Data Silos**: Timetables created on one computer are not accessible on another.
+3.  **Lack of Persistence**: Reinstalling the browser or extension can lead to data loss.
+4.  **Format Conversion**: No easy way to convert presentation structure into a timetable format.
 
 ### Target Users
 
-- **Primary**: Educators and trainers using Gamma for course creation
-- **Secondary**: Business presenters, workshop facilitators, webinar hosts
-- **Tertiary**: Event organizers, conference speakers
+- **Primary**: Educators and trainers using Gamma for course creation who work across multiple devices.
+- **Secondary**: Business presenters and workshop facilitators who need to access their materials on the go.
+- **Tertiary**: Teams who may need to collaborate on presentation timings in the future.
 
 ## 3. Product Goals
 
 ### Primary Goals
 
-1. Extract slide content and structure from Gamma presentations
-2. Generate editable timetables with time allocations
-3. Provide intuitive UI for timing adjustments
-4. Export timetables in multiple formats
+1.  Extract slide content and structure from Gamma presentations.
+2.  Generate editable timetables with time allocations.
+3.  Securely store and synchronize user data (presentations, timetables) in the cloud.
+4.  Provide a web dashboard for users to view and manage their data.
+5.  Export timetables in multiple formats.
 
 ### Success Metrics
 
-- User adoption rate (target: 1000+ active users in 6 months)
-- Time saved per timetable creation (target: 70% reduction)
-- User satisfaction score (target: 4.5/5)
-- Export usage rate (target: 80% of created timetables)
+- User adoption rate (target: 1000+ active users in 6 months).
+- **Cloud Sync Adoption**: 50% of active users logged in and using cloud features.
+- Time saved per timetable creation (target: 70% reduction).
+- User satisfaction score (target: 4.5/5).
 
 ## 4. Feature Requirements
 
-### Must Have (MVP)
+### Core Experience (Extension & Cloud)
 
-1. **Slide Detection & Extraction**
-   - Detect all slides in a Gamma presentation
-   - Extract slide titles and main content points
-   - Preserve slide order and hierarchy
+1.  **User Authentication (Complete)**
+    - Secure login/logout via a web-first pairing flow.
+    - User accounts managed by Clerk.
+2.  **Slide Detection & Extraction (Complete)**
+    - Detect all slides in a Gamma presentation.
+    - Extract slide titles and main content points.
+3.  **Sidebar Interface (Complete)**
+    - Display extracted slides as timetable items.
+    - Login/Logout controls.
+4.  **Time Management (Complete)**
+    - Default time allocation per slide.
+    - Manual time adjustment for each item.
+5.  **Basic Export (Complete)**
+    - CSV and XLSX export functionality.
 
-2. **Sidebar Interface**
-   - Chrome extension sidebar panel
-   - Display extracted slides as timetable items
-   - Show current total duration
+### Cloud & Web Dashboard Features
 
-3. **Time Management**
-   - Default time allocation per slide
-   - Manual time adjustment for each item
-   - Start time setting
-   - Automatic end time calculation
+1.  **Data Synchronization (In Progress)**
+    - Automatically save and sync presentations and timetables to the cloud when a user is logged in.
+    - Offline mode: The extension must remain fully functional when the user is not logged in.
+2.  **Web Dashboard (In Progress)**
+    - View a list of all synchronized presentations.
+    - View the details of a specific timetable.
+    - (Future) Edit timetables directly from the web interface.
+    - (Future) Manage account settings and connected devices.
 
-4. **Basic Export**
-   - CSV export functionality
-   - Include columns: Item, Start Time, Duration, End Time
+### Future Enhancements
 
-### Should Have (v1.1)
-
-1. **Enhanced Time Features**
-   - Break/pause scheduling
-   - Time templates (e.g., 5-min, 10-min, 15-min blocks)
-   - Total duration constraints
-
-2. **Content Enhancement**
-   - Extract bullet points as sub-items
-   - Support for nested content structure
-   - Notes/description field per item
-
-3. **Export Options**
-   - Excel format (.xlsx)
-   - PDF export with formatting
-   - Google Sheets integration
-   - Copy to clipboard
-
-### Nice to Have (Future)
-
-1. **Advanced Features**
-   - AI-powered time suggestions based on content
-   - Multiple presenter support
-   - Integration with calendar apps
-   - Collaborative editing
-   - Version history
-
-2. **Customization**
-   - Custom export templates
-   - Branding options
-   - Theme selection
+1.  **Advanced Export**
+    - PDF export with formatting.
+    - Google Sheets integration.
+2.  **Collaboration**
+    - Share presentations with other users.
+    - Real-time collaborative editing.
+3.  **AI-Powered Features**
+    - AI-powered time suggestions based on content.
 
 ## 5. User Experience
 
 ### User Journey
 
-1. User opens a Gamma presentation
-2. Clicks the extension icon to activate sidebar
-3. Extension automatically extracts slide content
-4. User reviews and adjusts timing
-5. User exports the timetable
+1.  **First-Time Use & Login:**
+    - User opens a Gamma presentation and activates the extension sidebar.
+    - User clicks the "Login" button in the sidebar.
+    - The web dashboard opens in a new tab.
+    - User signs up or logs in via Clerk.
+    - The dashboard confirms that the extension has been successfully linked.
+    - The user returns to the Gamma tab, and the sidebar now shows them as logged in.
+2.  **Timetable Creation:**
+    - Extension automatically extracts slide content.
+    - User reviews and adjusts timing.
+    - The timetable is automatically saved to the cloud.
+3.  **Accessing from Web:**
+    - User navigates to the web dashboard URL.
+    - They can see a list of their saved presentations and timetables.
 
 ### Interface Design Principles
 
-- **Minimalist**: Clean, uncluttered interface
-- **Intuitive**: Self-explanatory controls
-- **Responsive**: Real-time updates to changes
-- **Accessible**: Keyboard navigation support
+- **Minimalist**: Clean, uncluttered interface in both the extension and web dashboard.
+- **Intuitive**: Self-explanatory controls for both local editing and cloud features.
+- **Seamless**: A smooth and clear transition between the extension and the web dashboard during login.
+- **Responsive**: Real-time updates to changes, with clear indicators of sync status.
+- **Accessible**: Keyboard navigation support.
 
 ## 6. Technical Requirements
 
 ### Platform Requirements
 
-- Chrome browser (version 88+)
-- Manifest V3 compliance
-- Works on gamma.app domain
+- Chrome browser (version 88+).
+- Manifest V3 compliance.
+- A modern web browser for the dashboard (Chrome, Firefox, Safari, Edge).
 
 ### Performance Requirements
 
-- Slide extraction: < 2 seconds for 50 slides
-- UI response time: < 100ms
-- Export generation: < 1 second
+- Slide extraction: < 2 seconds for 50 slides.
+- UI response time: < 100ms.
+- **API Response Time**: < 500ms for all backend endpoints.
+- **Data Sync**: Changes should be reflected on other devices in < 10 seconds.
 
 ### Security & Privacy
 
-- No data stored on external servers
-- All processing done client-side
-- Minimal permissions required
-- No user tracking
+- All user data is stored securely in a Supabase database.
+- All communication with the backend is over HTTPS.
+- User authentication is handled by Clerk.
+- Row-Level Security is enforced in the database to ensure data privacy.
+- The extension requires permissions for `storage`, `tabs`, and `cookies` to manage authentication.
 
 ## 7. Constraints & Assumptions
 
 ### Constraints
 
-- Limited to Chrome browser initially
-- Dependent on Gamma's DOM structure
-- Client-side processing only
+- Dependent on Gamma's DOM structure for extraction.
+- The initial version is limited to the Chrome browser.
+- Requires an internet connection for login and data synchronization.
 
 ### Assumptions
 
-- Gamma's presentation structure remains relatively stable
-- Users have basic familiarity with browser extensions
-- Average presentation has 10-50 slides
+- Users are willing to create an account to enable cloud features.
+- Gamma's presentation structure remains relatively stable.
+- Users have basic familiarity with browser extensions.
 
 ## 8. Release Strategy
 

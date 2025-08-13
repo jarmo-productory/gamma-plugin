@@ -18,196 +18,201 @@ A Chrome browser extension that extracts slide content from Gamma presentations 
 
 ### Tech Stack
 
-- **Frontend**: HTML5, CSS3, JavaScript/TypeScript
-- **Framework**: Vanilla JS or lightweight framework (Preact/Alpine.js)
-- **Build Tools**: Webpack/Vite, TypeScript compiler
-- **Testing**: Jest, Puppeteer
+- **Frontend**: TypeScript, HTML5, CSS3
+- **Backend**: Node.js (Netlify Functions)
+- **Frameworks/Libraries**:
+    - **Web Dashboard**: Vite
+    - **Authentication**: Clerk
+    - **Database**: Supabase (PostgreSQL)
+- **Build Tools**: Vite, TypeScript compiler, ESLint, Prettier
+- **Testing**: Vitest, Playwright (for E2E)
+- **Deployment**:
+    - **Web Dashboard & Functions**: Netlify
+    - **Chrome Extension**: Chrome Web Store
 - **Version Control**: Git/GitHub
 
 ## 2. Architecture Overview
 
-### Extension Components
+The project is a monorepo composed of three main packages: `extension`, `web`, and `shared`. It follows a cloud-native architecture, leveraging serverless functions for the backend and a managed database.
+
+### Monorepo Structure
 
 ```
-gamma-timetable-extension/
-├── manifest.json           # Extension manifest (V3)
-├── src/
-│   ├── background/        # Background service worker
-│   │   └── background.ts
-│   ├── content/          # Content scripts
-│   │   ├── extractor.ts  # DOM extraction logic
-│   │   └── injector.ts   # UI injection
-│   ├── sidebar/          # Sidebar UI
-│   │   ├── sidebar.html
-│   │   ├── sidebar.ts
-│   │   └── sidebar.css
-│   ├── popup/            # Extension popup
-│   │   ├── popup.html
-│   │   └── popup.ts
-│   ├── core/             # Core business logic
-│   │   ├── parser.ts
-│   │   ├── timeCalculator.ts
-│   │   └── exporter.ts
-│   └── utils/            # Utility functions
-│       ├── storage.ts
-│       └── messaging.ts
-├── assets/               # Icons and images
-├── styles/              # Global styles
-├── tests/               # Test files
-└── build/               # Build output
+gamma-plugin/
+├── packages/
+│   ├── extension/      # The Chrome Extension
+│   │   ├── manifest.json
+│   │   └── ...
+│   ├── web/            # The Web Dashboard
+│   │   ├── index.html
+│   │   └── src/main.js
+│   └── shared/         # Shared code (types, config, auth logic)
+│       └── index.ts
+├── netlify/
+│   └── functions/      # Serverless backend functions
+│       ├── devices-link.ts
+│       └── ...
+├── supabase/
+│   └── migrations/     # Database schema migrations
+└── ...
 ```
 
 ### Component Communication
 
+The system enables a "web-first" authentication flow, where the extension pairs with an authenticated web session.
+
 ```mermaid
-graph LR
-    A[Content Script] -->|Extract Data| B[Background Script]
-    B -->|Send Data| C[Sidebar UI]
-    C -->|User Input| B
-    B -->|Process| D[Export Module]
-    D -->|Generate| E[Download File]
+graph TD
+    subgraph Browser
+        A[Extension Sidebar] -- 1. User clicks 'Login' --> B{Opens Web Dashboard};
+        B -- 2. User authenticates --> C[Clerk Hosted UI];
+        C -- 3. Redirect back --> D[Web Dashboard];
+        D -- 4. Links device --> E[Backend API];
+        A -- 5. Polls for token --> E;
+    end
+
+    subgraph Cloud
+        E[Backend API / Netlify Functions] -- 6. Verifies session --> F[Clerk Backend];
+        E -- 7. Stores/retrieves data --> G[Supabase DB];
+    end
+
+    E -- 8. Issues Device JWT --> A;
+    A -- 9. Makes authenticated API calls --> E;
 ```
+
 
 ## 3. Technical Specifications
 
-### 3.1 Content Script Implementation
+### 3.1 Device Pairing Flow (Web-First Authentication)
+
+The core of the new architecture is a secure device pairing flow that links the browser extension to a user's account without requiring the user to log in directly within the extension.
 
 ```typescript
-// extractor.ts - Core extraction logic
-interface SlideData {
-  id: string;
-  title: string;
-  content: string[];
-  order: number;
-  level: number;
+// packages/shared/auth/device.ts - Simplified device authentication logic
+
+// 1. Extension registers itself with the backend
+async function registerDevice(): Promise<PairingInfo> {
+  const response = await fetch(`${API_BASE_URL}/devices/register`, { method: 'POST' });
+  const data = await response.json();
+  // returns { deviceId, code, expiresAt }
+  return data;
 }
 
-class GammaExtractor {
-  private slides: SlideData[] = [];
+// 2. Web dashboard, after user logs in, links the device
+async function linkDevice(code: string, userToken: string): Promise<void> {
+  await fetch(`${API_BASE_URL}/devices/link`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${userToken}` },
+    body: JSON.stringify({ code }),
+  });
+}
 
-  extractSlides(): SlideData[] {
-    // DOM parsing logic
-    const slideElements = document.querySelectorAll('[data-slide-id]');
-    return Array.from(slideElements).map(this.parseSlide);
-  }
-
-  private parseSlide(element: Element): SlideData {
-    // Extract title, content, hierarchy
-    return {
-      id: element.getAttribute('data-slide-id') || '',
-      title: this.extractTitle(element),
-      content: this.extractContent(element),
-      order: this.getSlideOrder(element),
-      level: this.getHierarchyLevel(element),
-    };
-  }
+// 3. Extension polls to exchange its pairing code for a device-specific JWT
+async function exchangeCodeForToken(deviceId: string, code: string): Promise<DeviceToken> {
+    const response = await fetch(`${API_BASE_URL}/devices/exchange`, {
+    method: 'POST',
+    body: JSON.stringify({ deviceId, code }),
+  });
+  const data = await response.json();
+  // returns { token, expiresAt }
+  return data;
 }
 ```
 
-### 3.2 Sidebar UI Framework
+### 3.2 Backend API (Netlify Function)
+
+The backend consists of serverless functions. The `devices-link` function is a good example of a protected endpoint.
 
 ```typescript
-// sidebar.ts - UI component structure
-class TimetableUI {
-  private container: HTMLElement;
-  private items: TimetableItem[] = [];
+// netlify/functions/devices-link.ts - Simplified link function
+import { verifyRequest } from '@clerk/backend';
 
-  constructor(container: HTMLElement) {
-    this.container = container;
-    this.initializeUI();
+export default async (req: Request) => {
+  // Clerk authenticates the user from the web dashboard's request
+  const { session } = await verifyRequest({ req });
+  if (!session) {
+    return new Response('Unauthorized', { status: 401 });
   }
 
-  renderTimetable(slides: SlideData[]): void {
-    this.items = slides.map(slide => new TimetableItem(slide));
-    this.updateDisplay();
-  }
+  const { code } = await req.json();
+  // Logic to find device by `code` and associate `session.userId`
+  await linkDeviceToUser(code, session.userId);
 
-  private initializeUI(): void {
-    // Create UI structure
-    this.container.innerHTML = `
-      <div class="timetable-header">
-        <h2>Course Timetable</h2>
-        <button id="export-btn">Export</button>
-      </div>
-      <div class="timetable-settings">
-        <input type="time" id="start-time" />
-        <input type="number" id="default-duration" />
-      </div>
-      <div class="timetable-items"></div>
-    `;
-  }
-}
+  return new Response('Device linked successfully', { status: 200 });
+};
 ```
 
 ### 3.3 Data Models
 
+The data models are now centered around users, their presentations, and their connected devices.
+
 ```typescript
-// models.ts
-interface Presentation {
-  title: string;
-  totalSlides: number;
-  extractedAt: Date;
+// packages/shared/types/index.ts
+
+// Represents a user account, managed by Clerk
+interface User {
+  id: string; // e.g., 'user_2ABC...'
+  email: string;
+  // other profile data
 }
 
+// Represents a presentation and its timetable data, linked to a user
+interface Presentation {
+  id: string;
+  userId: string;
+  title: string;
+  gammaUrl: string;
+  timetableData: TimetableItem[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Represents a browser extension instance that has been paired to a user account
+interface Device {
+  id: string; // A unique ID for the extension instance
+  userId: string;
+  createdAt: Date;
+  lastSeenAt: Date;
+}
+
+// The structure for an item within the timetable
 interface TimetableItem {
   id: string;
   title: string;
-  content: string[];
   duration: number; // in minutes
-  startTime: string; // HH:MM format
-  endTime: string;
-  type: 'slide' | 'break';
-  children?: TimetableItem[];
-}
-
-interface TimetableSettings {
-  defaultDuration: number;
-  startTime: string;
-  breakDuration: number;
-  timeFormat: '12h' | '24h';
+  // ... other fields
 }
 ```
 
 ## 4. Implementation Plan
 
-### Phase 1: MVP Development (Weeks 1-6)
+The project has moved beyond the initial MVP and is now in a phased rollout of its cloud-enabled features.
 
-#### Week 1-2: Foundation
+### Phase 1: Cloud Foundation & Authentication (Complete)
 
-- [ ] Project setup and configuration
-- [ ] Manifest V3 implementation
-- [ ] Basic content script structure
-- [ ] Communication pipeline setup
+This phase focused on building the backend infrastructure and the user authentication system.
 
-#### Week 3-4: Core Features
+- **Sprint 0: Monorepo & Refactor (Complete)**
+  - [x] Restructured project into a monorepo (`packages/`, `netlify/`, `supabase/`).
+  - [x] Introduced abstraction layers for storage, config, and auth.
+- **Sprint 1: Authentication & Dashboard Shell (Complete)**
+  - [x] Implemented the web-first device pairing flow with Clerk.
+  - [x] Created the Supabase schema for `users` and `devices`.
+  - [x] Built the Netlify functions for the auth backend (`register`, `link`, `exchange`, `refresh`).
+  - [x] Developed the web dashboard shell with login/logout capabilities.
 
-- [ ] DOM extraction algorithm
-- [ ] Sidebar UI implementation
-- [ ] Time calculation logic
-- [ ] Basic CSV export
+### Phase 2: Core Feature Sync & Web Dashboard (In Progress)
 
-#### Week 5-6: Integration & Testing
+This phase focuses on synchronizing presentation and timetable data between the extension and the cloud, and building out the web dashboard.
 
-- [ ] Component integration
-- [ ] Error handling
-- [ ] Performance optimization
-- [ ] Beta testing
-
-### Phase 2: Enhanced Features (Weeks 7-9)
-
-#### Week 7-8: Additional Features
-
-- [ ] Break management
-- [ ] Multiple export formats
-- [ ] Time templates
-- [ ] UI improvements
-
-#### Week 9: Polish & Release
-
-- [ ] Bug fixes from beta feedback
-- [ ] Documentation
-- [ ] Chrome Web Store submission
-- [ ] Marketing materials
+- **Sprint 2: Presentation Data Sync**
+  - [ ] Implement `/api/presentations/save` and `/api/presentations/get` endpoints.
+  - [ ] Add presentation sync logic to the extension.
+  - [ ] Store timetable data in the Supabase `presentations` table.
+- **Sprint 3: Web Dashboard Features**
+  - [ ] Display a list of a user's presentations on the web dashboard.
+  - [ ] Allow users to view and manage their timetables from the web.
+  - [ ] Implement a user profile and device management page.
 
 ## 5. Technical Challenges & Solutions
 
@@ -269,21 +274,34 @@ describe('TimeCalculator', () => {
 
 ## 7. Security Considerations
 
+With the move to a cloud-based backend, security is paramount.
+
 ### Permissions Required
+
+The manifest now requires additional permissions for authentication and communication with the backend.
 
 ```json
 {
-  "permissions": ["activeTab", "storage", "downloads"],
-  "host_permissions": ["https://gamma.app/*"]
+  "permissions": [
+    "storage",
+    "tabs",
+    "cookies"
+  ],
+  "host_permissions": [
+    "https://gamma.app/*",
+    "https://*.clerk.accounts.dev/*",
+    "http://localhost/*"
+  ]
 }
 ```
 
 ### Security Measures
 
-- Content Security Policy implementation
-- Input sanitization
-- No external API calls
-- Secure storage practices
+- **Authentication**: All user-specific API endpoints are protected by Clerk session verification.
+- **Authorization**: Device-specific JWTs are used for requests from the extension, scoped with minimal permissions.
+- **Database Security**: Row-Level Security (RLS) is enabled in Supabase to ensure users can only access their own data.
+- **Secrets Management**: All API keys and secrets are stored as environment variables in Netlify and are not exposed on the client-side.
+- **CORS**: Netlify functions are configured with a strict CORS policy to only allow requests from the extension and the web dashboard.
 
 ## 8. Performance Optimization
 
