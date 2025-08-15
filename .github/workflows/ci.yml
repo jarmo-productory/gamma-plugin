@@ -1,0 +1,65 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test & Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Type check
+      run: npm run type-check
+      
+    - name: Lint check
+      run: npm run lint
+      
+    - name: Format check
+      run: npm run format:check
+      
+    - name: Build extension
+      run: npm run build:extension
+      
+    - name: Build web app
+      run: npm run build:web
+      
+    - name: Build shared library
+      run: npm run build:shared
+
+  health-check:
+    name: Production Health Check
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run health check
+      run: |
+        chmod +x scripts/health-check.sh
+        ./scripts/health-check.sh
+      
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ Production health check failed!"
+        echo "Site: https://productory-powerups.netlify.app"
+        echo "Admin: https://app.netlify.com/projects/productory-powerups"

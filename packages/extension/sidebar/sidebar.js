@@ -18,6 +18,7 @@ import { saveData, loadData, debounce } from '../lib/storage.js';
 import { authManager } from '@shared/auth';
 import { deviceAuth } from '@shared/auth/device';
 import { configManager } from '@shared/config';
+import { defaultStorageManager, saveDataWithSync } from '@shared/storage';
 
 let connected = false;
 let lastSlides = [];
@@ -97,7 +98,41 @@ const updateUIWithNewSlides = async (slides, tabId) => {
     currentPresentationUrl = presentationUrl;
 
     const timetableKey = `timetable-${presentationUrl}`;
-    const storedTimetable = await loadData(timetableKey);
+    let storedTimetable = await loadData(timetableKey);
+
+    // Try to sync from cloud if user is authenticated
+    const config = configManager.getConfig();
+    if (config.features.cloudSync && config.environment.apiBaseUrl) {
+      try {
+        const syncResult = await defaultStorageManager.syncFromCloud(presentationUrl, {
+          apiBaseUrl: config.environment.apiBaseUrl,
+          deviceAuth,
+        });
+        
+        if (syncResult.success && syncResult.data) {
+          console.log('[SIDEBAR] Found cloud version, merging with local...');
+          const cloudTimetable = syncResult.data;
+          
+          // Use cloud version if it's newer than local or if no local version exists
+          const shouldUseCloud = !storedTimetable || 
+            (cloudTimetable.lastModified && storedTimetable.lastModified &&
+             new Date(cloudTimetable.lastModified) > new Date(storedTimetable.lastModified));
+             
+          if (shouldUseCloud) {
+            storedTimetable = cloudTimetable;
+            // Also save to local storage for offline access
+            await saveData(timetableKey, cloudTimetable);
+            console.log('[SIDEBAR] Using cloud version (newer than local).');
+          } else {
+            console.log('[SIDEBAR] Using local version (newer than cloud).');
+          }
+        } else if (!syncResult.success && syncResult.error !== 'Presentation not found in cloud') {
+          console.warn('[SIDEBAR] Cloud sync failed:', syncResult.error);
+        }
+      } catch (error) {
+        console.warn('[SIDEBAR] Cloud sync error (non-critical):', error);
+      }
+    }
 
     if (storedTimetable) {
       console.log('[SIDEBAR] Found stored timetable.');
@@ -438,10 +473,38 @@ function renderTimetable(timetable) {
 }
 
 const debouncedSave = debounce(async () => {
-  if (currentTimetable) {
+  if (currentTimetable && currentPresentationUrl) {
     const key = `timetable-${currentPresentationUrl}`;
-    saveData(key, currentTimetable);
-    console.log('Timetable saved.');
+    
+    try {
+      // Get configuration for sync
+      const config = configManager.getConfig();
+      const apiBaseUrl = config.environment.apiBaseUrl;
+      
+      // Use enhanced save with cloud sync if authentication is available
+      if (config.features.cloudSync && apiBaseUrl) {
+        await saveDataWithSync(key, currentTimetable, {
+          deviceAuth,
+          apiBaseUrl,
+          title: currentTimetable.title || lastSlides[0]?.title || 'Untitled Presentation',
+          enableAutoSync: true,
+        });
+        console.log('[SIDEBAR] Timetable saved with cloud sync.');
+      } else {
+        // Fallback to local-only save
+        await saveData(key, currentTimetable);
+        console.log('[SIDEBAR] Timetable saved (local only).');
+      }
+    } catch (error) {
+      console.error('[SIDEBAR] Save failed:', error);
+      // Try fallback to basic saveData
+      try {
+        await saveData(key, currentTimetable);
+        console.log('[SIDEBAR] Timetable saved (fallback to local).');
+      } catch (fallbackError) {
+        console.error('[SIDEBAR] Fallback save also failed:', fallbackError);
+      }
+    }
   }
 }, 500);
 
@@ -538,6 +601,7 @@ async function initializeInfrastructure() {
 
 async function renderSidebar() {
   await renderAuthSection();
+  await updateSyncControlsVisibility();
   // Other render functions can go here
 }
 
@@ -559,6 +623,7 @@ function setupEventListeners() {
   authManager.addEventListener(async event => {
     console.log('[SIDEBAR] Auth state changed:', event.type);
     await renderAuthSection();
+    await updateSyncControlsVisibility();
     updateDebugInfo(lastSlides, `Auth event: ${event.type}`);
   });
 }
@@ -580,4 +645,358 @@ function setupAuthButtons() {
       await authManager.logout();
     });
   }
+}
+
+/**
+ * Updates the visibility and state of sync controls based on authentication
+ */
+async function updateSyncControlsVisibility() {
+  const cloudSyncSection = document.getElementById('cloud-sync-section');
+  if (!cloudSyncSection) return;
+
+  const config = configManager.getConfig();
+  const isCloudSyncEnabled = config.features.cloudSync && config.environment.apiBaseUrl;
+  
+  if (!isCloudSyncEnabled) {
+    cloudSyncSection.style.display = 'none';
+    return;
+  }
+
+  try {
+    const isAuthenticated = await authManager.isAuthenticated();
+    
+    if (isAuthenticated) {
+      cloudSyncSection.style.display = 'block';
+      
+      // Enable sync buttons
+      const saveBtn = document.getElementById('save-to-cloud-btn');
+      const loadBtn = document.getElementById('load-from-cloud-btn');
+      const autoSyncBtn = document.getElementById('auto-sync-toggle');
+      
+      if (saveBtn) saveBtn.disabled = false;
+      if (loadBtn) loadBtn.disabled = false;
+      if (autoSyncBtn) autoSyncBtn.disabled = false;
+      
+      // Set up event listeners if not already done
+      setupSyncEventListeners();
+      
+      // Update sync status display
+      await updateSyncStatusDisplay();
+    } else {
+      cloudSyncSection.style.display = 'none';
+    }
+  } catch (error) {
+    console.warn('[SIDEBAR] Failed to check auth state for sync controls:', error);
+    cloudSyncSection.style.display = 'none';
+  }
+}
+
+/**
+ * Sets up event listeners for sync buttons
+ */
+function setupSyncEventListeners() {
+  const saveBtn = document.getElementById('save-to-cloud-btn');
+  const loadBtn = document.getElementById('load-from-cloud-btn');
+  const autoSyncBtn = document.getElementById('auto-sync-toggle');
+
+  // Avoid duplicate listeners
+  if (saveBtn && !saveBtn.dataset.listenerAttached) {
+    saveBtn.addEventListener('click', handleSaveToCloud);
+    saveBtn.dataset.listenerAttached = 'true';
+  }
+
+  if (loadBtn && !loadBtn.dataset.listenerAttached) {
+    loadBtn.addEventListener('click', handleLoadFromCloud);
+    loadBtn.dataset.listenerAttached = 'true';
+  }
+
+  if (autoSyncBtn && !autoSyncBtn.dataset.listenerAttached) {
+    autoSyncBtn.addEventListener('click', handleAutoSyncToggle);
+    autoSyncBtn.dataset.listenerAttached = 'true';
+  }
+}
+
+/**
+ * Handles manual save to cloud operation
+ */
+async function handleSaveToCloud() {
+  if (!currentTimetable || !currentPresentationUrl) {
+    showSyncMessage('No presentation data to save', 'error');
+    return;
+  }
+
+  const saveBtn = document.getElementById('save-to-cloud-btn');
+  const originalText = saveBtn?.querySelector('.sync-btn-text')?.textContent;
+  
+  try {
+    // Show saving state
+    showSyncMessage('Saving to cloud...', 'info');
+    updateSyncIndicator('syncing');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      const textSpan = saveBtn.querySelector('.sync-btn-text');
+      if (textSpan) textSpan.textContent = 'Saving...';
+    }
+
+    const config = configManager.getConfig();
+    const apiBaseUrl = config.environment.apiBaseUrl;
+    
+    const syncResult = await defaultStorageManager.syncToCloud(
+      currentPresentationUrl,
+      currentTimetable,
+      {
+        apiBaseUrl,
+        deviceAuth,
+        title: currentTimetable.title || lastSlides[0]?.title || 'Untitled Presentation',
+      }
+    );
+
+    if (syncResult.success) {
+      showSyncMessage('Successfully saved to cloud!', 'success');
+      updateSyncIndicator('synced');
+      updateLastSyncTime();
+      console.log('[SIDEBAR] Manual save to cloud successful');
+    } else {
+      throw new Error(syncResult.error || 'Failed to save to cloud');
+    }
+  } catch (error) {
+    console.error('[SIDEBAR] Manual save to cloud failed:', error);
+    showSyncMessage(`Save failed: ${error.message}`, 'error');
+    updateSyncIndicator('error');
+  } finally {
+    // Restore button state
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      const textSpan = saveBtn.querySelector('.sync-btn-text');
+      if (textSpan && originalText) textSpan.textContent = originalText;
+    }
+  }
+}
+
+/**
+ * Handles manual load from cloud operation
+ */
+async function handleLoadFromCloud() {
+  if (!currentPresentationUrl) {
+    showSyncMessage('No presentation to load', 'error');
+    return;
+  }
+
+  const loadBtn = document.getElementById('load-from-cloud-btn');
+  const originalText = loadBtn?.querySelector('.sync-btn-text')?.textContent;
+  
+  try {
+    // Show loading state
+    showSyncMessage('Loading from cloud...', 'info');
+    updateSyncIndicator('syncing');
+    if (loadBtn) {
+      loadBtn.disabled = true;
+      const textSpan = loadBtn.querySelector('.sync-btn-text');
+      if (textSpan) textSpan.textContent = 'Loading...';
+    }
+
+    const config = configManager.getConfig();
+    const apiBaseUrl = config.environment.apiBaseUrl;
+    
+    const syncResult = await defaultStorageManager.syncFromCloud(
+      currentPresentationUrl,
+      {
+        apiBaseUrl,
+        deviceAuth,
+      }
+    );
+
+    if (syncResult.success && syncResult.data) {
+      const cloudTimetable = syncResult.data;
+      
+      // Check for conflicts (local is newer than cloud)
+      const hasLocalConflict = currentTimetable && 
+        currentTimetable.lastModified && 
+        cloudTimetable.lastModified &&
+        new Date(currentTimetable.lastModified) > new Date(cloudTimetable.lastModified);
+      
+      if (hasLocalConflict) {
+        const shouldUseCloud = await showConflictResolutionDialog(currentTimetable, cloudTimetable);
+        if (!shouldUseCloud) {
+          showSyncMessage('Load cancelled - keeping local version', 'info');
+          updateSyncIndicator('synced');
+          return;
+        }
+      }
+      
+      // Apply cloud version
+      currentTimetable = cloudTimetable;
+      
+      // Also save to local storage for offline access
+      const timetableKey = `timetable-${currentPresentationUrl}`;
+      await saveData(timetableKey, cloudTimetable);
+      
+      // Re-render the timetable with new data
+      renderTimetable(cloudTimetable);
+      
+      showSyncMessage('Successfully loaded from cloud!', 'success');
+      updateSyncIndicator('synced');
+      updateLastSyncTime();
+      console.log('[SIDEBAR] Manual load from cloud successful');
+    } else if (syncResult.error === 'Presentation not found in cloud') {
+      showSyncMessage('No cloud version found for this presentation', 'info');
+      updateSyncIndicator('synced');
+    } else {
+      throw new Error(syncResult.error || 'Failed to load from cloud');
+    }
+  } catch (error) {
+    console.error('[SIDEBAR] Manual load from cloud failed:', error);
+    showSyncMessage(`Load failed: ${error.message}`, 'error');
+    updateSyncIndicator('error');
+  } finally {
+    // Restore button state
+    if (loadBtn) {
+      loadBtn.disabled = false;
+      const textSpan = loadBtn.querySelector('.sync-btn-text');
+      if (textSpan && originalText) textSpan.textContent = originalText;
+    }
+  }
+}
+
+/**
+ * Handles auto-sync toggle
+ */
+async function handleAutoSyncToggle() {
+  const autoSyncBtn = document.getElementById('auto-sync-toggle');
+  const textSpan = autoSyncBtn?.querySelector('.sync-btn-text');
+  
+  // For Sprint 2, we'll just toggle the UI state since auto-sync is already implemented
+  // in the debouncedSave function via saveDataWithSync
+  const isActive = autoSyncBtn?.classList.contains('active');
+  
+  if (isActive) {
+    autoSyncBtn.classList.remove('active');
+    if (textSpan) textSpan.textContent = 'Auto Sync: Off';
+    showSyncMessage('Auto-sync disabled', 'info');
+  } else {
+    autoSyncBtn.classList.add('active');
+    if (textSpan) textSpan.textContent = 'Auto Sync: On';
+    showSyncMessage('Auto-sync enabled', 'success');
+  }
+  
+  // Auto-sync is enabled by default in debouncedSave, so this is mostly UI feedback
+  console.log('[SIDEBAR] Auto-sync toggled:', !isActive);
+}
+
+/**
+ * Shows a sync status message to the user
+ */
+function showSyncMessage(message, type = 'info') {
+  let messageElement = document.getElementById('sync-status-message');
+  
+  if (!messageElement) {
+    // Create message element if it doesn't exist
+    messageElement = document.createElement('div');
+    messageElement.id = 'sync-status-message';
+    messageElement.className = 'sync-status-message';
+    
+    const syncSection = document.getElementById('cloud-sync-section');
+    if (syncSection) {
+      syncSection.appendChild(messageElement);
+    }
+  }
+  
+  // Update message
+  messageElement.textContent = message;
+  messageElement.className = `sync-status-message ${type}`;
+  messageElement.style.display = 'block';
+  
+  // Auto-hide after 3 seconds for success/info messages
+  if (type === 'success' || type === 'info') {
+    setTimeout(() => {
+      if (messageElement) {
+        messageElement.style.display = 'none';
+      }
+    }, 3000);
+  }
+}
+
+/**
+ * Updates the sync indicator status
+ */
+function updateSyncIndicator(status) {
+  const indicator = document.getElementById('sync-indicator');
+  if (!indicator) return;
+  
+  // Remove all status classes
+  indicator.className = 'sync-indicator';
+  
+  // Add new status class
+  indicator.classList.add(status);
+  
+  // Update indicator symbol based on status
+  switch (status) {
+    case 'synced':
+      indicator.textContent = '●';
+      break;
+    case 'syncing':
+      indicator.textContent = '⟳';
+      break;
+    case 'error':
+      indicator.textContent = '⚠';
+      break;
+    case 'offline':
+      indicator.textContent = '○';
+      break;
+    default:
+      indicator.textContent = '●';
+  }
+}
+
+/**
+ * Updates the last sync time display
+ */
+function updateLastSyncTime() {
+  const lastSyncElement = document.getElementById('last-sync-time');
+  if (lastSyncElement) {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    lastSyncElement.textContent = `Last sync: ${timeString}`;
+  }
+}
+
+/**
+ * Updates the sync status display
+ */
+async function updateSyncStatusDisplay() {
+  try {
+    const isAuthenticated = await authManager.isAuthenticated();
+    
+    if (isAuthenticated) {
+      updateSyncIndicator('synced');
+    } else {
+      updateSyncIndicator('offline');
+    }
+  } catch (error) {
+    updateSyncIndicator('error');
+  }
+}
+
+/**
+ * Shows conflict resolution dialog when local and cloud versions differ
+ */
+async function showConflictResolutionDialog(localTimetable, cloudTimetable) {
+  return new Promise((resolve) => {
+    const localTime = new Date(localTimetable.lastModified || 0).toLocaleString();
+    const cloudTime = new Date(cloudTimetable.lastModified || 0).toLocaleString();
+    
+    const message = `Conflict detected:\n\n` +
+      `Local version: ${localTime}\n` +
+      `Cloud version: ${cloudTime}\n\n` +
+      `Which version would you like to keep?`;
+    
+    // Simple confirm dialog for Sprint 2 - can be enhanced later
+    const useCloud = confirm(
+      `${message}\n\n` +
+      `Click OK to use cloud version\n` +
+      `Click Cancel to keep local version`
+    );
+    
+    resolve(useCloud);
+  });
 }

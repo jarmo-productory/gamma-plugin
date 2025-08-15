@@ -1,7 +1,55 @@
 /**
- * Sign-in page with hosted Clerk redirect flow.
- * No UI embedding - uses Clerk's hosted pages for maximum reliability.
+ * Production Gamma Timetable Dashboard
+ * Clean, professional interface with real Clerk authentication
  */
+
+// Helper function to create DOM elements
+function h(tag, props = {}, children = []) {
+  const el = document.createElement(tag);
+  Object.entries(props).forEach(([k, v]) => {
+    if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
+    else el.setAttribute(k, v);
+  });
+  (Array.isArray(children) ? children : [children]).forEach(c => {
+    if (typeof c === 'string') el.appendChild(document.createTextNode(c));
+    else if (c) el.appendChild(c);
+  });
+  return el;
+}
+
+function extractClerkDomain(publishableKey) {
+  if (!publishableKey) return null;
+  try {
+    if (publishableKey.startsWith('pk_test_')) {
+      const encoded = publishableKey.replace('pk_test_', '');
+      const decoded = window.atob(encoded);
+      if (decoded.includes('.clerk.accounts.dev')) {
+        const match = decoded.match(/([a-z0-9-]+)\.clerk\.accounts\.dev/);
+        if (match) return `${match[1]}.accounts.dev`;
+      }
+    } else if (publishableKey.startsWith('pk_live_')) {
+      const encoded = publishableKey.replace('pk_live_', '');
+      const decoded = window.atob(decoded);
+      const match = decoded.match(/([a-z0-9-]+)\.clerk\.accounts\.com/);
+      if (match) return `${match[1]}.accounts.com`;
+    }
+  } catch (error) {
+    console.warn('[Auth] Could not extract Clerk domain:', error);
+  }
+  return null;
+}
+
+function buildClerkSignInUrl(returnUrl) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const clerkDomain = extractClerkDomain(publishableKey);
+  
+  if (clerkDomain) {
+    return `https://${clerkDomain}/sign-in?redirect_url=${encodeURIComponent(returnUrl)}`;
+  }
+  
+  return null;
+}
 async function initializeClerk() {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   if (!publishableKey) {
@@ -240,6 +288,8 @@ async function renderDashboard(app) {
   const storedJwtToken = localStorage.getItem('clerk_jwt_token');
   const hasStoredAuth = storedSessionToken || storedJwtToken;
   const isAuthenticated = clerkJwt || hasStoredAuth;
+  
+  console.log('[Dashboard] Auth check:', { clerkJwt, storedSessionToken, storedJwtToken, hasStoredAuth, isAuthenticated });
 
   console.log('[Dashboard] Pairing code:', pairingCode, 'Authenticated:', isAuthenticated);
 
@@ -342,7 +392,24 @@ async function renderDashboard(app) {
             h('span', { style: { color: '#4a5568' } }, 'Export to Excel & PDF')
           ])
         ])
-      ])
+      ]),
+      
+      // Logout button for testing (show if authenticated)
+      isAuthenticated ? h('div', { style: { marginTop: '30px', textAlign: 'center' } }, [
+        h('button', { 
+          id: 'main-logout-btn',
+          style: { 
+            background: '#e53e3e', 
+            color: 'white', 
+            border: 'none', 
+            padding: '8px 16px', 
+            borderRadius: '6px',
+            fontSize: '14px',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          } 
+        }, '🚪 Logout & Test New User')
+      ]) : null
     ])
   ]);
 
@@ -381,11 +448,37 @@ async function renderDashboard(app) {
             h('div', { style: { fontSize: '64px', marginBottom: '20px' } }, '✅'),
             h('div', { style: { fontSize: '20px', color: '#38a169', marginBottom: '16px' } }, 
               'Device Connected Successfully!'),
-            h('div', { style: { fontSize: '16px', color: '#4a5568' } }, 
-              'Your Chrome extension is now linked to your account.')
+            h('div', { style: { fontSize: '16px', color: '#4a5568', marginBottom: '24px' } }, 
+              'Your Chrome extension is now linked to your account.'),
+            h('button', { 
+              id: 'logout-btn',
+              style: { 
+                background: '#e53e3e', 
+                color: 'white', 
+                border: 'none', 
+                padding: '8px 16px', 
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              } 
+            }, '🚪 Logout & Test New User')
           ])
         );
         statusDiv.textContent = 'Extension connected and ready to sync';
+        
+        // Add logout button functionality
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', () => {
+            // Clear all authentication tokens
+            localStorage.removeItem('clerk_session_token');
+            localStorage.removeItem('clerk_jwt_token');
+            
+            // Redirect to fresh dashboard
+            window.location.href = window.location.origin;
+          });
+        }
         
       } catch (error) {
         console.error('[Dashboard] Auto-pairing failed:', error);
@@ -428,6 +521,19 @@ async function renderDashboard(app) {
   // Wire up the main login button
   const loginBtn = document.getElementById('main-login-btn');
   const statusDiv = document.getElementById('dashboard-status');
+  const mainLogoutBtn = document.getElementById('main-logout-btn');
+  
+  // Add logout functionality
+  if (mainLogoutBtn) {
+    mainLogoutBtn.addEventListener('click', () => {
+      // Clear all authentication tokens
+      localStorage.removeItem('clerk_session_token');
+      localStorage.removeItem('clerk_jwt_token');
+      
+      // Redirect to fresh dashboard
+      window.location.href = window.location.origin;
+    });
+  }
   
   if (loginBtn && statusDiv) {
     loginBtn.addEventListener('click', async () => {
@@ -461,25 +567,270 @@ async function renderDashboard(app) {
   }
 }
 
+// NEW SIMPLIFIED DASHBOARD WITH WORKING LOGOUT
+function renderSimplifiedDashboard(container) {
+  // Simple auth state manager
+  const auth = {
+    isLoggedIn: () => !!(localStorage.getItem('clerk_session_token') || 
+                         localStorage.getItem('clerk_jwt_token') ||
+                         localStorage.getItem('device_token')),
+    
+    logout: () => {
+      ['clerk_session_token', 'clerk_jwt_token', 'device_token', 'device_id', 
+       'pairing_code', 'user_email', 'gamma_auth_state'].forEach(key => 
+        localStorage.removeItem(key));
+      window.location.href = window.location.origin;
+    },
+    
+    login: () => {
+      // Use real Clerk authentication
+      const clerkUrl = buildClerkSignInUrl(window.location.origin);
+      if (clerkUrl) {
+        window.location.href = clerkUrl;
+      } else {
+        // Fallback to mock for local testing
+        localStorage.setItem('clerk_session_token', 'dev-session-token');
+        localStorage.setItem('user_email', 'test@example.com');
+        window.location.reload();
+      }
+    }
+  };
+  
+  const isLoggedIn = auth.isLoggedIn();
+  
+  container.innerHTML = '';
+  
+  const dashboard = h('div', { 
+    style: { 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%)', // Pink to purple gradient - DIFFERENT!
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    } 
+  }, [
+    h('div', { 
+      style: { 
+        background: '#1F2937', // Dark background - VERY DIFFERENT!
+        color: 'white',
+        padding: '40px', 
+        borderRadius: '24px', 
+        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+        maxWidth: '500px',
+        width: '100%',
+        border: '2px solid #374151'
+      } 
+    }, [
+      // Version Badge
+      h('div', { style: { textAlign: 'center', marginBottom: '20px' } }, [
+        h('span', { 
+          style: { 
+            background: '#10B981', 
+            color: 'white', 
+            padding: '4px 12px', 
+            borderRadius: '20px',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          } 
+        }, '✨ NEW DASHBOARD V2')
+      ]),
+      
+      // Header
+      h('div', { style: { textAlign: 'center', marginBottom: '30px' } }, [
+        h('div', { style: { fontSize: '48px', marginBottom: '10px' } }, '🚀'),
+        h('h1', { style: { fontSize: '28px', color: '#F3F4F6', margin: '0' } }, 'Gamma Timetable'),
+        h('p', { style: { fontSize: '16px', color: '#9CA3AF', marginTop: '8px' } }, 
+          'Fixed Authentication System')
+      ]),
+      
+      // Auth Status - Very prominent
+      h('div', { 
+        style: { 
+          background: isLoggedIn ? '#065F46' : '#7C2D12',
+          border: `2px solid ${isLoggedIn ? '#10B981' : '#EF4444'}`,
+          borderRadius: '12px',
+          padding: '20px',
+          marginBottom: '24px'
+        } 
+      }, [
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } }, [
+          h('span', { style: { fontSize: '24px' } }, isLoggedIn ? '✅' : '🔒'),
+          h('div', {}, [
+            h('div', { style: { fontWeight: '700', color: '#F9FAFB', fontSize: '18px' } }, 
+              isLoggedIn ? 'You are logged in!' : 'Not Logged In'),
+            isLoggedIn && h('div', { style: { fontSize: '14px', color: '#D1D5DB', marginTop: '4px' } }, [
+              h('div', {}, `Email: ${localStorage.getItem('user_email') || 'test@example.com'}`),
+              localStorage.getItem('clerk_session_token') === 'dev-session-token' && 
+                h('div', { style: { fontSize: '12px', color: '#FCA5A5', marginTop: '4px' } }, 
+                  '⚠️ Mock authentication (Clerk not configured)')
+            ])
+          ])
+        ])
+      ]),
+      
+      // Main Action Buttons - BIG and CLEAR
+      h('div', { style: { marginBottom: '30px' } }, [
+        isLoggedIn ? 
+          h('div', { style: { display: 'grid', gap: '12px' } }, [
+            h('button', { 
+              onclick: () => auth.logout(),
+              style: { 
+                background: '#DC2626', 
+                color: 'white', 
+                border: 'none', 
+                padding: '16px 24px', 
+                borderRadius: '12px', 
+                fontSize: '18px', 
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'transform 0.2s',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+              },
+              onmouseover: (e) => e.target.style.transform = 'scale(1.05)',
+              onmouseout: (e) => e.target.style.transform = 'scale(1)'
+            }, '🚪 LOGOUT'),
+            
+            h('button', { 
+              onclick: () => {
+                auth.logout();
+                setTimeout(() => auth.login(), 100);
+              },
+              style: { 
+                background: '#2563EB', 
+                color: 'white', 
+                border: 'none', 
+                padding: '16px 24px', 
+                borderRadius: '12px', 
+                fontSize: '16px', 
+                fontWeight: '600',
+                cursor: 'pointer'
+              } 
+            }, '🔄 Switch User (Test)')
+          ]) :
+          h('button', { 
+            onclick: () => auth.login(),
+            style: { 
+              background: '#10B981', 
+              color: 'white', 
+              border: 'none', 
+              padding: '16px 24px', 
+              borderRadius: '12px', 
+              fontSize: '18px', 
+              fontWeight: '700',
+              cursor: 'pointer',
+              width: '100%',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+            } 
+          }, '🔐 LOGIN')
+      ]),
+      
+      // Features - Dark theme
+      h('div', { style: { borderTop: '1px solid #374151', paddingTop: '20px' } }, [
+        h('h3', { style: { fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#D1D5DB' } }, 
+          'Features'),
+        h('div', { style: { display: 'grid', gap: '10px' } }, [
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [
+            h('span', { style: { color: '#10B981' } }, '✓'),
+            h('span', { style: { fontSize: '14px', color: '#9CA3AF' } }, 
+              'Working logout button!')
+          ]),
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [
+            h('span', { style: { color: '#10B981' } }, '✓'),
+            h('span', { style: { fontSize: '14px', color: '#9CA3AF' } }, 
+              'Clear authentication state')
+          ]),
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [
+            h('span', { style: { color: '#10B981' } }, '✓'),
+            h('span', { style: { fontSize: '14px', color: '#9CA3AF' } }, 
+              'Easy multi-user testing')
+          ])
+        ])
+      ]),
+      
+      // Developer Tools - Dark theme
+      h('div', { 
+        style: { 
+          borderTop: '1px solid #374151', 
+          marginTop: '30px', 
+          paddingTop: '20px' 
+        } 
+      }, [
+        h('h3', { style: { fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: '#6B7280' } }, 
+          '🛠️ Developer Tools'),
+        h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, [
+          h('button', { 
+            onclick: () => {
+              auth.logout();
+              alert('All auth data cleared! Page will reload.');
+            },
+            style: { 
+              background: '#374151', 
+              color: '#D1D5DB', 
+              border: '1px solid #4B5563', 
+              padding: '6px 12px', 
+              borderRadius: '6px', 
+              fontSize: '12px',
+              cursor: 'pointer'
+            } 
+          }, 'Clear All Storage'),
+          
+          h('button', { 
+            onclick: () => {
+              console.log('Current auth state:', {
+                localStorage: Object.keys(localStorage).reduce((acc, key) => {
+                  if (key.includes('clerk') || key.includes('device') || 
+                      key.includes('token') || key.includes('gamma')) {
+                    acc[key] = localStorage.getItem(key);
+                  }
+                  return acc;
+                }, {})
+              });
+              alert('Check console for auth state');
+            },
+            style: { 
+              background: '#374151', 
+              color: '#D1D5DB', 
+              border: '1px solid #4B5563', 
+              padding: '6px 12px', 
+              borderRadius: '6px', 
+              fontSize: '12px',
+              cursor: 'pointer'
+            } 
+          }, 'Debug Auth State')
+        ])
+      ])
+    ])
+  ]);
+  
+  container.appendChild(dashboard);
+}
+
+// Load production dashboard
+const prodScript = document.createElement('script');
+prodScript.src = './production-dashboard.js';
+document.head.appendChild(prodScript);
+
 document.addEventListener('DOMContentLoaded', () => {
   const app = document.getElementById('app');
   if (!app) return;
   
   const url = new URL(window.location.href);
-  const isSignInPath = location.pathname === '/sign-in' || location.pathname.endsWith('/sign-in');
-  const hasPairCode = !!url.searchParams.get('code');
-  const hasClerkJwt = !!url.searchParams.get('__clerk_db_jwt');
-  const hasLegacySession = !!url.searchParams.get('__session');
+  const debug = url.searchParams.get('debug') === 'true';
   
-  // Use unified dashboard for most flows
-  if (isSignInPath && (hasPairCode || hasClerkJwt || hasLegacySession)) {
-    // Coming from Clerk auth with pairing code - use dashboard for seamless flow
-    renderDashboard(app);
-  } else if (isSignInPath && !hasPairCode) {
-    // Manual sign-in page (fallback)
-    renderSignIn(app);
+  // Use production dashboard by default
+  if (!debug && window.renderProductionDashboard) {
+    window.renderProductionDashboard(app);
+  } else if (debug) {
+    // Debug mode - use simplified dashboard
+    renderSimplifiedDashboard(app);
   } else {
-    // Main dashboard - handles all pairing code scenarios automatically
-    renderDashboard(app);
+    // Fallback to production rendering inline
+    const script = document.createElement('script');
+    script.textContent = `(${renderProductionDashboardInline.toString()})()`;
+    document.body.appendChild(script);
+    if (window.renderProductionDashboard) {
+      window.renderProductionDashboard(app);
+    }
   }
 });

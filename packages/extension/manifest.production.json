@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "Gamma Timetable Extension",
+  "version": "0.0.28",
+  "description": "Extracts slide content from Gamma presentations and generates customizable timetables.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "downloads",
+    "sidePanel",
+    "tabs",
+    "cookies"
+  ],
+  "host_permissions": [
+    "https://gamma.app/*",
+    "https://productory-powerups.netlify.app/*",
+    "https://*.clerk.accounts.dev/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "48": "assets/icon-48.png",
+      "128": "assets/icon-128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gamma.app/*",
+        "https://*.gamma.app/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "icons": {
+    "16": "assets/icon-16.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  }
+}

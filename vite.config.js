@@ -3,8 +3,9 @@ import { resolve } from 'path';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import packageJson from './package.json';
 
-// Build target can be set via BUILD_TARGET env var
+// Build target and environment can be set via env vars
 const buildTarget = process.env.BUILD_TARGET || 'extension';
+const buildEnv = process.env.BUILD_ENV || 'local';
 
 const extensionConfig = {
   build: {
@@ -33,7 +34,13 @@ const extensionConfig = {
   plugins: [
     viteStaticCopy({
       targets: [
-        { src: 'packages/extension/manifest.json', dest: '.' },
+        { 
+          src: buildEnv === 'production' 
+            ? 'packages/extension/manifest.production.json' 
+            : 'packages/extension/manifest.json', 
+          dest: '.', 
+          rename: 'manifest.json' 
+        },
         { src: 'packages/extension/assets/*', dest: 'assets' },
         { src: 'packages/extension/lib/xlsx.full.min.js', dest: 'lib/' },
         { src: 'packages/extension/popup/popup.html', dest: '.' },
@@ -105,6 +112,7 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(packageJson.version),
       __BUILD_TARGET__: JSON.stringify(buildTarget),
+      __BUILD_ENV__: JSON.stringify(buildEnv),
       'process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY': JSON.stringify(
         env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
       ),

@@ -200,3 +200,7 @@ export class AuthManager {
 
 // Export a default instance for easy use
 export const authManager = new AuthManager();
+
+// Export unified auth manager for simplified UX
+export { UnifiedAuthManager, authManager as unifiedAuth } from './unified-auth';
+export type { AuthData, AuthState as UnifiedAuthState } from './unified-auth';

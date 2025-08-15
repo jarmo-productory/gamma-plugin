@@ -369,10 +369,225 @@ input[type='time']::-webkit-calendar-picker-indicator {
   justify-content: center;
 }
 
+/* Cloud Sync Section Styles */
+.cloud-sync-section {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.sync-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.sync-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  flex: 1;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.sync-btn:hover:not(:disabled) {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.sync-btn:active:not(:disabled) {
+  transform: translateY(0);
+  background-color: #f3f4f6;
+}
+
+.sync-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #9ca3af;
+}
+
+.sync-btn-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.sync-btn-text {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Save to Cloud - Green accent */
+#save-to-cloud-btn:not(:disabled) {
+  border-color: #10b981;
+  color: #047857;
+}
+
+#save-to-cloud-btn:hover:not(:disabled) {
+  background-color: #ecfdf5;
+  border-color: #059669;
+}
+
+/* Load from Cloud - Blue accent */
+#load-from-cloud-btn:not(:disabled) {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+#load-from-cloud-btn:hover:not(:disabled) {
+  background-color: #eff6ff;
+  border-color: #2563eb;
+}
+
+/* Auto Sync Toggle - Purple accent when active */
+.sync-toggle.active {
+  background-color: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #ffffff;
+}
+
+.sync-toggle.active:hover {
+  background-color: #7c3aed;
+  border-color: #7c3aed;
+}
+
+.sync-status-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.last-sync {
+  font-style: italic;
+}
+
+.sync-indicator {
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+/* Sync status colors */
+.sync-indicator.synced {
+  color: #10b981; /* Green */
+}
+
+.sync-indicator.syncing {
+  color: #f59e0b; /* Amber */
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.sync-indicator.error {
+  color: #ef4444; /* Red */
+}
+
+.sync-indicator.offline {
+  color: #6b7280; /* Gray */
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Sync status message */
+.sync-status-message {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.3s ease-in-out;
+}
+
+.sync-status-message.success {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.sync-status-message.error {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid: #fecaca;
+}
+
+.sync-status-message.info {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+/* Settings Section Styles */
+.settings-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  background-color: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  width: 100%;
+  justify-content: center;
+}
+
+.settings-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.settings-icon {
+  font-size: 12px;
+}
+
+.settings-text {
+  font-size: 12px;
+}
+
 @media (max-width: 350px) {
   .sticky-toolbar {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+  }
+  
+  .sync-controls {
+    flex-direction: column;
+  }
+  
+  .sync-btn {
+    min-width: auto;
   }
 }

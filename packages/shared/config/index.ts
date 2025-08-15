@@ -82,8 +82,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   userProfiles: false,
   sessionManagement: false,
 
-  // Cloud sync features - DISABLED in Sprint 0
-  cloudSync: false,
+  // Cloud sync features - ENABLED in Sprint 2
+  cloudSync: true,
   autoSync: false,
   syncQueue: false,
   conflictResolution: false,
@@ -111,15 +111,39 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   performanceMetrics: false,
 };
 
-export const DEFAULT_ENVIRONMENT_CONFIG: EnvironmentConfig = {
-  environment: 'production',
+// Environment-specific configurations
+const LOCAL_ENVIRONMENT_CONFIG: EnvironmentConfig = {
+  environment: 'development',
   apiBaseUrl: 'http://localhost:3000',
   webBaseUrl: 'http://localhost:3000',
+  enableAnalytics: false,
+  logLevel: 'debug',
+  maxStorageSize: 50, // 50MB
+  syncIntervalMs: 30000, // 30 seconds
+};
+
+const PRODUCTION_ENVIRONMENT_CONFIG: EnvironmentConfig = {
+  environment: 'production',
+  apiBaseUrl: 'https://productory-powerups.netlify.app',
+  webBaseUrl: 'https://productory-powerups.netlify.app',
   enableAnalytics: false,
   logLevel: 'info',
   maxStorageSize: 50, // 50MB
   syncIntervalMs: 30000, // 30 seconds
 };
+
+// Function to get the appropriate environment config based on build environment
+function getEnvironmentConfig(): EnvironmentConfig {
+  // Check if we're in a build environment with BUILD_ENV set
+  if (typeof __BUILD_ENV__ !== 'undefined') {
+    return __BUILD_ENV__ === 'production' ? PRODUCTION_ENVIRONMENT_CONFIG : LOCAL_ENVIRONMENT_CONFIG;
+  }
+  
+  // Default to local environment for development
+  return LOCAL_ENVIRONMENT_CONFIG;
+}
+
+export const DEFAULT_ENVIRONMENT_CONFIG: EnvironmentConfig = getEnvironmentConfig();
 
 export const DEFAULT_USER_CONFIG: UserConfig = {
   theme: 'auto',
@@ -127,7 +151,7 @@ export const DEFAULT_USER_CONFIG: UserConfig = {
   exportFormat: 'xlsx',
   notifications: false,
   autoSave: true,
-  syncOnStartup: false, // No sync in Sprint 0
+  syncOnStartup: true, // Enable sync in Sprint 2
 };
 
 /**

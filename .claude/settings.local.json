@@ -30,7 +30,27 @@
       "Bash(pkill:*)",
       "Bash(rm:*)",
       "Bash(curl:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(git commit:*)",
+      "Bash(npm install)",
+      "Bash(node:*)",
+      "Bash(JWT_SECRET=test-secret-key-for-development-only node debug-jwt.js)",
+      "Bash(mv:*)",
+      "Bash(netlify env:list:*)",
+      "Bash(kill:*)",
+      "Bash(chmod:*)",
+      "Bash(/tmp/test-clerk-real.sh:*)",
+      "Bash(cat:*)",
+      "Bash(netlify:*)",
+      "Bash(supabase:*)",
+      "Bash(gh repo view:*)",
+      "Bash(BUILD_TARGET=web vite build)",
+      "Bash(npx vite build:*)",
+      "Bash(BUILD_TARGET=web npx vite build)",
+      "Bash(./scripts/health-check.sh:*)",
+      "WebFetch(domain:productory-powerups.netlify.app)",
+      "Bash(npm test:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

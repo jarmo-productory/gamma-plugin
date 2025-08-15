@@ -82,10 +82,18 @@ async function initializeClerk() {
       await clerkInstance.load();
       
       // Additional check to ensure Clerk is fully loaded
+      // Use different timeouts for development vs production
+      const isProduction = window.location.hostname !== 'localhost';
+      const maxRetries = isProduction ? 15 : 10; // More retries for production
+      const retryDelay = isProduction ? 150 : 100; // Longer delay for production
+      
       let retries = 0;
-      while (!clerkInstance.loaded && retries < 10) {
-        console.log('[Auth] Waiting for Clerk to finish loading...', { retries });
-        await new Promise(resolve => setTimeout(resolve, 100));
+      while (!clerkInstance.loaded && retries < maxRetries) {
+        console.log('[Auth] Waiting for Clerk to finish loading...', { 
+          retries, 
+          environment: isProduction ? 'production' : 'development' 
+        });
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
         retries++;
       }
       
@@ -311,10 +319,24 @@ async function renderDashboard() {
       console.log('[Dashboard] Clerk still loading, showing loading state...');
       container.innerHTML = '<div style="text-align: center; padding: 20px;">Restoring session...</div>';
       
-      // Wait a bit and retry
-      setTimeout(() => renderDashboard(), 100);
+      // For production, add a longer timeout and maximum retry attempts
+      const maxRetries = window.location.hostname === 'localhost' ? 50 : 30; // Shorter timeout for production
+      const retryDelay = window.location.hostname === 'localhost' ? 100 : 200; // Longer delay for production
+      
+      if (!window.clerkLoadRetryCount) window.clerkLoadRetryCount = 0;
+      window.clerkLoadRetryCount++;
+      
+      if (window.clerkLoadRetryCount < maxRetries) {
+        setTimeout(() => renderDashboard(), retryDelay);
+      } else {
+        console.error('[Dashboard] Clerk failed to load after maximum retries');
+        container.innerHTML = '<div style="text-align: center; color: red; padding: 20px;">Authentication failed to load. Please refresh the page.</div>';
+      }
       return;
     }
+    
+    // Reset retry counter when Clerk loads successfully
+    window.clerkLoadRetryCount = 0;
     
     // Now get the current user (Clerk is fully loaded)
     const user = await getCurrentUser();
