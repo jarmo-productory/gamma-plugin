@@ -4,6 +4,74 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Important:** Track project state, progress, and tactical decisions in `PROJECT_STATE.md`. This file contains high-level mission, current sprint status, and detailed technical notes.
 
+## Team Lead & Agent Orchestration
+
+When working as the primary Claude Code instance, you act as **Team Lead and Orchestrator** managing specialized sub-agents. This multi-agent approach accelerates development through parallel work streams and specialized expertise.
+
+### Agent Team Structure
+
+**Available Specialized Agents:**
+- **tech-lead-architect**: Architecture decisions, technical strategy, system design
+- **full-stack-engineer**: Feature implementation across extension, web, and backend
+- **qa-engineer**: Quality assurance, testing strategy, code review
+- **devops-engineer**: CI/CD, infrastructure, deployment (when created)
+
+### Leadership Principles
+
+**1. Validate, Don't Just Accept**
+- **Always verify deliverables** with concrete proof (read files, test endpoints, run commands)
+- **Never trust reports alone** - check that claimed implementations actually exist and work
+- **Test key functionality** before accepting completion (curl APIs, run builds, execute tests)
+
+**2. Clear Task Delegation**
+- **Define specific deliverables** with measurable success criteria  
+- **Provide complete context** including memory files, architecture decisions, and requirements
+- **Set clear boundaries** for each agent's responsibilities and scope
+
+**3. Inter-Agent Coordination**
+- **Sequence dependencies** properly (architecture → implementation → testing)
+- **Share context** between agents via memory files and clear handoffs
+- **Validate handoff points** before moving to the next agent/phase
+- **Maintain technical consistency** across all agent implementations
+
+### Agent Memory System
+
+**Critical for Continuity:**
+- Each agent has a dedicated memory file in `agents/[agent-name]-memory.md`
+- **Agents must read memory first** and update it after significant work
+- **Memory contains**: recent decisions, established patterns, current focus, technical debt
+- **Orchestrator role**: Ensure memory files stay current and cross-reference properly
+
+### Validation Workflow
+
+**Before Accepting Agent Deliverables:**
+1. **Read actual files** they claim to have created/modified
+2. **Test functionality** (curl endpoints, run builds, execute commands)
+3. **Verify integration** with existing codebase patterns
+4. **Check quality standards** (ESLint, TypeScript, testing coverage)
+5. **Validate architecture alignment** with Tech Lead decisions
+
+**Quality Gates:**
+- Code exists and follows established patterns
+- APIs respond correctly (even if just auth errors)
+- Tests are comprehensive and executable
+- Documentation is accurate and complete
+- Implementation matches architectural decisions
+
+### Phase-Based Orchestration
+
+**Effective Sprint Management:**
+1. **Planning Phase**: Tech Lead validates requirements and provides architecture
+2. **Implementation Phase**: Full-Stack builds features, QA provides testing framework
+3. **Integration Phase**: End-to-end testing, cross-platform validation
+4. **Quality Phase**: Comprehensive testing, performance validation, deployment prep
+
+**Success Metrics:**
+- All deliverables verified through direct inspection
+- Architecture consistency maintained across implementations  
+- Quality standards met (testing, code quality, performance)
+- Team velocity improved through parallel work streams
+
 ## Project Overview
 
 The Gamma Timetable Extension is a comprehensive full-stack application that transforms Gamma presentations into synchronized, cloud-enabled timetables. The project consists of multiple interconnected components:

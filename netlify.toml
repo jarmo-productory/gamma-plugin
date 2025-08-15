@@ -28,6 +28,26 @@
   status = 200
 
 [[redirects]]
+  from = "/api/presentations/save"
+  to = "/.netlify/functions/presentations-save"
+  status = 200
+
+[[redirects]]
+  from = "/api/presentations/get"
+  to = "/.netlify/functions/presentations-get"
+  status = 200
+
+[[redirects]]
+  from = "/api/presentations/list"
+  to = "/.netlify/functions/presentations-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/bootstrap"
+  to = "/.netlify/functions/auth-bootstrap"
+  status = 200
+
+[[redirects]]
   from = "/api/protected/ping"
   to = "/.netlify/functions/protected-ping"
   status = 200

@@ -228,7 +228,7 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
   - Committed all changes with "feat: complete unified authentication & device pairing flow"
   - Version: v0.0.26 (28 files changed, 31716 insertions, 570 deletions)
 
-- **2025-08-13:** **Documentation Overhaul Complete** - Aligned all core product and technical documents in `/documents/core` with the current cloud-enabled architecture. Updated development, deployment, product, and UI/UX documentation to reflect the new Netlify/Supabase/Clerk stack, web dashboard, and authentication flows.
+
 - **2025-08-12:** **Final Sprint 1 Cleanup & ESLint Fixes** ✅
   - Resolved critical ESLint `any` type errors in netlify/functions/devices-link.ts and packages/shared/config/index.ts
   - Replaced `any` types with proper TypeScript types: `{ user_id?: string; sub?: string }`, `Record<string, unknown>`, `unknown`
@@ -236,6 +236,8 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
   - Enhanced error handling with proper type guards: `e instanceof Error ? e.message : 'Unknown error'`
   - **All commits pushed to main branch** - project ready for handoff
   - **Sprint 1 Status**: 🎉 **FULLY COMPLETE** with production-ready code quality
+
+- **2025-08-13:** **Documentation Overhaul Complete** - Aligned all core product and technical documents in `/documents/core` with the current cloud-enabled architecture. Updated development, deployment, product, and UI/UX documentation to reflect the new Netlify/Supabase/Clerk stack, web dashboard, and authentication flows.
 
 ### Build Plan: Web‑first Login + Pairing
 
@@ -323,6 +325,11 @@ curl -X POST https://api.clerk.com/v1/redirect_urls \
 ## Next Session Priorities (Sprint 2)
 
 **Immediate Next Steps:**
+0. **P0: User bootstrap on first authenticated access (High Priority)**
+   - Ensure a row exists in `public.users` for the authenticated user (Clerk ID) before any `/api/presentations/*` operations
+   - Implement production-safe creation path (current auto-create only active in local dev)
+   - Option A: Create on successful `devices-link`; Option B: Create on first `/presentations/save|get|list` if missing
+   - Add tests and monitoring; update API docs and migration notes
 1. **Production Deployment** 
    - Deploy Netlify functions to production environment
    - Set production environment variables (Clerk prod keys, Supabase prod keys)
