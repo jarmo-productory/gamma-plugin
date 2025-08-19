@@ -2,7 +2,7 @@ import * as React from "react"
 import { Button } from "./button"
 import { Card, CardContent, CardHeader, CardTitle } from "./card"
 import { Input } from "./input"
-import { cn } from "@lib/utils"
+import { cn } from "../lib/utils"
 
 /**
  * Gamma-specific React components that match existing design patterns
