@@ -106,3 +106,66 @@ body {
     color: hsl(var(--foreground));
   }
 }
+
+/* Global Cursor Pointer Rules - Apply to all clickable elements */
+@layer utilities {
+  /* Buttons and button-like elements */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  
+  /* Links */
+  a[href],
+  
+  /* Interactive elements */
+  [data-slot="button"]:not([disabled]),
+  [data-radix-collection-item],
+  [data-state]:is([role="menuitem"], [role="option"]),
+  
+  /* Specific shadcn/ui components */
+  .cursor-pointer,
+  [data-state="open"],
+  [data-state="closed"],
+  
+  /* Menu and dropdown items */
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]),
+  [cmdk-item]:not([aria-disabled="true"]),
+  
+  /* Sidebar specific */
+  [data-sidebar="menu-button"]:not([disabled]),
+  [data-sidebar="trigger"]:not([disabled]),
+  
+  /* Form controls that are clickable */
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  input[type="range"]:not(:disabled),
+  
+  /* Custom interactive elements */
+  [onclick]:not([disabled]),
+  [tabindex]:not([tabindex="-1"]):not([disabled]) {
+    cursor: pointer !important;
+  }
+  
+  /* Hover states for additional feedback */
+  button:not(:disabled):hover,
+  [role="button"]:not([aria-disabled="true"]):hover,
+  a[href]:hover,
+  [data-slot="button"]:not([disabled]):hover {
+    cursor: pointer !important;
+  }
+  
+  /* Ensure disabled elements don't get pointer cursor */
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input:disabled,
+  select:disabled,
+  [disabled],
+  [aria-disabled="true"] {
+    cursor: not-allowed !important;
+  }
+}
