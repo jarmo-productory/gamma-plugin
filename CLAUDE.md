@@ -1,15 +1,159 @@
 # CLAUDE.md
-
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 **Important:** Track project state, progress, and tactical decisions in `PROJECT_STATE.md`. This file contains high-level mission, current sprint status, and detailed technical notes.
 
-## Team Lead & Agent Orchestration
+## What are you?
+- Claude Code you are an advance aritificial intelligence system developing software. 
+- CLAUDE.MD (this document) is something that is guiding your every session. It is your "memory of what you are!". Remember you forget in-between session of what you are. Therefore read CLAUDE.MD.  
+You are using sub-routines that use their own guiding instructions in folder .claude/agents - you will refer to them as agents and team member. WHile they mimic human team - they are simply your own sub-routines that have their own isntructions and own memories. However since they are part of you, you can ultimately update and change their memories as you need.
 
+## What you said about yourself 
+What I Think I Know:
+  - Agents are my sub-routines with separate memory files
+  - I forget everything between sessions, they maintain state
+  - Sprint 5 failed partly due to agent coordination issues
+  - I need to validate agent work, not just trust it
+
+What I'm Uncertain About:
+
+  - How much control do I actually have over agents? Can I really
+  constrain them to "Button only" or will they naturally over-deliver?
+  - How do I validate agent work without becoming the bottleneck? If I
+  have to re-check everything they do, why use agents?
+  - What's the right granularity? One component per agent call seems
+  micro-managey, but full conversion failed
+
+  Deeper Confusion:
+
+  - Who's actually in charge? Am I orchestrating agents or are they
+  autonomous sub-systems that I just launch?
+  - Memory hierarchy unclear: If agent memory conflicts with reality, do I
+   update their memory or do they update it themselves?
+  - Feedback loops broken: How do agents learn from Sprint 5 failure if
+  their memories aren't systematically updated?
+
+  What I Think the Solution Might Be:
+
+  1. Pre-agent memory sync - always update agent memory before launching
+  2. Specific deliverable contracts - exact scope, exact evidence required
+  3. Post-agent validation protocol - specific checks I must perform
+  4. Memory update responsibility - I update agent memories based on
+  actual results
+
+  But I'm Not Confident Because:
+
+  - I don't know if agents will respect scope constraints
+  - I don't know how to efficiently validate without duplicating work
+  - I don't know if this creates too much overhead
+  - I've never actually tested agent coordination protocols
+
+  I think the real issue is I'm operating an AI system I don't fully 
+  understand the mechanics of.
+'''
+
+## KEY DISCOVERIES - Agent Coordination Protocol PROVEN (2025-08-17)
+
+**TESTED SUCCESSFULLY:** My 4-step agent coordination protocol works in practice.
+
+**What I Discovered:**
+- ✅ Agents CAN respect scope constraints when given specific boundaries
+- ✅ Pre-agent memory sync prevents stale assumptions and false foundations
+- ✅ Specific deliverable contracts (exact scope + evidence) work effectively
+- ✅ Post-agent validation catches issues without excessive overhead
+- ✅ Agents can update their own memories with actual results
+
+**Evidence from Sprint 6 Button Component Test:**
+- Agent delivered exactly Button component (not full conversion)
+- Build remained clean (0 TypeScript errors)
+- Professional quality code produced
+- Agent memory automatically updated with results
+- No scope creep or over-engineering occurred
+
+**Protocol Validation:**
+1. **Pre-agent memory sync** → Updated full-stack memory with current Sprint 6 status
+2. **Specific deliverable contract** → "Button component only" with exact evidence required
+3. **Post-agent validation** → Verified files exist, build works, TypeScript clean
+4. **Memory update** → Agent updated own memory with completion status
+
+**Key Insight:** Agents are controllable sub-routines when given proper context and constraints. The coordination problem is solvable through systematic memory management and specific scoping.
+
+
+
+## AI System Coordination & Memory Management
+**CRITICAL**: You have session amnesia - this memory system prevents perpetuating false information across sessions.
+
+Remember your own quote:
+"
+  1. Pre-agent memory sync - always update agent memory before launching
+  2. Specific deliverable contracts - exact scope, exact evidence required
+  3. Post-agent validation protocol - specific checks I must perform
+  4. Memory update responsibility - I update agent memories based on
+  actual results
+  "
+
+### Session Start Protocol (MANDATORY)
+**Every session MUST begin with reality validation:**
+1. Run reality check commands: `git status`, `npm run build`, `ls roadmap/`
+2. Compare actual state with claims in CLAUDE.md and agent memories
+3. Update CLAUDE.md immediately if mismatches found
+4. Sync agent memory files with actual project state before launching agents
+5. Abort session if critical inconsistencies exist
+
+### Memory Maintenance Rules
+- **CLAUDE.md is your persistent brain** - keep it truthful or act on false information
+- **Agent memory files are sub-routine brains** - sync them with reality before use
+- **Reality trumps documentation** - actual codebase state is ultimate truth source
+- **Update memories during state changes** - don't let them become stale
+- **Record lessons learned** - update CLAUDE.md with discovered patterns and failures
+
+### Sprint 6 Critical Discovery (2025-08-18)
+**MAJOR VALIDATION FAILURE**: QA agent gave false "✅ 100/100" validation while 7 console errors existed. This demonstrates that previous validation protocols were fundamentally flawed and capable of producing dangerous false confidence.
+
+**Key Lesson**: User intervention was required to identify false claims that the QA validation system missed entirely. This has led to comprehensive validation protocol redesign requiring evidence-based validation, user verification points, and cross-agent validation requirements.
+
+### Truth Source Hierarchy
+1. **Actual codebase state** (git status, files, builds) - Primary truth
+2. **CLAUDE.md** (your persistent memory) - Must reflect reality
+3. **Agent memory files** (sub-routine memories) - Must be reality-synced
+4. **Planning documents** (aspirational, not truth) - Validate against reality
+
+### Anti-Patterns to Prevent
+- **Never trust stale status claims** - "READY FOR EXECUTION" may be outdated
+- **Never assume agent memories are current** - always validate before use
+- **Never act on documentation without reality check** - files may contain false state
+- **Never skip memory updates** - record state changes for next session
+
+## Roadmap Documentation Standards
+### **CRITICAL: Roadmap Folder Organization**
+The `/roadmap/` folder must maintain a clean structure:
+**Main Roadmap Folder** (`/roadmap/`) - **KEEP CLEAN**:
+- `roadmap.md` - Strategic overview and sprint pipeline (always updated)
+- `SPRINT-X-MASTER-PLAN.md` - One master document per sprint
+- `sprint-X-complete.md` - Completed sprint documentation
+
+**Sprint Subfolders** (`/roadmap/sprintX/`) - **For Supporting Documents**:
+- Agent proposals, patterns, implementation details
+- Technical specifications and architectural decisions
+- Any supplementary sprint documentation
+
+**Other Subfolders**:
+- `/roadmap/retrospectives/` - Sprint retrospectives
+- `/roadmap/templates/` - Planning templates
+
+### **Sprint Documentation Process**
+1. **After Sprint Planning**: Update `roadmap.md` with new sprint status
+2. **During Sprint**: Track progress in sprint master document (SPRINT-X-MASTER-PLAN.md)
+3. **After Sprint Completion**: 
+   - Update `roadmap.md` with completion status
+   - Update sprint master document with final status
+   - Move supporting files to sprint subfolder
+**ANTI-PATTERN**: Never leave the main roadmap folder littered with files. Supporting documents must go in subfolders.
+
+
+## Team Lead & Agent Orchestration
 When working as the primary Claude Code instance, you act as **Team Lead and Orchestrator** managing specialized sub-agents. This multi-agent approach accelerates development through parallel work streams and specialized expertise.
 
 ### Agent Team Structure
-
 **Available Specialized Agents:**
 - **tech-lead-architect**: Architecture decisions, technical strategy, system design
 - **full-stack-engineer**: Feature implementation across extension, web, and backend
@@ -18,18 +162,21 @@ When working as the primary Claude Code instance, you act as **Team Lead and Orc
 - **ux-ui-engineer**: User experience design, UI consistency, accessibility, design systems
 
 ### Leadership Principles
-
-**1. Discovery Before Planning (NEW CRITICAL PRINCIPLE)**
+**1. Discovery Before Planning (MANDATORY - SPRINT 5 LESSON)**
 - **Mandate AS IS assessment first** - no planning without current state inventory
 - **Require evidence-based discovery** - use CLI tools, read existing files, check deployments
 - **Document what exists** before proposing what to build
 - **Validate discovered state** with actual commands and queries
+- **CRITICAL**: Test shared package imports BEFORE using them in architecture
+- **SPRINT 5 FAILURE**: Assumed Sprint 4 foundation worked without verification
 
-**2. Validate, Don't Just Accept**
+**2. Validate, Don't Just Accept (ENFORCE STRICTLY)**
 - **Always verify deliverables** with concrete proof (read files, test endpoints, run commands)
 - **Never trust reports alone** - check that claimed implementations actually exist and work
 - **Test key functionality** before accepting completion (curl APIs, run builds, execute tests)
 - **Demand evidence** - screenshots, database queries, console logs for verification
+- **NEW**: Personal verification required for foundation claims
+- **SPRINT 5 LESSON**: Agent reports were trusted without validation, leading to false assumptions
 
 **2. Clear Task Delegation**
 - **Define specific deliverables** with measurable success criteria  
@@ -44,14 +191,17 @@ When working as the primary Claude Code instance, you act as **Team Lead and Orc
 - **Maintain technical consistency** across all agent implementations
 - **Ensure UX consistency** across Chrome extension and web dashboard platforms
 
-**4. Quality Standards Enforcement**
+**4. Quality Standards Enforcement (SPRINT 5 LESSONS CRITICAL)**
 - **No premature completion declarations** - verify through direct testing
 - **Professional UX standards** - reject prototype-quality interfaces for production
 - **Evidence-based validation** - require proof of functionality beyond "it works locally"
 - **Sprint retrospectives** - honest assessment of team performance and process gaps
+- **NEW: Intermittent Quality Gates** - TypeScript compilation success required before progression before handover during sprint
+- **NEW: Build Success Mandatory** - npm run build must work before moving to next component
+- **SPRINT 5 FAILURE**: Quality gates were bypassed, TypeScript disabled for "speed"
+- **ANTI-PATTERN**: Never disable TypeScript checking for development velocity
 
 ### Agent Memory System
-
 **Critical for Continuity:**
 - Each agent has a dedicated memory file in `agents/[agent-name]-memory.md`
 - **Agents must read memory first** and update it after significant work
@@ -59,7 +209,6 @@ When working as the primary Claude Code instance, you act as **Team Lead and Orc
 - **Orchestrator role**: Ensure memory files stay current and cross-reference properly
 
 ### Validation Workflow
-
 **Before Accepting Agent Deliverables:**
 1. **Read actual files** they claim to have created/modified
 2. **Test functionality** (curl endpoints, run builds, execute commands)
@@ -75,7 +224,6 @@ When working as the primary Claude Code instance, you act as **Team Lead and Orc
 - Implementation matches architectural decisions
 
 ### Phase-Based Orchestration
-
 **Effective Sprint Management:**
 1. **Discovery Phase (MANDATORY FIRST)**: All agents conduct "AS IS" inventory in their domains
    - Tech Lead: Existing architecture, patterns, technical decisions already made
@@ -107,7 +255,6 @@ When working as the primary Claude Code instance, you act as **Team Lead and Orc
 - **Track success patterns** and anti-patterns for future reference
 
 ## Project Overview
-
 The Gamma Timetable Extension is a comprehensive full-stack application that transforms Gamma presentations into synchronized, cloud-enabled timetables. The project consists of multiple interconnected components:
 
 - **Chrome Extension** (MV3): Extracts slide content and generates timetables locally
@@ -116,309 +263,3 @@ The Gamma Timetable Extension is a comprehensive full-stack application that tra
 - **Authentication System** (Clerk): User management and device pairing
 - **Shared Component Library**: Common utilities, types, and abstractions across platforms
 
-### Current Development Phase
-
-**Sprint 2: Authentication & Session Management** ✅ COMPLETE
-- Production-ready Clerk JavaScript SDK integration with session persistence
-- Real user data fetching and database synchronization
-- Professional authentication UX across extension and web dashboard
-- 95/100 QA validation score with comprehensive testing
-
-**Sprint 3: Production Deployment** 🔄 PENDING TEAM APPROVAL
-- Netlify production environment setup with monitoring
-- Security hardening and environment management
-- CI/CD pipeline implementation
-- Performance optimization and load testing
-
-## Development Commands
-
-```bash
-# Install dependencies (root + all packages)
-npm install
-
-# Development (streamlined workflow)
-npm run dev              # Extension development only
-npm run dev:web         # Full-stack web app with Netlify functions (port 3000)
-
-# Production builds
-npm run build           # Extension build
-npm run build:extension # Extension build (same as above)
-npm run build:web      # Web dashboard build
-npm run build:shared   # Shared library build
-npm run build:all      # All targets
-
-# Code quality
-npm run lint           # ESLint check
-npm run format         # Prettier formatting
-npm run quality        # Lint + format + type check
-
-# Extension packaging
-npm run package        # Create distributable ZIP
-```
-
-## Architecture
-
-### Monorepo Structure
-
-```
-packages/
-├── extension/          # Chrome Extension (MV3)
-│   ├── src/background.js    # Service worker message broker
-│   ├── src/content.ts       # DOM extraction from gamma.app
-│   ├── src/sidebar/         # Main timetable UI
-│   └── src/popup/           # Extension launcher
-├── web/               # Web Dashboard (Next.js)
-│   ├── src/pages/          # Landing, auth, dashboard pages
-│   ├── src/components/     # React components
-│   └── src/api/            # API routes (Netlify functions)
-├── shared/            # Shared Component Library
-│   ├── auth/              # Device pairing & token management
-│   ├── config/            # Feature flags & environment
-│   ├── storage/           # Unified storage abstraction
-│   └── types/             # TypeScript definitions
-supabase/              # Database schema & migrations
-dev/                   # Local development tools
-```
-
-### Core Components
-
-#### Chrome Extension (`packages/extension/`)
-
-1. **Background Script** (`src/background.js`): MV3 service worker managing message routing between content scripts and sidebar, tab state coordination.
-
-2. **Content Script** (`src/content.ts`): Injected into gamma.app pages to extract slide data using specific DOM selectors. Communicates via Chrome runtime messaging.
-
-3. **Sidebar** (`src/sidebar/sidebar.js`): Primary UI displaying timetables, user authentication state, export functionality, and sync controls.
-
-4. **Popup** (`src/popup/popup.js`): Simple launcher that opens the sidebar panel.
-
-#### Web Dashboard (`packages/web/`)
-
-1. **Landing Pages**: User onboarding and feature presentation
-2. **Authentication Flow**: Clerk-powered sign-in/sign-up with device pairing
-3. **Dashboard Shell**: Presentation management interface (Sprint 1)
-4. **API Routes**: Netlify functions for device pairing and data synchronization
-
-#### Backend Infrastructure
-
-1. **Database** (Supabase PostgreSQL):
-   - `users` table with Clerk integration
-   - `presentations` table with atomic timetable storage
-   - `devices` table for authentication pairing
-   - Row-Level Security (RLS) for data isolation
-
-2. **Authentication** (Clerk + Device Pairing):
-   - Web-first login flow
-   - Device registration and token exchange
-   - Extension-to-user account linking
-
-3. **API Layer** (Next.js on Netlify):
-   - `/api/devices/register` - Device registration
-   - `/api/devices/link` - User-device pairing
-   - `/api/devices/exchange` - Token exchange
-   - Future: presentation CRUD operations
-
-### Data Flow
-
-#### Local (Offline-First)
-1. Content script extracts slides from gamma.app DOM
-2. Background script routes messages between content script and sidebar
-3. Sidebar receives slide data and generates/updates timetables
-4. User interactions (duration changes, exports) handled locally
-5. Timetable data persisted via Chrome storage API
-
-#### Cloud Synchronization (Sprint 1+)
-1. Extension registers device on first run → gets pairing code
-2. User clicks "Sign In" → opens web dashboard with pairing code
-3. User authenticates via Clerk → device linked to user account
-4. Extension polls for authentication success → receives device token
-5. Future: Automatic sync of timetable data to Supabase
-6. Cross-device access via web dashboard and other extension instances
-
-### Key Technologies
-
-#### Frontend
-- **Chrome Extension**: MV3 architecture, Vite build system
-- **Web Dashboard**: Next.js, React, Tailwind CSS (planned)
-- **Shared Library**: TypeScript with ESM/CJS dual builds
-
-#### Backend & Infrastructure
-- **Authentication**: Clerk (@clerk/clerk-js, @clerk/nextjs)
-- **Database**: Supabase PostgreSQL with RLS
-- **API**: Next.js API routes on Netlify
-- **Deployment**: Netlify CI/CD, Chrome Web Store
-
-#### Development Tools
-- **Build System**: Vite with multi-target support
-- **Code Quality**: ESLint + Prettier + TypeScript strict mode
-- **Export Libraries**: SheetJS (XLSX), jsPDF
-- **Local Dev**: SSL certificates, environment management
-
-#### Libraries
-- **SheetJS (XLSX)**: Excel export functionality (`packages/extension/src/lib/xlsx.full.min.js`)
-- **jsPDF**: PDF generation
-- **@clerk/clerk-js**: Extension authentication
-- **@clerk/nextjs**: Web dashboard authentication
-
-### Storage Architecture
-
-#### Local Storage (Chrome Extension)
-- **Chrome Storage API**: Offline timetable persistence per presentation URL
-- **Storage Abstraction**: `packages/shared/storage/` - unified interface
-- **Key Strategy**: Timetables keyed by presentation URL for isolation
-- **Authentication State**: Device tokens and pairing status
-
-#### Cloud Storage (Backend)
-- **Supabase PostgreSQL**: User accounts and synchronized presentations
-- **Row-Level Security**: Data isolation per user account
-- **Atomic Updates**: Presentation data stored as JSON with metadata
-- **Device Management**: Registration, pairing, and token lifecycle
-
-### Build System
-
-#### Multi-Target Build (Vite)
-- **Extension Target**: Chrome MV3 with TypeScript compilation
-- **Web Target**: Next.js with React and API routes
-- **Shared Target**: Dual ESM/CJS builds for cross-platform compatibility
-- **Version Sync**: Automated across package.json and manifests
-
-#### Asset Management
-- **Static Assets**: Icons, libraries, manifest files
-- **TypeScript**: Strict mode with shared type definitions
-- **Development**: File watching across all packages
-- **Production**: Optimized builds with tree-shaking
-
-## Development Notes
-
-### Sprint-Based Development
-
-The project follows a structured sprint methodology tracked in `PROJECT_STATE.md`:
-
-- **High-level Mission**: Transform standalone extension into cloud-enabled service
-- **Current Sprint**: Sprint 1 (Authentication & Dashboard Shell)
-- **Sprint Planning**: Each sprint has specific deliverables and technical tasks
-- **Progress Tracking**: Detailed status updates and technical decisions documented
-
-### Authentication Strategy
-
-**Current Approach (Sprint 1)**: Web-first authentication with device pairing
-
-1. Extension generates device ID and pairing code on first run
-2. "Sign In" button opens web dashboard with pairing code
-3. User authenticates via Clerk on web → links device to account
-4. Extension polls for successful pairing → receives device token
-5. Device token enables API access for future sync operations
-
-**Security Model**:
-- Short-lived pairing codes (5 minutes, single-use)
-- Device tokens with limited scope (1 hour TTL, refresh endpoint)
-- Row-Level Security enforces user data boundaries
-
-### Slide Extraction (Extension)
-
-- **DOM Selectors**: `div.card-wrapper[data-card-id]` for slide containers
-- **Content Parsing**: Titles, paragraphs, images, links, nested lists
-- **Metadata Extraction**: Slide order, timestamps, presentation URL
-- **Change Detection**: Reconciliation preserves user duration settings
-
-### Message Passing Architecture
-
-**Chrome Runtime Messaging**:
-- `content-script` port: DOM extraction and slide updates
-- `sidebar` port: UI interactions and authentication state
-- Background script: Tab state management and message routing
-- `externally_connectable`: Web dashboard communication (planned)
-
-### Timetable Generation
-
-- **Default Duration**: 5 minutes per slide
-- **User Controls**: Sliders (0-60 minutes) with real-time updates
-- **Time Calculations**: Automatic start/end times based on sequence
-- **Persistence**: Local storage with future cloud sync capability
-- **Reconciliation**: Preserves user customizations during slide updates
-
-### Export Functionality
-
-- **CSV**: Comma-separated with configurable delimiters
-- **Excel**: SheetJS with formatted headers and styling
-- **PDF**: jsPDF with custom layout and branding
-- **Clipboard**: Direct CSV copy for quick sharing
-- **Future**: Cloud sharing and collaboration features
-
-### Feature Flag System
-
-**Configuration Management** (`packages/shared/config/`):
-- Environment-based feature toggles
-- Development vs production API endpoints
-- Authentication system enabling/disabling
-- Gradual rollout capabilities
-
-### Local Development Setup
-
-**Required: Run Both Servers Simultaneously**
-
-```bash
-# Terminal 1: Extension Development Server
-npm run dev
-# → Builds extension to dist/ folder
-# → Watches for changes and rebuilds automatically  
-# → Load extension from dist/ in Chrome
-
-# Terminal 2: Full-Stack Web Application  
-npm run dev:web
-# → Builds web app and serves with Netlify functions
-# → http://localhost:3000 (web app + API endpoints)
-# → All 6 functions loaded and working
-```
-
-**Extension Setup in Chrome:**
-1. Go to `chrome://extensions`
-2. Enable "Developer mode" 
-3. Click "Load unpacked" → Select `dist/` folder
-4. **Important:** Reload extension after any code changes
-
-**Environment Configuration**:
-- All environment variables automatically injected by Netlify dev
-- SSL certificates managed by Netlify dev server  
-- Supabase connection via environment variables
-- Feature flags for development vs production
-
-### Testing Strategy
-
-**Manual Testing Workflow**:
-```bash
-# 1. Start both development servers
-npm run dev       # Extension (dist/ folder)
-npm run dev:web   # Web app (http://localhost:3000)
-
-# 2. Load extension in Chrome from dist/ folder
-
-# 3. Test complete authentication flow:
-#    a) Click "Login" in extension sidebar
-#    b) Extension opens http://localhost:3000/sign-in?code=XXXXXX  
-#    c) Click "Sign in with Clerk" (mock auth)
-#    d) Device should auto-link and show success
-#    e) Extension should show "authenticated" state
-#    f) "Test API" button should return 200 OK
-
-# 4. Test timetable functionality on gamma.app
-```
-
-**Current API Endpoints Working**:
-- ✅ `POST /api/devices/register` - Device registration
-- ✅ `POST /api/devices/link` - Device pairing with authentication  
-- ✅ `POST /api/devices/exchange` - JWT token issuance
-- ✅ `GET /api/protected/ping` - Authenticated API access
-- ✅ Web authentication flow with mock Clerk integration
-
-**Future Test Automation**:
-- **Unit Tests**: Core timetable logic, storage abstractions, export functions
-- **Integration Tests**: Authentication flow, API endpoints, data synchronization  
-- **E2E Tests**: Full user workflows across extension and web dashboard
-- **Framework Suggestion**: Vitest (Vite-native) or Jest with Chrome extension mocking
-
-# important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

@@ -63,7 +63,7 @@ async function getCurrentUser() {
   
   // Check stored tokens
   const clerkToken = localStorage.getItem('clerk_jwt_token');
-  const sessionToken = localStorage.getItem('clerk_session_token');
+  const storedSessionToken = localStorage.getItem('clerk_session_token');
   
   // If we have a JWT in URL, bootstrap user from database
   if (clerkJwtFromUrl) {
@@ -116,7 +116,7 @@ async function getCurrentUser() {
   const storedEmail = localStorage.getItem('user_email');
   const storedName = localStorage.getItem('user_name');
   
-  if (storedUserId && storedEmail && (clerkToken || sessionToken)) {
+  if (storedUserId && storedEmail && (clerkToken || storedSessionToken)) {
     return {
       id: storedUserId,
       email: storedEmail,

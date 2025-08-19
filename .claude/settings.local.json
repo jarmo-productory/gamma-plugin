@@ -50,7 +50,23 @@
       "Bash(./scripts/health-check.sh:*)",
       "WebFetch(domain:productory-powerups.netlify.app)",
       "Bash(npm test:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next:*)",
+      "Bash(test:*)",
+      "Bash(npm ls:*)",
+      "Bash(timeout 30s npm run build)",
+      "Bash(open:*)",
+      "Bash(sed:*)",
+      "Bash(xxd:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(npm --prefix /Users/jarmotuisk/Projects/gamma-plugin/packages/web-next run build)",
+      "Bash(timeout 10 npm run dev)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(timeout 30s npm run dev)",
+      "Bash(ps:*)"
     ],
     "deny": []
   }

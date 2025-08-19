@@ -49,5 +49,5 @@
     "types": ["chrome", "node"]
   },
   "include": ["packages/**/*", "types/**/*"],
-  "exclude": ["node_modules", "dist", "dist-*", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist", "dist-*", "**/*.test.ts", "**/*.spec.ts", "**/main-legacy.js"]
 }
