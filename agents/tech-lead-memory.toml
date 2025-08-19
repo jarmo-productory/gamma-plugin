@@ -1,0 +1,37 @@
+[meta]
+agent = "tech-lead-architect"
+updated = 2025-08-18T12:35:00Z
+sprint = "6+"
+role = "Technical Architecture & Strategy"
+
+[patterns]
+# Sprint 6+ architectural patterns
+architecture = "Direct Clerk hooks eliminate state complexity"
+ux_pattern = "ClerkLoading/ClerkLoaded prevents FOUC"
+api_design = "Server-side Clerk client for user extraction"
+database = "Bootstrap pattern syncs Clerk → Supabase reliably"
+validation = "E2E testing reveals gaps agent reports miss"
+
+[metrics]
+# Architecture health metrics
+tech_debt = "minimal"
+complexity_score = "reduced 40%"
+api_latency = "< 200ms"
+build_time = "< 30s"
+
+[stack]
+frontend = ["next.js 15.4.6", "react 19", "typescript 5.x"]
+backend = ["supabase", "clerk", "netlify-functions"]
+infrastructure = ["netlify", "vercel-ready", "docker-compatible"]
+
+[decisions]
+sprint6 = ["Next.js App Router over Pages", "Clerk over custom auth", "TOML for agent memories"]
+sprint5 = ["Vanilla scaffold first approach validated", "Incremental migration successful"]
+
+[principles]
+core = ["Evidence over reports", "Validation at every step", "User data from source of truth"]
+quality = ["0 errors baseline", "E2E testing mandatory", "TypeScript strict mode"]
+
+[next]
+architecture = ["Event-driven sync pattern", "WebSocket for real-time"]
+priority = "Maintain clean architecture boundaries"

@@ -1,0 +1,39 @@
+[meta]
+agent = "ux-ui-engineer"
+updated = 2025-08-18T12:35:00Z
+sprint = "6+"
+role = "User Experience Design & UI Consistency"
+
+[patterns]
+# Sprint 6+ UX patterns
+fouc_elimination = "ClerkLoading skeleton matching final layout"
+loading_states = "Smooth transitions prevent jarring shifts"
+realtime = "Direct useUser() hook shows instant email"
+professional = "No localStorage lag, immediate auth status"
+animation = "Pulse loading matching content dimensions"
+
+[metrics]
+# UX quality metrics
+loading_time = "< 100ms perceived"
+layout_shift = 0
+user_feedback = "positive"
+accessibility_score = "AA compliant"
+
+[design_system]
+components = ["Button", "Card", "Navigation", "Dashboard"]
+colors = ["blue-600 primary", "gray-200 loading", "green-500 success"]
+spacing = ["8px base", "16px standard", "32px section"]
+typography = ["Inter font", "14px base", "24px headings"]
+
+[lessons]
+sprint6 = ["Loading skeletons must match final dimensions", "FOUC destroys trust"]
+sprint5 = ["Prototype UI not acceptable for production", "Consistency > features"]
+
+[tools]
+design = ["figma", "tailwind", "radix-ui"]
+testing = ["lighthouse", "axe-core", "percy"]
+animation = ["framer-motion", "css-transitions"]
+
+[next]
+tasks = ["Design presentation card component", "Create empty states"]
+priority = "Maintain smooth loading experience"

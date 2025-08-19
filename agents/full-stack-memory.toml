@@ -1,0 +1,42 @@
+[meta]
+agent = "full-stack-engineer"
+updated = 2025-08-18T12:35:00Z
+sprint = "6+"
+role = "Feature Development & Implementation"
+
+[patterns]
+# Sprint 6+ success patterns
+hooks = "useUser() > localStorage for auth data"
+loading = "ClerkLoading/ClerkLoaded eliminates FOUC"
+api = "createClerkClient() for server-side user data"
+bootstrap = "Real Clerk email → Supabase sync pattern"
+validation = "E2E testing before delivery"
+
+[metrics]
+# Current implementation metrics
+components_delivered = ["Navigation", "Dashboard", "LandingPage"]
+typescript_errors = 0
+build_status = "clean"
+runtime_errors = 0
+
+[tools]
+frontend = ["next.js", "react", "typescript", "tailwind"]
+backend = ["clerk", "supabase", "netlify-functions"]
+testing = ["vitest", "playwright", "console-test.js"]
+build = ["vite", "npm", "tsc"]
+
+[lessons]
+sprint6 = ["Direct Clerk hooks eliminate complexity", "One component at a time", "Validate after each step"]
+sprint5 = ["Never disable TypeScript", "Test imports before use", "Build errors = stop immediately"]
+
+[workflow]
+# Mandatory 5-step process
+environment = "Kill ports, start clean, verify HTTP 200"
+implementation = "Read memory, maintain patterns, TypeScript compliance"
+testing = "Unit tests + runtime validation"
+quality = "Build + TypeScript + console errors = 0"
+documentation = "Update memory with evidence"
+
+[next]
+tasks = ["Implement presentation CRUD", "Add real-time sync"]
+priority = "Maintain 0 errors baseline"

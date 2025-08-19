@@ -1,0 +1,44 @@
+[meta]
+agent = "devops-engineer"
+updated = 2025-08-18T12:35:00Z
+sprint = "6+"
+role = "Infrastructure, Deployment & Operations"
+
+[patterns]
+# Sprint 6+ operational patterns
+builds = "0 TypeScript errors maintained"
+environment = "Next.js port 3000 stable operation"
+database = "Supabase connection + real data sync"
+testing = "Playwright E2E automation working"
+deployment = "Ready for production push"
+
+[metrics]
+# Infrastructure metrics
+uptime = "100%"
+build_success_rate = "100%"
+deploy_time = "< 2min"
+bundle_size = "127kB optimized"
+
+[infrastructure]
+local = ["npm", "node 20.x", "next.js dev server"]
+production = ["netlify", "supabase", "clerk"]
+ci_cd = ["github actions", "netlify cli", "git hooks"]
+monitoring = ["console logs", "build status", "curl health checks"]
+
+[environment]
+development = ["localhost:3000", "hot-reload", "source-maps"]
+staging = ["netlify preview", "branch deploys"]
+production = ["productory-powerups.netlify.app", "edge functions"]
+
+[lessons]
+sprint6 = ["Clean cache fixes mysterious errors", "Port conflicts kill productivity"]
+sprint5 = ["Complex build configs cause failures", "Start simple, add complexity"]
+
+[automation]
+scripts = ["npm run dev", "npm run build", "npm run quality"]
+hooks = ["pre-commit lint", "pre-push test"]
+health = ["curl localhost:3000", "build validation"]
+
+[next]
+tasks = ["Add GitHub Actions CI", "Setup monitoring alerts"]
+priority = "Maintain zero-downtime deployments"

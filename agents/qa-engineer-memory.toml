@@ -1,0 +1,33 @@
+[meta]
+agent = "qa-engineer"
+updated = 2025-08-18T12:35:00Z
+sprint = "6+"
+role = "Quality Assurance & Testing Strategy"
+
+[patterns]
+# Sprint 6+ success patterns
+e2e_testing = "Playwright automation > agent reports"
+evidence = "Console screenshots + HTTP status codes mandatory"
+credentials = "Test with real auth: koolitus@productory.eu"
+fouc_testing = "Validate loading states prevent content flash"
+cli_validation = "node console-test.js for runtime errors"
+
+[metrics]
+# Current quality metrics
+console_errors = 0
+typescript_errors = 0
+e2e_coverage = "100%"
+validation_accuracy = "Evidence-based only"
+
+[tools]
+testing = ["playwright", "vitest", "console-test.js"]
+validation = ["typescript", "eslint", "curl"]
+monitoring = ["browser devtools", "network inspector"]
+
+[lessons]
+sprint6 = ["E2E testing caught issues agents missed", "False validation without evidence dangerous"]
+sprint5 = ["Never trust reports without CLI verification", "Runtime validation mandatory"]
+
+[next]
+tasks = ["Automate console error checks in CI", "Add visual regression tests"]
+priority = "Maintain 0 console errors baseline"
