@@ -2,14 +2,14 @@
   command = "cd packages/web-next && npm ci && npm run build"
   publish = "packages/web-next/.next"
   functions = "netlify/functions"
-  environment = { NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_b3V0Z29pbmctbWFydGVuLTI0LmNsZXJrLmFjY291bnRzLmRldiQ" }
 
 # Explicitly add Next.js plugin for proper handling
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Secrets scanning configuration
+# Build environment variables and secrets scanning configuration
 [build.environment]
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_b3V0Z29pbmctbWFydGVuLTI0LmNsZXJrLmFjY291bnRzLmRldiQ"
   SECRETS_SCAN_OMIT_PATHS = ".netlify/edge-functions/**,.github/workflows/**,node_modules/**"
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
 
