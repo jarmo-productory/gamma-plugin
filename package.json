@@ -46,7 +46,6 @@
     "clean": "rm -rf dist dist-web dist-shared dist-types",
     "dev:web": "npm run build:web && npx netlify dev --dir=dist-web",
     "dev:next": "cd packages/web-next && npm run dev",
-    "build:next": "cd packages/web-next && npm run build",
     "dev:full-stack": "concurrently \"npm run dev:next\" \"npm run dev:web\"",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"

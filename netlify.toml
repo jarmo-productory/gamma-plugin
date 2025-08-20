@@ -3,7 +3,9 @@
   publish = "packages/web-next/.next"
   functions = "netlify/functions"
 
-# Netlify auto-detects Next.js and installs @netlify/plugin-nextjs automatically
+# Explicitly add Next.js plugin for proper handling
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [dev]
   framework = "#static"
