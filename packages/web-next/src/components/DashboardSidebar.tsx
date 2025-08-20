@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import {
   Home,
   Presentation,
@@ -77,6 +77,16 @@ const menuItems = [
 export function DashboardSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Sign out failed:', error);
+    }
+  };
 
   return (
     <Sidebar>
@@ -162,7 +172,7 @@ export function DashboardSidebar() {
                   Billing
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
                   <LogOut className="mr-2 size-4" />
                   Sign out
                 </DropdownMenuItem>
