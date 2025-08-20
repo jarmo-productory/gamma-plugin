@@ -19,6 +19,7 @@
     "build:local": "BUILD_TARGET=extension BUILD_ENV=local vite build --outDir dist",
     "build:prod": "BUILD_TARGET=extension BUILD_ENV=production vite build --outDir dist-prod",
     "build:web": "BUILD_TARGET=web vite build",
+    "build:next": "cd packages/web-next && npm run build",
     "build:shared": "BUILD_TARGET=shared vite build",
     "build:all": "npm run build:extension && npm run build:web && npm run build:shared",
     "preview": "vite preview",

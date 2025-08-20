@@ -40,8 +40,8 @@ jobs:
     - name: Build extension
       run: npm run build:extension
       
-    - name: Build web app
-      run: npm run build:web
+    - name: Build Next.js app
+      run: npm run build:next
       
     - name: Build shared library
       run: npm run build:shared
@@ -65,8 +65,8 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Build web app for production
-      run: npm run build:web
+    - name: Build Next.js app for production
+      run: npm run build:next
       env:
         NODE_ENV: production
       
@@ -74,7 +74,7 @@ jobs:
       id: netlify-deploy
       uses: nwtgck/actions-netlify@v3.0
       with:
-        publish-dir: './dist-web'
+        publish-dir: './packages/web-next/.next/standalone'
         production-branch: main
         production-deploy: true
         deploy-message: "Deploy from GitHub Actions - ${{ github.sha }}"

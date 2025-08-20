@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build:web"
-  publish = "dist-web"
+  command = "npm run build:next"
+  publish = "packages/web-next/.next/standalone"
   functions = "netlify/functions"
 
 [dev]
