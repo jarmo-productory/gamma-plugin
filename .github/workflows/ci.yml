@@ -40,6 +40,9 @@ jobs:
     - name: Build extension
       run: npm run build:extension
       
+    - name: Install Next.js dependencies
+      run: cd packages/web-next && npm ci
+      
     - name: Build Next.js app
       run: npm run build:next
       
@@ -64,6 +67,9 @@ jobs:
         
     - name: Install dependencies
       run: npm ci
+      
+    - name: Install Next.js dependencies
+      run: cd packages/web-next && npm ci
       
     - name: Build Next.js app for production
       run: npm run build:next
