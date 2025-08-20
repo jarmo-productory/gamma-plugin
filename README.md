@@ -1,5 +1,7 @@
 # Gamma Timetable Extension
 
+[![CI/CD Pipeline](https://github.com/jarmo-productory/gamma-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/jarmo-productory/gamma-plugin/actions/workflows/ci.yml) [![Netlify Status](https://api.netlify.com/api/v1/badges/9652d33b-9bc4-4c79-8d8f-702cf4dbe787/deploy-status)](https://app.netlify.com/sites/productory-powerups/deploys)
+
 A Chrome extension to help you create and manage timetables directly from your Gamma presentations.
 
 ---

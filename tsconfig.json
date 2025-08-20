@@ -3,6 +3,7 @@
     /* Language and Environment */
     "target": "es2020",
     "lib": ["es2020", "dom", "dom.iterable"],
+    "jsx": "react-jsx",
 
     /* Modules */
     "module": "es2020",

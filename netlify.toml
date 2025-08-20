@@ -1,5 +1,6 @@
 [build]
-  publish = "packages/web"
+  command = "npm run build:web"
+  publish = "dist-web"
   functions = "netlify/functions"
 
 [dev]

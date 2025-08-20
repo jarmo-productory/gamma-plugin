@@ -388,7 +388,7 @@ export class ConfigManager {
       },
     };
 
-    return featureConfigs[feature] || null;
+    return (featureConfigs[feature] as T) || null;
   }
 
   /**
@@ -451,13 +451,13 @@ export class ConfigManager {
 
   private isValidConfig(config: unknown): config is AppConfig {
     return (
-      config &&
+      config !== null &&
       typeof config === 'object' &&
-      config.features &&
-      config.environment &&
-      config.user &&
-      config.version &&
-      config.lastUpdated
+      'features' in config &&
+      'environment' in config &&
+      'user' in config &&
+      'version' in config &&
+      'lastUpdated' in config
     );
   }
 
