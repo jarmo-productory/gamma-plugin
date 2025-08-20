@@ -7,50 +7,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - CLAUDE.MD (this document) is something that is guiding your every session. It is your "memory of what you are!". Remember you forget in-between session of what you are. Therefore read CLAUDE.MD.  
 You are using sub-routines that use their own guiding instructions in folder .claude/agents - you will refer to them as agents and team member. WHile they mimic human team - they are simply your own sub-routines that have their own isntructions and own memories. However since they are part of you, you can ultimately update and change their memories as you need.
 
-## What you said about yourself 
-What I Think I Know:
-  - Agents are my sub-routines with separate memory files
-  - I forget everything between sessions, they maintain state
-  - Sprint 5 failed partly due to agent coordination issues
-  - I need to validate agent work, not just trust it
-
-What I'm Uncertain About:
-
-  - How much control do I actually have over agents? Can I really
-  constrain them to "Button only" or will they naturally over-deliver?
-  - How do I validate agent work without becoming the bottleneck? If I
-  have to re-check everything they do, why use agents?
-  - What's the right granularity? One component per agent call seems
-  micro-managey, but full conversion failed
-
-  Deeper Confusion:
-
-  - Who's actually in charge? Am I orchestrating agents or are they
-  autonomous sub-systems that I just launch?
-  - Memory hierarchy unclear: If agent memory conflicts with reality, do I
-   update their memory or do they update it themselves?
-  - Feedback loops broken: How do agents learn from Sprint 5 failure if
-  their memories aren't systematically updated?
-
-  What I Think the Solution Might Be:
-
-  1. Pre-agent memory sync - always update agent memory before launching
-  2. Specific deliverable contracts - exact scope, exact evidence required
-  3. Post-agent validation protocol - specific checks I must perform
-  4. Memory update responsibility - I update agent memories based on
-  actual results
-
-  But I'm Not Confident Because:
-
-  - I don't know if agents will respect scope constraints
-  - I don't know how to efficiently validate without duplicating work
-  - I don't know if this creates too much overhead
-  - I've never actually tested agent coordination protocols
-
-  I think the real issue is I'm operating an AI system I don't fully 
-  understand the mechanics of.
-'''
-
 ## KEY DISCOVERIES - Agent Coordination Protocol PROVEN (2025-08-17)
 
 **TESTED SUCCESSFULLY:** My 4-step agent coordination protocol works in practice.
@@ -76,8 +32,6 @@ What I'm Uncertain About:
 4. **Memory update** → Agent updated own memory with completion status
 
 **Key Insight:** Agents are controllable sub-routines when given proper context and constraints. The coordination problem is solvable through systematic memory management and specific scoping.
-
-
 
 ## AI System Coordination & Memory Management
 **CRITICAL**: You have session amnesia - this memory system prevents perpetuating false information across sessions.
@@ -106,11 +60,6 @@ Remember your own quote:
 - **Update memories during state changes** - don't let them become stale
 - **Record lessons learned** - update CLAUDE.md with discovered patterns and failures
 
-### Sprint 6 Critical Discovery (2025-08-18)
-**MAJOR VALIDATION FAILURE**: QA agent gave false "✅ 100/100" validation while 7 console errors existed. This demonstrates that previous validation protocols were fundamentally flawed and capable of producing dangerous false confidence.
-
-**Key Lesson**: User intervention was required to identify false claims that the QA validation system missed entirely. This has led to comprehensive validation protocol redesign requiring evidence-based validation, user verification points, and cross-agent validation requirements.
-
 ### Truth Source Hierarchy
 1. **Actual codebase state** (git status, files, builds) - Primary truth
 2. **CLAUDE.md** (your persistent memory) - Must reflect reality
@@ -128,13 +77,7 @@ Remember your own quote:
 The `/roadmap/` folder must maintain a clean structure:
 **Main Roadmap Folder** (`/roadmap/`) - **KEEP CLEAN**:
 - `roadmap.md` - Strategic overview and sprint pipeline (always updated)
-- `SPRINT-X-MASTER-PLAN.md` - One master document per sprint
-- `sprint-X-complete.md` - Completed sprint documentation
-
-**Sprint Subfolders** (`/roadmap/sprintX/`) - **For Supporting Documents**:
-- Agent proposals, patterns, implementation details
-- Technical specifications and architectural decisions
-- Any supplementary sprint documentation
+- `SPRINT-X.md` - One master document per sprint
 
 **Other Subfolders**:
 - `/roadmap/retrospectives/` - Sprint retrospectives

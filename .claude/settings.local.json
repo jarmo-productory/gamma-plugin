@@ -66,7 +66,12 @@
       "Bash(npm:*)",
       "Bash(npx:*)",
       "Bash(timeout 30s npm run dev)",
-      "Bash(ps:*)"
+      "Bash(ps:*)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebSearch",
+      "Bash(gh:*)",
+      "Bash(brew install:*)",
+      "Bash(act:*)"
     ],
     "deny": []
   }

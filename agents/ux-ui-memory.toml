@@ -21,9 +21,20 @@ accessibility_score = "AA compliant"
 
 [design_system]
 components = ["Button", "Card", "Navigation", "Dashboard"]
-colors = ["blue-600 primary", "gray-200 loading", "green-500 success"]
 spacing = ["8px base", "16px standard", "32px section"]
 typography = ["Inter font", "14px base", "24px headings"]
+
+# PRODUCTORY BRAND COLORS (LEARNED 2025-08-19)
+productory_brand = ["purple-1=#491A73 primary", "purple-2=#830F70 secondary", "purple-3=#B50864 accent", "grey=#475467 text"]
+productory_surfaces = ["white=#FFFFFF", "surface-light=#FFFCFE", "surface-tinted=#F6F2F8"]
+system_colors = ["success=#16a34a", "warning=#eab308", "destructive=#dc2626"]
+
+# STYLEGUIDE SYSTEM (NEW)
+styleguide_location = "/packages/web-next/src/app/styleguide/page.tsx"
+styleguide_url = "http://localhost:3000/styleguide"
+design_tokens = "tailwind.config.js + globals.css"
+component_library = "/packages/shared/ui/"
+validation_command = "curl -I localhost:3000/styleguide"
 
 [lessons]
 sprint6 = ["Loading skeletons must match final dimensions", "FOUC destroys trust"]
@@ -33,6 +44,7 @@ sprint5 = ["Prototype UI not acceptable for production", "Consistency > features
 design = ["figma", "tailwind", "radix-ui"]
 testing = ["lighthouse", "axe-core", "percy"]
 animation = ["framer-motion", "css-transitions"]
+styleguide = "http://localhost:3000/styleguide"
 
 [next]
 tasks = ["Design presentation card component", "Create empty states"]

@@ -4,6 +4,7 @@ module.exports = {
     './packages/web/src/**/*.{html,js,ts,jsx,tsx}',
     './packages/web/pages/**/*.{html,js,ts,jsx,tsx}',
     './packages/web/components/**/*.{html,js,ts,jsx,tsx}',
+    './packages/web-next/src/**/*.{html,js,ts,jsx,tsx}',
     './packages/extension/sidebar/**/*.{html,js,ts}',
     './packages/extension/popup/**/*.{html,js,ts}',
     './packages/shared/**/*.{js,ts,jsx,tsx}',
@@ -22,14 +23,27 @@ module.exports = {
       // Design tokens extracted from production dashboard and extension CSS
       
       colors: {
-        // === Primary Brand Colors ===
+        // === PRODUCTORY BRAND COLORS ===
+        productory: {
+          white: '#FFFFFF',
+          'surface-light': '#FFFCFE',
+          'surface-tinted': '#F6F2F8',
+          'purple-1': '#491A73',      // Dark purple - Primary brand
+          'purple-2': '#830F70',      // Medium purple - Secondary brand
+          'purple-3': '#B50864',      // Bright magenta - Accent
+          grey: '#475467',            // Dark grey - Text/accents
+        },
+        
+        // === Primary Brand Colors (Updated to use Productory) ===
         brand: {
-          primary: '#4f46e5',      // Indigo - Primary buttons, brand elements
-          'primary-hover': '#4338ca',
-          'primary-light': '#e0e7ff',
-          'primary-lighter': '#c7d2fe',
-          secondary: '#3b82f6',     // Blue - Secondary actions, links, sliders
-          'secondary-hover': '#2563eb',
+          primary: '#491A73',         // Productory Purple-1 - Primary buttons, brand elements
+          'primary-hover': '#3a1459', // Darker version of purple-1
+          'primary-light': '#f3ebf7', // Light tint of purple-1
+          'primary-lighter': '#f8f4fa', // Lighter tint
+          secondary: '#830F70',       // Productory Purple-2 - Secondary actions
+          'secondary-hover': '#6b0c5a', // Darker version of purple-2
+          accent: '#B50864',          // Productory Purple-3 - Accent color
+          'accent-hover': '#9a0555',  // Darker version of purple-3
         },
         
         // === Semantic Colors ===

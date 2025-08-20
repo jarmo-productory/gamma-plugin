@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     const userId = clerkUserId || '123e4567-e89b-12d3-a456-426614174000';
     
     // Try to find user by clerk_id first
-    let { data: existingUser, error: fetchError } = await supabase
+    const { data: existingUser, error: fetchError } = await supabase
       .from('users')
       .select('*')
       .eq('clerk_id', clerkUserId)
