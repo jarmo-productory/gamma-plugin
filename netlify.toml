@@ -1,14 +1,9 @@
 [build]
-  command = "npm run build:next"
-  publish = "packages/web-next/.next/standalone"
+  command = "cd packages/web-next && npm ci && NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_b3V0Z29pbmctbWFydGVuLTI0LmNsZXJrLmFjY291bnRzLmRldiQ npm run build"
+  publish = "packages/web-next/.next"
   functions = "netlify/functions"
 
-# Next.js runtime configuration
-[build.environment]
-  NEXT_RUNTIME = "nodejs18.x"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# Netlify auto-detects Next.js and installs @netlify/plugin-nextjs automatically
 
 [dev]
   framework = "#static"

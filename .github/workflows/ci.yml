@@ -83,7 +83,7 @@ jobs:
       id: netlify-deploy
       uses: nwtgck/actions-netlify@v3.0
       with:
-        publish-dir: './packages/web-next/.next/standalone'
+        publish-dir: './packages/web-next/.next'
         production-branch: main
         production-deploy: true
         deploy-message: "Deploy from GitHub Actions - ${{ github.sha }}"

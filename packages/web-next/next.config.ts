@@ -47,8 +47,8 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 2,
   },
   
-  // Output optimization
-  output: 'standalone',
+  // Output optimization - remove standalone for Netlify compatibility
+  // output: 'standalone', // Only for Node.js/Docker deployments
   
   // Image optimization
   images: {
