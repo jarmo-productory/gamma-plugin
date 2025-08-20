@@ -3,6 +3,13 @@
   publish = "packages/web-next/.next/standalone"
   functions = "netlify/functions"
 
+# Next.js runtime configuration
+[build.environment]
+  NEXT_RUNTIME = "nodejs18.x"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 [dev]
   framework = "#static"
   port = 3000
