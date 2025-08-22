@@ -46,8 +46,7 @@ export default [
     },
     rules: {
       ...typescript.configs.recommended.rules,
-      // Allow console.log (we'll handle with conditional logging)
-      'no-console': 'off',
+      // Security: Allow only error/warn console statements
       // TypeScript specific
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
@@ -58,6 +57,21 @@ export default [
       'no-var': 'error',
       eqeqeq: 'error',
       curly: 'error',
+      
+      // Security-focused rules
+      'no-eval': 'error', // Prevent code injection
+      'no-implied-eval': 'error', // Prevent setTimeout/setInterval with strings
+      'no-script-url': 'error', // Prevent javascript: URLs
+      'no-debugger': 'error', // Remove debugger statements in production
+      'no-alert': 'warn', // Discourage alert/confirm/prompt usage
+      
+      // Prevent sensitive data exposure
+      'no-console': ['warn', { allow: ['error', 'warn'] }], // Allow errors/warnings only
+      
+      // TypeScript security
+      '@typescript-eslint/no-unsafe-assignment': 'off', // Allow for flexibility
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
     },
   },
   {

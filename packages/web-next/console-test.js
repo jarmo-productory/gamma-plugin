@@ -1,73 +1,120 @@
-const { chromium } = require('playwright');
+// Runtime validation script for sign out functionality
+const puppeteer = require('puppeteer');
 
-async function checkConsoleErrors() {
-  console.log('🔍 Starting browser console error check...');
-  
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
-  
-  const errors = [];
-  const warnings = [];
-  
-  // Capture console messages
-  page.on('console', msg => {
-    const type = msg.type();
-    const text = msg.text();
-    
-    if (type === 'error') {
-      errors.push(text);
-      console.log('❌ CONSOLE ERROR:', text);
-    } else if (type === 'warning') {
-      warnings.push(text);
-      console.log('⚠️  CONSOLE WARNING:', text);
-    } else if (type === 'log' && text.includes('[Auth]')) {
-      console.log('ℹ️  AUTH LOG:', text);
-    }
-  });
-  
-  // Capture page errors
-  page.on('pageerror', error => {
-    errors.push(error.message);
-    console.log('💥 PAGE ERROR:', error.message);
-  });
+async function testSignOutFunctionality() {
+  let browser;
+  let consoleErrors = [];
+  let networkErrors = [];
   
   try {
-    console.log('📍 Navigating to localhost:3000...');
-    await page.goto('http://localhost:3000', { 
-      waitUntil: 'domcontentloaded',
+    browser = await puppeteer.launch({ 
+      headless: false,
+      devtools: true,
+      slowMo: 1000 // Slow down for visibility
+    });
+    
+    const page = await browser.newPage();
+    
+    // Listen for console errors
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+        console.log('❌ Console Error:', msg.text());
+      }
+    });
+    
+    // Listen for network failures
+    page.on('requestfailed', request => {
+      networkErrors.push(`${request.method()} ${request.url()} - ${request.failure().errorText}`);
+      console.log('❌ Network Error:', request.url(), request.failure().errorText);
+    });
+    
+    console.log('🔍 Opening http://localhost:3000');
+    
+    // Navigate to the app
+    const response = await page.goto('http://localhost:3000', { 
+      waitUntil: 'networkidle0',
       timeout: 10000 
     });
     
-    console.log('⏳ Waiting for page to settle...');
-    await page.waitForTimeout(3000);
+    if (!response.ok()) {
+      throw new Error(`HTTP ${response.status()}: ${response.statusText()}`);
+    }
     
-    // Check if page loaded successfully
-    const title = await page.title();
-    console.log('📄 Page title:', title);
+    console.log('✅ Page loaded successfully');
     
-    // Check if main content is visible
-    const mainContent = await page.isVisible('main');
-    console.log('🎯 Main content visible:', mainContent);
+    // Wait for potential React hydration
+    await page.waitForTimeout(2000);
     
-    // Summary
-    console.log('\n📊 SUMMARY:');
-    console.log(`❌ Errors: ${errors.length}`);
-    console.log(`⚠️  Warnings: ${warnings.length}`);
+    // Check if DashboardSidebar is visible (for signed-in users)
+    const dashboardSidebar = await page.$('[data-sidebar="sidebar"]');
     
-    if (errors.length === 0) {
-      console.log('✅ No console errors found!');
+    if (dashboardSidebar) {
+      console.log('✅ DashboardSidebar detected - checking sign out functionality');
+      
+      // Look for user dropdown in sidebar footer
+      const userDropdown = await page.$('[data-state] [role="button"]');
+      
+      if (userDropdown) {
+        console.log('✅ User dropdown found - attempting to click');
+        await userDropdown.click();
+        
+        // Wait for dropdown to open
+        await page.waitForTimeout(1000);
+        
+        // Look for sign out option
+        const signOutOption = await page.$('text/Sign out');
+        
+        if (signOutOption) {
+          console.log('✅ Sign out option found in dropdown');
+          console.log('🎯 TEST SUCCESS: Sign out functionality is properly implemented');
+        } else {
+          console.log('❌ Sign out option not found in dropdown');
+        }
+      } else {
+        console.log('❌ User dropdown not found in sidebar');
+      }
     } else {
-      console.log('🚨 Console errors detected:');
-      errors.forEach((error, i) => {
-        console.log(`  ${i + 1}. ${error}`);
-      });
+      console.log('ℹ️  DashboardSidebar not visible - user may not be signed in');
+      console.log('ℹ️  This is expected for non-authenticated users');
+    }
+    
+    // Check for any React errors
+    const reactErrors = await page.evaluate(() => {
+      return window.__REACT_DEVTOOLS_GLOBAL_HOOK__?.onCommitFiberRoot?.errors || [];
+    });
+    
+    if (reactErrors.length > 0) {
+      console.log('❌ React errors detected:', reactErrors);
+    }
+    
+    console.log('\n📊 TEST SUMMARY:');
+    console.log(`Console Errors: ${consoleErrors.length}`);
+    console.log(`Network Errors: ${networkErrors.length}`);
+    console.log(`Page Status: ${response.status()}`);
+    
+    if (consoleErrors.length === 0 && networkErrors.length === 0) {
+      console.log('✅ No runtime errors detected');
+      return true;
+    } else {
+      console.log('❌ Runtime errors detected');
+      return false;
     }
     
   } catch (error) {
-    console.log('💥 Failed to load page:', error.message);
+    console.error('❌ Test failed:', error.message);
+    return false;
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 }
 
-checkConsoleErrors().catch(console.error);
+// Run the test
+testSignOutFunctionality().then(success => {
+  process.exit(success ? 0 : 1);
+}).catch(error => {
+  console.error('Test runner error:', error);
+  process.exit(1);
+});

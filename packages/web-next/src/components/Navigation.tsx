@@ -24,7 +24,10 @@ export const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
     clerkUser = user ?? null;
   } catch {
     // Hooks called outside ClerkProvider (placeholder keys) - use fallbacks
-    console.log('[Nav] Using fallback auth state (placeholder keys)');
+    // Development only: log fallback navigation auth
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Nav] Using fallback auth state');
+    }
   }
   
   // Extract user data directly from Clerk
@@ -35,7 +38,10 @@ export const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
       : clerkUser.username || clerkUser.emailAddresses[0]?.emailAddress || 'User'
   } : null;
 
-  console.log('[Nav] User data from Clerk:', userData);
+  // Development only: confirm user data processing
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Nav] User data processed from Clerk');
+  }
 
   const handleSignIn = () => {
     // For now, redirect to sign-in page or implement Clerk modal

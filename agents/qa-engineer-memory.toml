@@ -28,6 +28,65 @@ monitoring = ["browser devtools", "network inspector"]
 sprint6 = ["E2E testing caught issues agents missed", "False validation without evidence dangerous"]
 sprint5 = ["Never trust reports without CLI verification", "Runtime validation mandatory"]
 
+[findings]
+# Sprint 6+ QA Findings 
+signout_fix_complete = "RESOLVED: DashboardSidebar.tsx now has proper sign out implementation with useAuth hook and handleSignOut function"
+build_validation = "npm run build passes, TypeScript clean except test files, dev server stable"
+component_architecture = "Verified: page.tsx correctly uses DashboardSidebar for authenticated users"
+clerk_integration = "Proper useAuth hook usage with try-catch error handling and redirect to /"
+
+# Sprint 8 Security Audit Findings (2025-08-22)
+security_audit_complete = "Comprehensive security audit completed for Sprint 8 planning"
+vulnerability_scan = "vite-plugin-static-copy moderate vulnerability RESOLVED via npm audit fix"
+hardcoded_secrets = "CRITICAL: Real production secrets exposed in .env and .env.local files"
+console_logs = "58 files contain console.log statements - production cleanup needed"
+xss_vulnerabilities = "10 innerHTML/outerHTML usages found - need sanitization review"
+legacy_file_inventory = "35+ vanilla JS/HTML files identified for deprecation"
+
+[security_issues]
+critical = [
+  "Real Supabase service role key exposed in .env files",
+  "Real Clerk secret key exposed in .env files", 
+  "Real JWT secret exposed in .env files",
+  "Real Gemini API key exposed in .env files"
+]
+high = [
+  "Console.log statements in 58 production files",
+  "10 innerHTML/outerHTML XSS risk points",
+  "Production secrets committed to git history"
+]
+medium = [
+  "35+ legacy vanilla JS/HTML files need deprecation",
+  "Duplicate code between src/ and packages/extension/",
+  "Dead code and unused exports present"
+]
+
+[deprecation_candidates]
+# Files that can be safely deprecated
+src_vanilla_files = [
+  "src/background.js", "src/lib/storage.js", "src/lib/timetable.js", 
+  "src/popup/popup.html", "src/popup/popup.js", "src/sidebar/sidebar.html", 
+  "src/sidebar/sidebar.js", "src/scripts/sync-version.js"
+]
+packages_web_legacy = [
+  "packages/web/src/dashboard-v2.js", "packages/web/src/production-dashboard.js",
+  "packages/web/src/main-old.js", "packages/web/src/main-clerk-sdk.js",
+  "packages/web/src/main-legacy.js", "packages/web/src/index.html"
+]
+dist_directories = ["dist/", "dist-prod/", "dist-web/", "dist-shared/"]
+
 [next]
-tasks = ["Automate console error checks in CI", "Add visual regression tests"]
-priority = "Maintain 0 console errors baseline" 
+tasks = [
+  "URGENT: Rotate all production secrets exposed in .env files",
+  "Remove console.log statements from production code", 
+  "Review and sanitize innerHTML/outerHTML usages",
+  "Deprecate vanilla JS files in src/ directory",
+  "Clean up dist/ directories and legacy packages/web/ files"
+]
+priority = "CRITICAL - Rotate exposed production secrets immediately"
+
+[completed]
+sprint6_signout_fix = "2025-08-20: DashboardSidebar sign out implementation fixed and validated"
+validation_evidence = "Build passes, code implementation correct, architecture verified"
+quality_gates = "All technical validation gates passed - ready for manual testing"
+security_audit_sprint8 = "2025-08-22: Complete security audit and deprecation inventory completed" 

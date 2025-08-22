@@ -21,7 +21,10 @@ function ClerkAuthStateSync() {
     hasValidAuth = true;
   } catch {
     // useAuth called outside ClerkProvider (placeholder keys) - use fallbacks
-    console.log('[AuthStateSync] Using fallback auth state (placeholder keys)');
+    // Development only: log fallback auth
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[AuthStateSync] Using fallback auth state');
+    }
     hasValidAuth = false;
   }
 
@@ -67,7 +70,10 @@ function MockAuthStateSync() {
   useEffect(() => {
     // In development mode, clear any existing auth state
     clearAuthState();
-    console.log('[Auth] Running in development mode - authentication disabled');
+    // Development only: confirm dev mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Auth] Development mode - auth disabled');
+    }
   }, []);
   
   return null;
@@ -89,7 +95,10 @@ export function AuthStateSync() {
 
 async function bootstrapUser(token: string) {
   try {
-    console.log('[Auth] Bootstrapping user from database...');
+    // Development only: log bootstrap process
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Auth] Bootstrapping user from database');
+    }
     
     const response = await fetch('/api/auth/bootstrap', {
       method: 'POST',
@@ -109,7 +118,10 @@ async function bootstrapUser(token: string) {
       localStorage.setItem('user_name', user.name || '');
       localStorage.setItem('user_clerk_id', user.clerkId);
       
-      console.log('[Auth] User bootstrapped from database:', user);
+      // Development only: confirm bootstrap success
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth] User bootstrap successful');
+      }
       return user;
     } else {
       const errorText = await response.text();
@@ -139,5 +151,8 @@ function clearAuthState() {
   ];
   
   authKeys.forEach(key => localStorage.removeItem(key));
-  console.log('[Auth] Cleared auth state from localStorage');
+  // Development only: confirm state cleanup
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Auth] Auth state cleared');
+  }
 }

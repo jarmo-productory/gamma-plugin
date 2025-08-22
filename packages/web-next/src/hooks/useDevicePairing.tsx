@@ -26,7 +26,10 @@ export function useDevicePairing(): DevicePairingState {
     authGetToken = auth.getToken;
   } catch {
     // useAuth called outside ClerkProvider (placeholder keys) - use fallbacks
-    console.log('[DevicePairing] Using fallback auth state (placeholder keys)');
+    // Development only: log device pairing fallback
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DevicePairing] Using fallback auth state');
+    }
   }
 
   const getToken = useCallback(async () => {
@@ -71,7 +74,10 @@ export function useDevicePairing(): DevicePairingState {
           throw new Error('Failed to get authentication token');
         }
         
-        console.log('[DevicePairing] Linking device with code:', pairingCode);
+        // Development only: log device linking attempt
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[DevicePairing] Attempting device link');
+        }
         
         const response = await fetch('/api/devices/link', {
           method: 'POST',
@@ -84,7 +90,10 @@ export function useDevicePairing(): DevicePairingState {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('[DevicePairing] Device linked successfully:', data);
+          // Development only: confirm device link success
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[DevicePairing] Device linked successfully');
+          }
           
           // Store device information
           if (data.deviceId) {

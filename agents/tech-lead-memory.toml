@@ -1,7 +1,7 @@
 [meta]
 agent = "tech-lead-architect"
-updated = 2025-08-18T12:35:00Z
-sprint = "6+"
+updated = 2025-08-20
+sprint = "7+ Complete"
 role = "Technical Architecture & Strategy"
 
 [patterns]
@@ -22,7 +22,8 @@ build_time = "< 30s"
 [stack]
 frontend = ["next.js 15.4.6", "react 19", "typescript 5.x"]
 backend = ["supabase", "clerk", "netlify-functions"]
-infrastructure = ["netlify", "vercel-ready", "docker-compatible"]
+infrastructure = ["netlify", "github-actions", "automatic-deployment"]
+deployment = ["push-to-main", "4-minute-cycle", "production-parity-validated"]
 
 [decisions]
 sprint6 = ["Next.js App Router over Pages", "Clerk over custom auth", "TOML for agent memories"]
@@ -34,4 +35,20 @@ quality = ["0 errors baseline", "E2E testing mandatory", "TypeScript strict mode
 
 [next]
 architecture = ["Event-driven sync pattern", "WebSocket for real-time"]
-priority = "Maintain clean architecture boundaries"
+priority = "Sprint 8 codebase cleanup and security hardening"
+
+[cleanup_analysis]
+# Sprint 8 discovery findings
+date = "2025-08-22"
+legacy_files = ["2,503 lines of vanilla JS in packages/web/src/", "35+ duplicate files src/ vs packages/extension/"]
+security_issues = ["511 console.log statements", "95 innerHTML usage", "XSS vulnerabilities"]
+build_duplication = ["vite.config.js manages 3 targets", "src/ and packages/extension/ identical"]
+secrets_status = ["git history shows secret cleanup commits", "no hardcoded secrets found in current state"]
+
+[architecture_debt]
+# Current technical debt requiring Sprint 8 cleanup
+duplicate_builds = "src/ directory mirrors packages/extension/ exactly"
+legacy_web = "packages/web/src/ contains 2,503 lines of deprecated vanilla JS"
+security_surface = "innerHTML usage creates XSS vulnerabilities in production"
+production_logs = "console.log statements leak to production builds"
+build_complexity = "vite.config.js manages extension/web/shared with complex switching logic"

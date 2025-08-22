@@ -44,7 +44,10 @@ export async function POST(request: NextRequest) {
         const tokenParts = token.split('.');
         if (tokenParts.length === 3) {
           const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
-          console.log('[Bootstrap] Full JWT payload:', JSON.stringify(payload, null, 2));
+          // Development only: log JWT payload structure (production: remove sensitive data)
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Bootstrap] JWT payload keys:', Object.keys(payload));
+          }
           
           clerkUserId = payload.sub || payload.userId;
           
@@ -55,28 +58,26 @@ export async function POST(request: NextRequest) {
               clerkEmail = clerkUser.emailAddresses[0]?.emailAddress;
               clerkName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || clerkUser.username;
               
-              console.log('[Bootstrap] Fetched user from Clerk API:', {
-                userId: clerkUserId,
-                email: clerkEmail,
-                name: clerkName,
-                firstName: clerkUser.firstName,
-                lastName: clerkUser.lastName,
-                username: clerkUser.username
-              });
+              // Development only: log user fetch success
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[Bootstrap] User fetched from Clerk successfully');
+              }
             } catch (error) {
               console.error('[Bootstrap] Failed to fetch user from Clerk:', error);
               // Continue with null values
             }
           }
           
-          console.log('[Bootstrap] Final Clerk data:', { 
-            userId: clerkUserId, 
-            email: clerkEmail, 
-            name: clerkName 
-          });
+          // Development only: confirm data preparation
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Bootstrap] Clerk data prepared for database');
+          }
         }
       } catch (e) {
-        console.log('[Bootstrap] Could not parse token:', e);
+        // Development only: log parsing errors
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Bootstrap] Token parsing failed');
+        }
       }
     }
     
@@ -130,7 +131,10 @@ export async function POST(request: NextRequest) {
     } else {
       // Update existing user with real Clerk data if we have it
       if (clerkEmail && existingUser.email.includes('@example.com')) {
-        console.log('[Bootstrap] Updating existing user with real email:', clerkEmail);
+        // Development only: log user email update
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Bootstrap] Updating user with verified email');
+        }
         
         const { data: updatedUser, error: updateError } = await supabase
           .from('users')

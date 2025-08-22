@@ -36,7 +36,10 @@ function DashboardContent() {
     userId = auth.userId ?? null;
   } catch {
     // useAuth called outside ClerkProvider (placeholder keys) - use fallbacks
-    console.log('[Auth] Using fallback auth state (placeholder keys)');
+    // Development only: log fallback auth usage
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Auth] Using fallback auth state');
+    }
     isSignedIn = false;
     isLoaded = true; // Assume loaded when using fallbacks
     userId = null;
