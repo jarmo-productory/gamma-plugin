@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       // Empty body is fine for this endpoint
     }
     
+    
     // Initialize Supabase client with service role key to bypass RLS
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     

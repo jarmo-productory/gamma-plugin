@@ -10,6 +10,12 @@ const isProtectedRoute = createRouteMatcher([
   '/presentations(.*)',
 ]);
 
+// Define routes that should bypass Clerk middleware entirely
+const isPublicApiRoute = createRouteMatcher([
+  '/api/auth/bootstrap(.*)',  // Our custom auth endpoint
+  '/api/health(.*)',          // Health check endpoints
+]);
+
 // Check if we're using placeholder keys
 const isPlaceholderAuth = () => {
   const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
@@ -26,6 +32,14 @@ const middleware = isPlaceholderAuth()
       return NextResponse.next();
     }
   : clerkMiddleware((auth, req) => {
+      // Skip Clerk processing for public API routes
+      if (isPublicApiRoute(req)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Middleware] Bypassing Clerk for public API:', req.nextUrl.pathname);
+        }
+        return NextResponse.next();
+      }
+
       // Log middleware execution in development
       if (process.env.NODE_ENV === 'development') {
         console.log('[Middleware] Processing:', req.nextUrl.pathname);
@@ -43,11 +57,13 @@ const middleware = isPlaceholderAuth()
 export default middleware;
 
 export const config = {
-  // The middleware will only run on these paths
+  // The middleware will only run on these paths  
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    // Run for specific API routes (exclude auth/bootstrap)
+    '/api/((?!auth/bootstrap).)*',
+    // Run for trpc routes 
+    '/(trpc)(.*)',
   ],
 };

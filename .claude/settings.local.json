@@ -71,7 +71,8 @@
       "WebSearch",
       "Bash(gh:*)",
       "Bash(brew install:*)",
-      "Bash(act:*)"
+      "Bash(act:*)",
+      "WebFetch(domain:supabase.com)"
     ],
     "deny": []
   }
