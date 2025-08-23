@@ -530,7 +530,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .sync-status-message.error {
   background-color: #fef2f2;
   color: #dc2626;
-  border: 1px solid: #fecaca;
+  border: 1px solid #fecaca;
 }
 
 .sync-status-message.info {
