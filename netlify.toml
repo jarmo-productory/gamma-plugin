@@ -1,7 +1,6 @@
 [build]
-  command = "cd packages/web-next && npm ci && npm run build"
-  publish = "packages/web-next/.next"
-  functions = "netlify/functions"
+  base = "packages/web-next"
+  command = "npm ci && npm run build"
 
 # Explicitly add Next.js plugin for proper handling
 [[plugins]]
