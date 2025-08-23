@@ -229,6 +229,7 @@ function createTimeInput(timetable, onTimeChange) {
   hoursInput.value = initialHours;
   hoursInput.maxLength = 2;
   hoursInput.placeholder = '00';
+  hoursInput.inputMode = 'numeric';
 
   const separator = document.createElement('span');
   separator.className = 'time-input-separator';
@@ -240,37 +241,154 @@ function createTimeInput(timetable, onTimeChange) {
   minutesInput.value = initialMinutes;
   minutesInput.maxLength = 2;
   minutesInput.placeholder = '00';
+  minutesInput.inputMode = 'numeric';
 
-  const handleTimeChange = () => {
-    const hours = hoursInput.value.padStart(2, '0');
-    const minutes = minutesInput.value.padStart(2, '0');
-    const h = parseInt(hours, 10);
-    const m = parseInt(minutes, 10);
-    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
-      onTimeChange(`${hours}:${minutes}`);
+  // State tracking
+  let hasFocus = false;
+
+  // Improved validation - only validate complete times
+  const validateAndApplyTime = () => {
+    const hoursStr = hoursInput.value.trim();
+    const minutesStr = minutesInput.value.trim();
+    
+    // Only validate if we have complete values
+    if (hoursStr && minutesStr) {
+      const h = parseInt(hoursStr, 10);
+      const m = parseInt(minutesStr, 10);
+      
+      if (!isNaN(h) && !isNaN(m) && h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+        const formattedTime = `${hoursStr.padStart(2, '0')}:${minutesStr.padStart(2, '0')}`;
+        onTimeChange(formattedTime);
+      }
     }
   };
 
-  const debouncedHandleTimeChange = debounce(handleTimeChange, 400);
+  // Reduced debounce time for more responsive feel
+  const debouncedTimeChange = debounce(validateAndApplyTime, 200);
 
-  hoursInput.addEventListener('input', () => {
-    if (hoursInput.value.length >= 2) {
-      hoursInput.value = hoursInput.value.slice(0, 2);
+  // Enhanced input filtering - only allow digits
+  const filterInput = (input, event) => {
+    const value = event.target.value;
+    const filtered = value.replace(/[^0-9]/g, '');
+    if (filtered !== value) {
+      event.target.value = filtered;
+    }
+    return filtered;
+  };
+
+  // Improved auto-focus logic
+  const shouldAutoAdvance = (value, isBackspaceOrDelete) => {
+    // Don't auto-advance on backspace/delete
+    if (isBackspaceOrDelete) return false;
+    
+    // Auto-advance when we have 2 digits and it's a valid hour
+    if (value.length === 2) {
+      const num = parseInt(value, 10);
+      return !isNaN(num) && num >= 0 && num <= 23;
+    }
+    return false;
+  };
+
+  // Focus management
+  const handleFocus = () => { hasFocus = true; };
+  const handleBlur = () => { 
+    hasFocus = false;
+    // Ensure final validation happens on blur
+    validateAndApplyTime();
+  };
+
+  hoursInput.addEventListener('focus', handleFocus);
+  hoursInput.addEventListener('blur', handleBlur);
+  minutesInput.addEventListener('focus', handleFocus);
+  minutesInput.addEventListener('blur', handleBlur);
+
+  hoursInput.addEventListener('input', (event) => {
+    const filtered = filterInput(hoursInput, event);
+    
+    // Smart auto-advance only for valid complete hours
+    if (shouldAutoAdvance(filtered, false)) {
+      // Small delay to feel more natural
+      setTimeout(() => minutesInput.focus(), 50);
+    }
+    
+    debouncedTimeChange();
+  });
+
+  hoursInput.addEventListener('keydown', (event) => {
+    // Arrow key support for time adjustment
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      const current = parseInt(hoursInput.value || '0', 10);
+      const delta = event.key === 'ArrowUp' ? 1 : -1;
+      const newValue = Math.max(0, Math.min(23, current + delta));
+      hoursInput.value = newValue.toString().padStart(2, '0');
+      debouncedTimeChange();
+    }
+    
+    // Enter key validation
+    if (event.key === 'Enter') {
       minutesInput.focus();
+      validateAndApplyTime();
     }
-    debouncedHandleTimeChange();
   });
 
-  minutesInput.addEventListener('input', () => {
-    if (minutesInput.value.length >= 2) {
-      minutesInput.value = minutesInput.value.slice(0, 2);
-    }
-    debouncedHandleTimeChange();
+  minutesInput.addEventListener('input', (event) => {
+    filterInput(minutesInput, event);
+    debouncedTimeChange();
   });
+
+  minutesInput.addEventListener('keydown', (event) => {
+    // Arrow key support for minutes
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      const current = parseInt(minutesInput.value || '0', 10);
+      const delta = event.key === 'ArrowUp' ? 1 : -1;
+      const newValue = Math.max(0, Math.min(59, current + delta));
+      minutesInput.value = newValue.toString().padStart(2, '0');
+      debouncedTimeChange();
+    }
+    
+    // Enter key validation
+    if (event.key === 'Enter') {
+      validateAndApplyTime();
+      hoursInput.focus(); // Cycle back to hours
+    }
+    
+    // Backspace to hours field when minutes is empty
+    if (event.key === 'Backspace' && minutesInput.value === '') {
+      hoursInput.focus();
+    }
+  });
+
+  // Paste support for common time formats
+  const handlePaste = (event) => {
+    event.preventDefault();
+    const paste = event.clipboardData.getData('text').trim();
+    
+    // Handle various time formats: 8:30, 08:30, 830, 0830
+    const timeMatch = paste.match(/^(\d{1,2}):?(\d{2})$/);
+    if (timeMatch) {
+      const [, hours, minutes] = timeMatch;
+      const h = parseInt(hours, 10);
+      const m = parseInt(minutes, 10);
+      
+      if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+        hoursInput.value = h.toString().padStart(2, '0');
+        minutesInput.value = m.toString().padStart(2, '0');
+        validateAndApplyTime();
+      }
+    }
+  };
+
+  hoursInput.addEventListener('paste', handlePaste);
+  minutesInput.addEventListener('paste', handlePaste);
 
   container.appendChild(hoursInput);
   container.appendChild(separator);
   container.appendChild(minutesInput);
+
+  // Store focus state on container for external checks
+  container._hasFocus = () => hasFocus;
 
   return container;
 }
@@ -365,14 +483,18 @@ function renderTimetable(timetable) {
   const timeDisplaySection = document.createElement('div');
   timeDisplaySection.className = 'time-display-section';
 
-  timeDisplaySection.prepend(
-    createTimeInput(timetable, newStartTime => {
-      currentTimetable.startTime = newStartTime;
-      const newTimetable = recalculateTimetable(currentTimetable);
+  const timeInputComponent = createTimeInput(timetable, newStartTime => {
+    currentTimetable.startTime = newStartTime;
+    const newTimetable = recalculateTimetable(currentTimetable);
+    
+    // Only re-render if time input doesn't have focus to prevent interrupting user input
+    if (!timeInputComponent._hasFocus || !timeInputComponent._hasFocus()) {
       renderTimetable(newTimetable);
-      debouncedSave();
-    })
-  );
+    }
+    debouncedSave();
+  });
+  
+  timeDisplaySection.prepend(timeInputComponent);
 
   toolbar.appendChild(timeDisplaySection);
 
@@ -972,7 +1094,7 @@ async function updateSyncStatusDisplay() {
     } else {
       updateSyncIndicator('offline');
     }
-  } catch (error) {
+  } catch {
     updateSyncIndicator('error');
   }
 }
@@ -991,6 +1113,7 @@ async function showConflictResolutionDialog(localTimetable, cloudTimetable) {
       `Which version would you like to keep?`;
     
     // Simple confirm dialog for Sprint 2 - can be enhanced later
+    // eslint-disable-next-line no-alert, no-undef
     const useCloud = confirm(
       `${message}\n\n` +
       `Click OK to use cloud version\n` +
