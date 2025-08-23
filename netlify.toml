@@ -1,31 +1,25 @@
 [build]
   base = "packages/web-next"
   command = "npm run build"
+  publish = ".next"
   # Auto-deploy from main branch - GitHub Actions removed
   
-# Override any UI settings - use Next.js defaults
-
 # Build environment variables and secrets scanning configuration
 [build.environment]
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_b3V0Z29pbmctbWFydGVuLTI0LmNsZXJrLmFjY291bnRzLmRldiQ"
   SECRETS_SCAN_OMIT_PATHS = ".netlify/edge-functions/**,.github/workflows/**,node_modules/**"
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
 
+# Next.js plugin configuration
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 [dev]
-  framework = "#static"
+  framework = "#custom"
+  command = "npm run dev"
   port = 3000
   autoLaunch = false
 
-# API routes are handled by Next.js - no redirects needed
-
-[[redirects]]
-  from = "/sign-in"
-  to = "/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/"
-  to = "/index.html"
-  status = 200
+# Next.js handles its own routing - no redirects needed
 
 
