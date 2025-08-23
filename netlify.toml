@@ -18,50 +18,7 @@
   port = 3000
   autoLaunch = false
 
-[[redirects]]
-  from = "/api/devices/register"
-  to = "/.netlify/functions/devices-register"
-  status = 200
-
-[[redirects]]
-  from = "/api/devices/link"
-  to = "/.netlify/functions/devices-link"
-  status = 200
-
-[[redirects]]
-  from = "/api/devices/exchange"
-  to = "/.netlify/functions/devices-exchange"
-  status = 200
-
-[[redirects]]
-  from = "/api/devices/refresh"
-  to = "/.netlify/functions/devices-refresh"
-  status = 200
-
-[[redirects]]
-  from = "/api/presentations/save"
-  to = "/.netlify/functions/presentations-save"
-  status = 200
-
-[[redirects]]
-  from = "/api/presentations/get"
-  to = "/.netlify/functions/presentations-get"
-  status = 200
-
-[[redirects]]
-  from = "/api/presentations/list"
-  to = "/.netlify/functions/presentations-list"
-  status = 200
-
-[[redirects]]
-  from = "/api/auth/bootstrap"
-  to = "/.netlify/functions/auth-bootstrap"
-  status = 200
-
-[[redirects]]
-  from = "/api/protected/ping"
-  to = "/.netlify/functions/protected-ping"
-  status = 200
+# API routes are handled by Next.js - no redirects needed
 
 [[redirects]]
   from = "/sign-in"
