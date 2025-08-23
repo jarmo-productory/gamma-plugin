@@ -1,6 +1,6 @@
 [build]
   base = "packages/web-next"
-  command = "npm run build"
+  command = "npm ci && npm run build"
   publish = ".next"
   # Auto-deploy from main branch - GitHub Actions removed
   
@@ -21,5 +21,4 @@
   autoLaunch = false
 
 # Next.js handles its own routing - no redirects needed
-
 

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 // Bundle analyzer configuration
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
@@ -18,10 +19,10 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true, // Enable gzip compression
   
-  // Performance optimizations
-  experimental: {
-    optimizePackageImports: ['@clerk/nextjs', '@clerk/clerk-js'],
-  },
+  // Performance optimizations (disable risky vendor chunking until builds are stable)
+  // experimental: {
+  //   optimizePackageImports: ['@clerk/nextjs', '@clerk/clerk-js'],
+  // },
   
   // Turbopack configuration (stable in Next.js 15)
   turbopack: {
@@ -99,6 +100,16 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
     ];
+  },
+  // Resolve font module based on environment
+  webpack: (config) => {
+    const resolveFontsTo = process.env.DISABLE_GOOGLE_FONTS === '1'
+      ? path.resolve(__dirname, 'src/lib/fonts.fallback.ts')
+      : path.resolve(__dirname, 'src/lib/fonts.google.ts');
+    config.resolve = config.resolve || {};
+    config.resolve.alias = config.resolve.alias || {};
+    config.resolve.alias['@/lib/fonts'] = resolveFontsTo;
+    return config;
   },
 };
 
