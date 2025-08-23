@@ -1,6 +1,7 @@
 [build]
   base = "packages/web-next"
   command = "npm run build"
+  # Auto-deploy from main branch - GitHub Actions removed
   
 # Override any UI settings - use Next.js defaults
 

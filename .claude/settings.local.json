@@ -72,7 +72,8 @@
       "Bash(gh:*)",
       "Bash(brew install:*)",
       "Bash(act:*)",
-      "WebFetch(domain:supabase.com)"
+      "WebFetch(domain:supabase.com)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }
