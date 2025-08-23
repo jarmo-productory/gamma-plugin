@@ -1,7 +1,8 @@
 [build]
   base = "packages/web-next"
+  command = "npm run build"
   
-# Let Netlify auto-detect Next.js - no custom commands needed
+# Override any UI settings - use Next.js defaults
 
 # Build environment variables and secrets scanning configuration
 [build.environment]
