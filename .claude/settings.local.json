@@ -73,7 +73,9 @@
       "Bash(brew install:*)",
       "Bash(act:*)",
       "WebFetch(domain:supabase.com)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(./node_modules/.bin/eslint packages/extension/sidebar/sidebar.js)",
+      "Bash(timeout:*)"
     ],
     "deny": []
   }
