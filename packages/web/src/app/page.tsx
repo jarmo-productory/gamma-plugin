@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background p-8">
-      <h1 className="text-4xl font-bold mb-4">🎯 Phase 1.3: Shadcn/UI Button Added!</h1>
-      <p className="text-lg text-muted-foreground mb-6">Testing Shadcn/UI Button component with our Tailwind foundation.</p>
+      <h1 className="text-4xl font-bold mb-4">🎯 Phase 1.5: Shadcn/UI Card Added!</h1>
+      <p className="text-lg text-muted-foreground mb-6">Testing Button + Card components with our Tailwind foundation.</p>
       
       <div className="flex gap-4 flex-wrap mb-8">
         <Button>Default Button</Button>
@@ -21,6 +22,48 @@ export default function HomePage() {
         <Button size="lg">Large</Button>
       </div>
       
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Card Title</CardTitle>
+            <CardDescription>Card description goes here</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>This is the card content. It can contain any React elements.</p>
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" size="sm">Action</Button>
+          </CardFooter>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Another Card</CardTitle>
+            <CardDescription>With different content</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Cards are flexible containers for grouping related content and actions.</p>
+          </CardContent>
+          <CardFooter className="justify-between">
+            <Button variant="ghost" size="sm">Cancel</Button>
+            <Button size="sm">Save</Button>
+          </CardFooter>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Status Card</CardTitle>
+            <CardDescription>Showing component status</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-sm">All systems operational</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
       <div style={{ 
         marginTop: '2rem', 
         padding: '1rem', 
@@ -31,8 +74,9 @@ export default function HomePage() {
         <h2>✅ What Works:</h2>
         <ul>
           <li>Clean Next.js 15.4.6 + React 19.1.0</li>
-          <li>No complex dependencies</li>
-          <li>No Clerk/Supabase complications</li>
+          <li>Tailwind CSS v3.4.17 + Shadcn/UI design system</li>
+          <li>Button component with all variants + sizes</li>
+          <li>Card component with Header/Content/Footer</li>
           <li>Deploys to Netlify successfully</li>
           <li>Chrome Extension sidebar still works</li>
         </ul>
