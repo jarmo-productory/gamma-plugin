@@ -1,7 +1,7 @@
 {
   "version": 4,
   "routes": {
-    "/": {
+    "/auth/auth-code-error": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -14,8 +14,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/",
-      "dataRoute": "/index.rsc",
+      "srcRoute": "/auth/auth-code-error",
+      "dataRoute": "/auth/auth-code-error.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",

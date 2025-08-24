@@ -1,7 +1,11 @@
 {
-  "/api/test-db/route": "app/api/test-db/route.js",
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/test-db/route": "app/api/test-db/route.js",
+  "/auth/callback/route": "app/auth/callback/route.js",
+  "/auth/signout/route": "app/auth/signout/route.js",
+  "/auth/auth-code-error/page": "app/auth/auth-code-error/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/login/page": "app/login/page.js",
   "/page": "app/page.js",
-  "/signup/page": "app/signup/page.js",
-  "/login/page": "app/login/page.js"
+  "/signup/page": "app/signup/page.js"
 }

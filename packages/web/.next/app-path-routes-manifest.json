@@ -1,7 +1,11 @@
 {
-  "/api/test-db/route": "/api/test-db",
   "/_not-found/page": "/_not-found",
+  "/api/test-db/route": "/api/test-db",
+  "/auth/callback/route": "/auth/callback",
+  "/auth/signout/route": "/auth/signout",
+  "/auth/auth-code-error/page": "/auth/auth-code-error",
+  "/dashboard/page": "/dashboard",
+  "/login/page": "/login",
   "/page": "/",
-  "/signup/page": "/signup",
-  "/login/page": "/login"
+  "/signup/page": "/signup"
 }
