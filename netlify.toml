@@ -1,5 +1,5 @@
 [build]
-  base = "packages/web-next"
+  base = "packages/web"
   command = "npm ci && npm run build"
   publish = ".next"
   # Auto-deploy from main branch - GitHub Actions removed
@@ -7,8 +7,7 @@
 # Build environment variables and secrets scanning configuration  
 [build.environment]
   NODE_VERSION = "22"
-  # CLERK ENV TEMPORARILY RESTORED TO FIX BUILD FAILURE
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_b3V0Z29pbmctbWFydGVuLTI0LmNsZXJrLmFjY291bnRzLmRldiQ"
+  # NO COMPLEX ENV VARS - MINIMAL BUILD ONLY
   SECRETS_SCAN_OMIT_PATHS = ".netlify/edge-functions/**,.github/workflows/**,node_modules/**"
   # SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
 
