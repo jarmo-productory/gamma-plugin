@@ -7,7 +7,7 @@ export default function Phase3Page() {
       <header className="bg-white shadow-sm">
         <div className="max-w-4xl mx-auto px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900">
-            🎯 Phase 3: Radix UI Import Test
+            🚀 Phase 3: Radix UI Import Test - CACHE BUST 2f8bbd0
           </h1>
           <p className="text-gray-600 mt-2">
             Testing @radix-ui/react-dialog import (dependency test)
