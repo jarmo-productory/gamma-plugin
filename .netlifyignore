@@ -1,0 +1,47 @@
+# Documentation and planning (not needed in deployment)
+documents/
+roadmap/
+agents/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+PROJECT_STATE.md
+claude-instruction-dump.md
+
+# Test artifacts and reports  
+test-results/
+playwright-report/
+tests/
+test/
+
+# Development scripts and tools
+scripts/
+certs/
+
+# Development images and validation screenshots
+*.png
+auth-components-runtime-validation.png
+chromium-compatibility-test.png
+
+# Legacy build artifacts (already deleted but ensure they stay out)
+src/
+dist-web/
+dist-shared/
+dist-prod/
+
+# Extension build (not needed for web deployment)  
+dist/
+
+# Development configs not needed in production
+eslint.config.js
+playwright.config.ts
+vitest.config.ts
+tsconfig.json
+vite.config.js
+postcss.config.js
+tailwind.config.js
+components.json
+
+# Development/testing scripts
+e2e-auth-test.js
+simple-console-test.js
