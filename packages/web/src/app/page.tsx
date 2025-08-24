@@ -1,8 +1,8 @@
 export default function HomePage() {
   return (
-    <div>
-      <h1>🚀 SUCCESS: Clean Slate Deployment aeff832</h1>
-      <p>This is a minimal Next.js app that actually works and deploys!</p>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <h1 className="text-4xl font-bold text-gray-900 mb-4">🚀 Phase 1.1: Tailwind CSS Added!</h1>
+      <p className="text-lg text-gray-700 mb-6">Testing Tailwind CSS integration with our clean slate foundation.</p>
       
       <div style={{ 
         marginTop: '2rem', 
