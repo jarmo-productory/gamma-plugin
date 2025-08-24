@@ -460,6 +460,7 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
 }
 
 function renderTimetable(timetable) {
+  console.log('[DEBUG] renderTimetable() called - about to recreate login button');
   currentTimetable = timetable;
   const mainContainer = document.getElementById('sidebar-main');
   if (!mainContainer) return;
@@ -518,9 +519,19 @@ function renderTimetable(timetable) {
 
   const loginToolbarBtn = exportOptionsContainer.querySelector('#auth-login-toolbar-btn');
   const loginToolbarText = exportOptionsContainer.querySelector('#auth-toolbar-text');
+  
+  console.log('[DEBUG] Login button elements found:', {
+    loginToolbarBtn: !!loginToolbarBtn,
+    loginToolbarText: !!loginToolbarText
+  });
+  
   if (loginToolbarBtn && loginToolbarText) {
+    console.log('[DEBUG] Attempting to wire auth action...');
     const wireAuthAction = async () => {
+      console.log('[DEBUG] wireAuthAction() called');
       const authed = await authManager.isAuthenticated();
+      console.log('[DEBUG] User authentication status:', authed);
+      
       if (authed) {
         loginToolbarText.textContent = 'Logout';
         loginToolbarBtn.onclick = async () => {
@@ -528,6 +539,7 @@ function renderTimetable(timetable) {
           await authManager.logout();
           await wireAuthAction();
         };
+        console.log('[DEBUG] Logout handler attached');
       } else {
         loginToolbarText.textContent = 'Login';
         loginToolbarBtn.onclick = async () => {
@@ -561,9 +573,22 @@ function renderTimetable(timetable) {
             console.error('[SIDEBAR] Web-first login failed:', err);
           }
         };
+        console.log('[DEBUG] Login handler attached');
       }
     };
-    wireAuthAction();
+    
+    console.log('[DEBUG] About to call wireAuthAction()...');
+    try {
+      wireAuthAction().then(() => {
+        console.log('[DEBUG] wireAuthAction() completed successfully');
+      }).catch(err => {
+        console.error('[DEBUG] wireAuthAction() failed:', err);
+      });
+    } catch (err) {
+      console.error('[DEBUG] wireAuthAction() failed immediately:', err);
+    }
+  } else {
+    console.error('[DEBUG] Login button elements NOT found - cannot wire auth action');
   }
 
 
