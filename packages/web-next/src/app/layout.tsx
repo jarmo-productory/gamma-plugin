@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Gate 5: Minimal Build Test - SUCCESS!",
-  description: "Testing minimal Next.js deployment infrastructure",
+  title: "Phase 3: Radix UI Import Test - FORCE CACHE BUST",
+  description: "Testing Radix UI dependency loading in production",
 };
 
 export default function RootLayout({
