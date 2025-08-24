@@ -1,19 +1,11 @@
 import type { Metadata } from "next";
-import { Sofia_Sans, Geist_Mono } from "next/font/google";
+import { sofiaSansVar, geistMonoVar } from "@/lib/fonts";
 import { ClerkProvider } from "@/providers/ClerkProvider";
 import { AuthStateSync } from "@/components/AuthStateSync";
 import "./globals.css";
 
-const sofiaSans = Sofia_Sans({
-  variable: "--font-sofia-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Font variables are provided by a small helper that
+// can disable Google font downloads in network-restricted builds.
 
 export const metadata: Metadata = {
   title: "Gamma Timetable Dashboard",
@@ -28,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${sofiaSans.variable} ${geistMono.variable} antialiased`}
+        className={`${sofiaSansVar} ${geistMonoVar} antialiased`}
       >
         <ClerkProvider>
           <AuthStateSync />

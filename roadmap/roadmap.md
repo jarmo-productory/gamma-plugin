@@ -1,7 +1,7 @@
 # Gamma Timetable Extension Roadmap
 
 **Last Updated:** 2025-08-23  
-**Current Status:** Sprint 8 COMPLETE ✅ (Production Crisis Resolution)
+**Current Status:** Sprint 9 PLANNING 📝 (Authentication Pairing Re-establishment)
 
 ---
 
@@ -122,6 +122,26 @@ Transform the Gamma Timetable Extension from a standalone browser tool into a cl
 
 **Note:** Original security hardening scope postponed for production stability priority
 
+### **Sprint 9: Authentication Pairing Re-establishment** 📝 **PLANNING**
+**Duration:** 1-2 days (planned)  
+**Status:** Planning phase - ready for execution  
+**Details:** See `/roadmap/SPRINT-9.md`
+
+**Primary Objective:**
+Re-establish the device pairing authentication flow between Chrome extension and web application
+
+**Key Deliverables:**
+- 🎯 Fix device pairing mechanism between extension and web
+- 🎯 Restore token exchange and storage functionality
+- 🎯 Ensure persistent authentication across sessions
+- 🎯 Implement clear user feedback during pairing process
+
+**Success Criteria:**
+- User can initiate pairing from extension
+- Web app recognizes pairing codes
+- Tokens properly exchanged and stored
+- Authentication persists after browser restart
+
 ---
 
 ## 📋 Sprint Process & Guidelines
@@ -156,24 +176,31 @@ Transform the Gamma Timetable Extension from a standalone browser tool into a cl
 
 ## 🎯 Current Focus
 
-### **Sprint 8 Complete - Ready for Sprint 9 Planning**
+### **Sprint 9 Planning - Authentication Pairing Focus**
 
 **Status:** 
-Production Crisis Resolution completed with simplified CI/CD and stable deployment.
+Sprint 8 complete with stable production. Sprint 9 planning ready for execution.
 
-**Sprint 8 Results:**
-- ✅ **Primary Achievement**: Production HTTP 500 crisis resolved → stable HTTP 200 operation
-- ✅ **CI/CD Simplified**: Direct Netlify auto-deploy (1-2 min) replacing complex GitHub Actions
-- ✅ **API Migration**: New Supabase/Clerk keys working in production
-- ✅ **Build System**: lightningcss and Next.js configuration issues resolved
-- ✅ **User Satisfaction**: Simplified workflow with maintained production parity
+**Sprint 9 Focus:**
+**Sole Objective:** Re-establish device pairing authentication between Chrome extension sidebar and web application.
 
-**Next Session Priority:**
-With production stable, ready for Sprint 9+ focused on either:
-1. **Security Hardening**: Resume original Sprint 8 security scope (XSS cleanup, secrets management)
-2. **Feature Development**: Presentation management and user experience enhancements
+**Why This Sprint:**
+- Authentication pairing is broken between extension and web
+- Users cannot sync data between devices
+- Core functionality blocked without working authentication
+- Foundation for all future collaborative features
 
-**Security Debt Note:** Sprint 8's original security hardening scope (XSS cleanup, legacy code removal) remains pending but now has stable foundation for implementation.
+**Technical Scope:**
+1. **Diagnose** current pairing flow failures
+2. **Fix** token exchange mechanism
+3. **Restore** persistent authentication
+4. **Validate** end-to-end pairing process
+
+**Sprint 9 Timeline:** 1-2 days focused execution
+
+**Post-Sprint 9 Options:**
+1. **Security Hardening**: Resume Sprint 8's original security scope (XSS cleanup, secrets management)
+2. **Feature Development**: Enhanced sync and collaboration features
 
 ---
 
@@ -189,7 +216,7 @@ With production stable, ready for Sprint 9+ focused on either:
 - ✅ **Sprint 6**: Next.js Clean Rewrite (Complete)
 - ✅ **Sprint 7**: CI/CD Pipeline Excellence (Complete)
 - ✅ **Sprint 8**: Production Crisis Resolution (Complete)
-- ⏳ **Sprint 9+**: Security Hardening or Feature Development (Ready)
+- 📝 **Sprint 9**: Authentication Pairing Re-establishment (Planning)
 
 ### **Current Velocity**
 - **Sprint 2**: 2 days (authentication system)

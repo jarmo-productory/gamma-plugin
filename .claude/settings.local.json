@@ -75,7 +75,14 @@
       "WebFetch(domain:supabase.com)",
       "Bash(git rm:*)",
       "Bash(./node_modules/.bin/eslint packages/extension/sidebar/sidebar.js)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(./scripts/preflight-check.sh:*)",
+      "Bash(git checkout:*)",
+      "Bash(./scripts/strict-build-check.sh:*)",
+      "Bash(./scripts/qa-validation.sh:*)",
+      "Bash(./scripts/dependency-cleanup.sh:*)",
+      "Bash(./scripts/netlify-config-validation.sh:*)",
+      "Bash(./scripts/env-variables-audit.sh:*)"
     ],
     "deny": []
   }

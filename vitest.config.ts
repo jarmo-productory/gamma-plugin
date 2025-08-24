@@ -7,8 +7,39 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./test/setup.ts'],
     coverage: {
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'test/', 'dist/', '**/*.config.*'],
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'text-summary'],
+      exclude: [
+        'node_modules/',
+        'test/',
+        'dist/',
+        'dist-*/',
+        '.next/',
+        'coverage/',
+        '**/*.config.*',
+        '**/*.d.ts',
+        '**/types/**',
+        'scripts/**',
+        'netlify/functions/**',
+      ],
+      thresholds: {
+        global: {
+          branches: 70,
+          functions: 70,
+          lines: 70,
+          statements: 70,
+        },
+      },
+      include: [
+        'packages/*/src/**/*.{ts,tsx,js,jsx}',
+        'src/**/*.{ts,tsx,js,jsx}',
+      ],
+    },
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
     },
   },
   resolve: {
@@ -16,6 +47,7 @@ export default defineConfig({
       '@shared': resolve(__dirname, 'packages/shared'),
       '@extension': resolve(__dirname, 'packages/extension'),
       '@web': resolve(__dirname, 'packages/web'),
+      '@web-next': resolve(__dirname, 'packages/web-next'),
     },
   },
 });

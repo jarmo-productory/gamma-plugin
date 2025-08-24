@@ -91,3 +91,13 @@ supabase db reset        # Reset with latest migrations
 - **`PROJECT_STATE.md`** - This file (executive dashboard and current status)
 
 For detailed sprint specifications and technical architecture, see `/roadmap/roadmap.md`.
+
+---
+
+## ✅ Green Build Checklist (Next.js web-next)
+- Single lockfile: remove `packages/web-next/package-lock.json` (root lockfile remains).
+- Clean caches before builds: `prebuild` runs automatically; locally `rm -rf packages/web-next/.next` if needed.
+- Offline-safe build: `cd packages/web-next && DISABLE_GOOGLE_FONTS=1 npm run build` (skips Google Fonts download).
+- Deterministic Netlify builds: `command = "npm ci && npm run build"` in `netlify.toml`.
+- Environment setup: set Clerk/Supabase vars in Netlify UI (production and deploy-preview contexts).
+- Smoke test locally: `npm run test:e2e -- --trace on` to catch runtime errors early.
