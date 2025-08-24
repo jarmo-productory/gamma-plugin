@@ -1,7 +1,7 @@
 export default function HomePage() {
   return (
     <div>
-      <h1>🎉 SUCCESS: Clean Slate Deployment</h1>
+      <h1>🚀 SUCCESS: Clean Slate Deployment aeff832</h1>
       <p>This is a minimal Next.js app that actually works and deploys!</p>
       
       <div style={{ 
