@@ -82,7 +82,8 @@
       "Bash(./scripts/qa-validation.sh:*)",
       "Bash(./scripts/dependency-cleanup.sh:*)",
       "Bash(./scripts/netlify-config-validation.sh:*)",
-      "Bash(./scripts/env-variables-audit.sh:*)"
+      "Bash(./scripts/env-variables-audit.sh:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }
