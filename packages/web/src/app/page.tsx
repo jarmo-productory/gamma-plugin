@@ -1,11 +1,21 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background p-8">
-      <h1 className="text-4xl font-bold mb-4">🎯 Phase 1.5: Shadcn/UI Card Added!</h1>
-      <p className="text-lg text-muted-foreground mb-6">Testing Button + Card components with our Tailwind foundation.</p>
+      <h1 className="text-4xl font-bold mb-4">🎯 Phase 3: Authentication UI Added!</h1>
+      <p className="text-lg text-muted-foreground mb-6">Testing complete auth flow UI with Shadcn/UI components.</p>
+      
+      <div className="flex gap-4 mb-8">
+        <Link href="/login">
+          <Button>View Login Page</Button>
+        </Link>
+        <Link href="/signup">
+          <Button variant="outline">View Signup Page</Button>
+        </Link>
+      </div>
       
       <div className="flex gap-4 flex-wrap mb-8">
         <Button>Default Button</Button>
