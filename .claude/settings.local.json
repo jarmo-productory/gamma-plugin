@@ -85,6 +85,9 @@
       "Bash(./scripts/env-variables-audit.sh:*)",
       "Bash(BUILD_TARGET=extension npx vite build)"
     ],
-    "deny": []
+    "deny": [],
+    "additionalDirectories": [
+      "/Users/jarmotuisk"
+    ]
   }
 }

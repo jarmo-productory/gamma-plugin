@@ -4,12 +4,13 @@
   publish = ".next"
   # Auto-deploy from main branch - GitHub Actions removed
   
-# Build environment variables and secrets scanning configuration
+# Build environment variables and secrets scanning configuration  
 [build.environment]
   NODE_VERSION = "22"
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_b3V0Z29pbmctbWFydGVuLTI0LmNsZXJrLmFjY291bnRzLmRldiQ"
+  # CLERK ENV REMOVED FOR MINIMAL BUILD TESTING
+  # NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_b3V0Z29pbmctbWFydGVuLTI0LmNsZXJrLmFjY291bnRzLmRldiQ"
   SECRETS_SCAN_OMIT_PATHS = ".netlify/edge-functions/**,.github/workflows/**,node_modules/**"
-  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
+  # SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
 
 # Next.js plugin configuration
 [[plugins]]
