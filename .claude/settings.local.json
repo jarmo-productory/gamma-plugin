@@ -83,7 +83,8 @@
       "Bash(./scripts/dependency-cleanup.sh:*)",
       "Bash(./scripts/netlify-config-validation.sh:*)",
       "Bash(./scripts/env-variables-audit.sh:*)",
-      "Bash(BUILD_TARGET=extension npx vite build)"
+      "Bash(BUILD_TARGET=extension npx vite build)",
+      "WebFetch(domain:www.netlify.com)"
     ],
     "deny": [],
     "additionalDirectories": [
