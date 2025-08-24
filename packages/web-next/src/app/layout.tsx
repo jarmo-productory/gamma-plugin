@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Phase 3: Radix UI Import Test - FORCE CACHE BUST",
-  description: "Testing Radix UI dependency loading in production",
+  title: "DEPLOYMENT TEST d49448f - WORKING?",
+  description: "Testing if Netlify deployment updates properly",
 };
 
 export default function RootLayout({
