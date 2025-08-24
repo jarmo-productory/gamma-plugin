@@ -1,3 +1,4 @@
+// Legacy client - kept for backward compatibility with existing API routes
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -7,6 +8,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 export const supabase = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null as any
+
+// For new auth implementation, use the clients in /utils/supabase/
 
 export type Database = {
   public: {

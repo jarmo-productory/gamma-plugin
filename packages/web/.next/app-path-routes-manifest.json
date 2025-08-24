@@ -1,0 +1,7 @@
+{
+  "/api/test-db/route": "/api/test-db",
+  "/_not-found/page": "/_not-found",
+  "/page": "/",
+  "/signup/page": "/signup",
+  "/login/page": "/login"
+}
