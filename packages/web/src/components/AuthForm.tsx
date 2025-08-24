@@ -29,7 +29,14 @@ export default function AuthForm() {
     })
 
     if (error) {
-      setMessage(error.message)
+      // Provide user-friendly error messages
+      if (error.message.includes('Email not confirmed')) {
+        setMessage('Please check your email and click the confirmation link before signing in.')
+      } else if (error.message.includes('Invalid login credentials')) {
+        setMessage('Invalid email or password. Please check your credentials and try again.')
+      } else {
+        setMessage(error.message)
+      }
     } else {
       // Redirect will be handled by middleware
       window.location.href = '/dashboard'
@@ -64,7 +71,7 @@ export default function AuthForm() {
     if (error) {
       setMessage(error.message)
     } else {
-      setMessage('Check your email for the confirmation link!')
+      setMessage('Account created successfully! Check your email for the confirmation link to complete registration.')
     }
     setIsLoading(false)
   }
