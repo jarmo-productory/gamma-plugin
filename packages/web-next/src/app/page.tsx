@@ -1,14 +1,16 @@
-export default function Phase2Page() {
+import * as Dialog from "@radix-ui/react-dialog"
+
+export default function Phase3Page() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Simple Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-4xl mx-auto px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900">
-            🎯 Phase 2: Simple UI Components
+            🎯 Phase 3: Radix UI Import Test
           </h1>
           <p className="text-gray-600 mt-2">
-            Adding basic Tailwind-styled components (no external deps)
+            Testing @radix-ui/react-dialog import (dependency test)
           </p>
         </div>
       </header>
@@ -18,10 +20,10 @@ export default function Phase2Page() {
         {/* Status Card */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-3">
-            ✅ Phase 2 Status
+            🧪 Phase 3 Status
           </h2>
-          <p className="text-green-600 font-medium">
-            Simple UI components with Tailwind CSS added successfully!
+          <p className="text-blue-600 font-medium">
+            Testing Radix UI Dialog import - checking for build breaks...
           </p>
         </div>
 
@@ -61,12 +63,12 @@ export default function Phase2Page() {
               <span className="text-green-700">Phase 1: Basic CSS and fonts</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
-              <span className="text-blue-700 font-medium">Phase 2: Simple UI components (current)</span>
+              <div className="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-green-700">Phase 2: Simple UI components</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-gray-300 rounded-full mr-3"></div>
-              <span className="text-gray-500">Phase 3: External UI dependencies</span>
+              <div className="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-blue-700 font-medium">Phase 3: Radix UI import (current)</span>
             </div>
             <div className="flex items-center">
               <div className="w-4 h-4 bg-gray-300 rounded-full mr-3"></div>
