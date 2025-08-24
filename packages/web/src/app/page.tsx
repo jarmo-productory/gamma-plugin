@@ -1,8 +1,25 @@
+import { Button } from "@/components/ui/button"
+
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">🎯 Phase 1.2: Tailwind DEPLOY TEST d6578f1</h1>
-      <p className="text-lg text-gray-700 mb-6">Testing Tailwind CSS integration with our clean slate foundation.</p>
+    <div className="min-h-screen bg-background p-8">
+      <h1 className="text-4xl font-bold mb-4">🎯 Phase 1.3: Shadcn/UI Button Added!</h1>
+      <p className="text-lg text-muted-foreground mb-6">Testing Shadcn/UI Button component with our Tailwind foundation.</p>
+      
+      <div className="flex gap-4 flex-wrap mb-8">
+        <Button>Default Button</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="outline">Outline</Button>
+        <Button variant="destructive">Destructive</Button>
+        <Button variant="ghost">Ghost</Button>
+        <Button variant="link">Link</Button>
+      </div>
+      
+      <div className="flex gap-4 flex-wrap mb-8">
+        <Button size="sm">Small</Button>
+        <Button size="default">Default</Button>
+        <Button size="lg">Large</Button>
+      </div>
       
       <div style={{ 
         marginTop: '2rem', 
