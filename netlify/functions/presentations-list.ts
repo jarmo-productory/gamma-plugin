@@ -90,7 +90,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Query presentations with RLS enforcement
-    let query = supabase
+    const query = supabase
       .from('presentations')
       .select(`
         id,
@@ -106,7 +106,7 @@ export const handler: Handler = async (event) => {
       .order(validSortBy, { ascending: sortOrder === 'asc' })
       .range(offset, offset + limit - 1);
 
-    const { data: presentations, error: listError, count } = await query;
+    const { data: presentations, error: listError } = await query;
 
     if (listError) {
       log(event, 'list_presentations_failed', { 

@@ -271,8 +271,8 @@ export class StorageManager implements IStorageManager {
         const normalizedItems = Array.isArray(timetableData?.items)
           ? timetableData.items
               .map((item: any) => {
-                const id = item?.id != null ? String(item.id) : '';
-                const title = item?.title != null ? String(item.title) : '';
+                const id = item?.id !== null && item?.id !== undefined ? String(item.id) : '';
+                const title = item?.title !== null && item?.title !== undefined ? String(item.title) : '';
                 const duration = Number(item?.duration);
                 const startTime = typeof item?.startTime === 'string' ? item.startTime.slice(0,5) : item?.startTime;
                 const endTime = typeof item?.endTime === 'string' ? item.endTime.slice(0,5) : item?.endTime;

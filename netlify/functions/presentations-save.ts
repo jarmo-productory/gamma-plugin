@@ -72,7 +72,7 @@ export const handler: Handler = async (event) => {
     let requestBody: SavePresentationRequest;
     try {
       requestBody = JSON.parse(event.body || '{}');
-    } catch (e) {
+    } catch {
       return json(400, { error: 'invalid_json' });
     }
 

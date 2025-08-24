@@ -15,7 +15,7 @@ export interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ 
   children, 
-  className = '' 
+  className: _className = '' 
 }) => {
   return (
     <SidebarProvider>

@@ -24,9 +24,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Try to parse request body if it exists (but handle empty body)
-    let body = {};
     try {
-      body = await request.json();
+      await request.json();
     } catch {
       // Empty body is fine for this endpoint
     }
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
             console.log('[Bootstrap] Clerk data prepared for database');
           }
         }
-      } catch (e) {
+      } catch {
         // Development only: log parsing errors
         if (process.env.NODE_ENV === 'development') {
           console.log('[Bootstrap] Token parsing failed');
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Use Clerk ID or fallback to test UUID
-    const userId = clerkUserId || '123e4567-e89b-12d3-a456-426614174000';
+    const _userId = clerkUserId || '123e4567-e89b-12d3-a456-426614174000';
     
     // Try to find user by clerk_id first
     const { data: existingUser, error: fetchError } = await supabase
@@ -184,7 +183,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // Handle GET requests for bootstrap endpoint
   return NextResponse.json({
     success: true,

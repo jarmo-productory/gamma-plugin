@@ -50,7 +50,7 @@ describe('Storage Abstraction Layer', () => {
     storageManager = new StorageManager();
     
     // Reset chrome.runtime.lastError
-    global.chrome.runtime.lastError = null;
+    global.chrome.runtime.lastError = undefined;
   });
 
   describe('Configuration Management', () => {
@@ -90,19 +90,19 @@ describe('Storage Abstraction Layer', () => {
   describe('Basic Storage Operations', () => {
     beforeEach(() => {
       // Setup successful Chrome storage operations by default
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
       
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({});
       });
       
-      mockChromeStorage.local.remove.mockImplementation((key, callback) => {
+      mockChromeStorage.local.remove.mockImplementation((key: string | string[], callback?: () => void) => {
         callback?.();
       });
       
-      mockChromeStorage.local.clear.mockImplementation((callback) => {
+      mockChromeStorage.local.clear.mockImplementation((callback?: () => void) => {
         callback?.();
       });
     });
@@ -152,7 +152,7 @@ describe('Storage Abstraction Layer', () => {
         timestamp: new Date(),
       };
 
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({ [testKey]: versionedData });
       });
 
@@ -166,7 +166,7 @@ describe('Storage Abstraction Layer', () => {
       const testKey = 'legacy-key';
       const legacyData = { message: 'Legacy data' };
 
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({ [testKey]: legacyData });
       });
 
@@ -181,7 +181,7 @@ describe('Storage Abstraction Layer', () => {
     });
 
     it('should return undefined for non-existent keys', async () => {
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({});
       });
 
@@ -210,7 +210,7 @@ describe('Storage Abstraction Layer', () => {
       const storageError = { message: 'Storage quota exceeded' };
       global.chrome.runtime.lastError = storageError;
 
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
 
@@ -228,7 +228,7 @@ describe('Storage Abstraction Layer', () => {
       const storageError = { message: 'Storage access denied' };
       global.chrome.runtime.lastError = storageError;
 
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({});
       });
 
@@ -246,7 +246,7 @@ describe('Storage Abstraction Layer', () => {
       const storageError = { message: 'Remove failed' };
       global.chrome.runtime.lastError = storageError;
 
-      mockChromeStorage.local.remove.mockImplementation((key, callback) => {
+      mockChromeStorage.local.remove.mockImplementation((key: string | string[], callback?: () => void) => {
         callback?.();
       });
 
@@ -264,7 +264,7 @@ describe('Storage Abstraction Layer', () => {
       const storageError = { message: 'Clear failed' };
       global.chrome.runtime.lastError = storageError;
 
-      mockChromeStorage.local.clear.mockImplementation((callback) => {
+      mockChromeStorage.local.clear.mockImplementation((callback?: () => void) => {
         callback?.();
       });
 
@@ -289,7 +289,7 @@ describe('Storage Abstraction Layer', () => {
         timestamp: new Date(),
       };
 
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({ [testKey]: oldVersionData });
       });
 
@@ -315,7 +315,7 @@ describe('Storage Abstraction Layer', () => {
         timestamp: new Date(),
       };
 
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({ versioned: versionedData });
       });
 
@@ -325,7 +325,7 @@ describe('Storage Abstraction Layer', () => {
       // Test legacy data
       const legacyData = { legacy: true };
 
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({ legacy: legacyData });
       });
 
@@ -348,7 +348,7 @@ describe('Storage Abstraction Layer', () => {
     });
 
     beforeEach(() => {
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
     });
@@ -364,7 +364,7 @@ describe('Storage Abstraction Layer', () => {
     it('should add to sync queue when cloud sync enabled', async () => {
       const syncEnabledManager = new StorageManager({ enableCloudSync: true });
       
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
 
@@ -383,7 +383,7 @@ describe('Storage Abstraction Layer', () => {
     it('should add remove operations to sync queue', async () => {
       const syncEnabledManager = new StorageManager({ enableCloudSync: true });
       
-      mockChromeStorage.local.remove.mockImplementation((key, callback) => {
+      mockChromeStorage.local.remove.mockImplementation((key: string | string[], callback?: () => void) => {
         callback?.();
       });
 
@@ -405,7 +405,7 @@ describe('Storage Abstraction Layer', () => {
         syncDebounceMs: 100 
       });
       
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
 
@@ -432,10 +432,10 @@ describe('Storage Abstraction Layer', () => {
     it('should clear sync queue during storage clear', async () => {
       const syncEnabledManager = new StorageManager({ enableCloudSync: true });
       
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
-      mockChromeStorage.local.clear.mockImplementation((callback) => {
+      mockChromeStorage.local.clear.mockImplementation((callback?: () => void) => {
         callback?.();
       });
 
@@ -451,11 +451,11 @@ describe('Storage Abstraction Layer', () => {
 
   describe('Compatibility Layer', () => {
     beforeEach(() => {
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
       
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({});
       });
     });
@@ -481,7 +481,7 @@ describe('Storage Abstraction Layer', () => {
       const testKey = 'compat-test';
       const testData = { legacy: 'api' };
 
-      mockChromeStorage.local.get.mockImplementation((key, callback) => {
+      mockChromeStorage.local.get.mockImplementation((key: string | string[] | Record<string, any> | null, callback?: (items: Record<string, any>) => void) => {
         callback?.({ [testKey]: testData });
       });
 
@@ -562,7 +562,7 @@ describe('Storage Abstraction Layer', () => {
 
   describe('Edge Cases and Boundary Conditions', () => {
     it('should handle empty data correctly', async () => {
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
 
@@ -586,7 +586,7 @@ describe('Storage Abstraction Layer', () => {
         functions: undefined, // Functions should be handled gracefully
       };
 
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
 
@@ -606,7 +606,7 @@ describe('Storage Abstraction Layer', () => {
       const longKey = 'a'.repeat(1000);
       const testData = { test: 'long key' };
 
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
 
@@ -642,7 +642,7 @@ describe('Storage Abstraction Layer', () => {
         },
       ];
 
-      mockChromeStorage.local.set.mockImplementation((data, callback) => {
+      mockChromeStorage.local.set.mockImplementation((data: Record<string, any>, callback?: () => void) => {
         callback?.();
       });
 
