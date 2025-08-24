@@ -7,8 +7,8 @@
 # Build environment variables and secrets scanning configuration  
 [build.environment]
   NODE_VERSION = "22"
-  # CLERK ENV REMOVED FOR MINIMAL BUILD TESTING
-  # NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_b3V0Z29pbmctbWFydGVuLTI0LmNsZXJrLmFjY291bnRzLmRldiQ"
+  # CLERK ENV TEMPORARILY RESTORED TO FIX BUILD FAILURE
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_b3V0Z29pbmctbWFydGVuLTI0LmNsZXJrLmFjY291bnRzLmRldiQ"
   SECRETS_SCAN_OMIT_PATHS = ".netlify/edge-functions/**,.github/workflows/**,node_modules/**"
   # SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
 
