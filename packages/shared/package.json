@@ -1,0 +1,17 @@
+{
+  "name": "@shared/package",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./auth": "./auth/index.ts",
+    "./auth/device": "./auth/device.ts",
+    "./storage": "./storage/index.ts",
+    "./config": "./config/index.ts",
+    "./types": "./types/index.ts"
+  },
+  "dependencies": {
+    "@clerk/clerk-js": "^5.0.0"
+  }
+}

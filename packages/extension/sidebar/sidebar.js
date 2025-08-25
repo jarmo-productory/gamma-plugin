@@ -15,10 +15,10 @@ import {
 import { saveData, loadData, debounce } from '../lib/storage.js';
 
 // Import authentication and configuration infrastructure
-import { authManager } from '@shared/auth';
-import { deviceAuth } from '@shared/auth/device';
-import { configManager } from '@shared/config';
-import { defaultStorageManager, saveDataWithSync } from '@shared/storage';
+import { authManager } from '../shared-auth/index.js';
+import { deviceAuth } from '../shared-auth/device.js';
+import { configManager } from '../shared-config/index.js';
+import { defaultStorageManager, saveDataWithSync } from '../shared-storage/index.js';
 
 let connected = false;
 let lastSlides = [];
