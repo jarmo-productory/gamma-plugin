@@ -27,7 +27,7 @@ export default function DevicePairing({ searchParams }: DevicePairingProps) {
   // Only log on client side after mounting
   useEffect(() => {
     console.log('[DevicePairing] Component mounted');
-    console.log('[DevicePairing] Props:', { searchParams: searchParamsPromise });
+    console.log('[DevicePairing] Props:', { searchParams });
     console.log('[DevicePairing] Values:', { pairingCode, source, isPairingRequest, user: !!user, loading });
     setMounted(true);
   }, []);
