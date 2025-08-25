@@ -37,8 +37,9 @@ jobs:
     #   run: npm run format:check
     #   continue-on-error: true
       
-    - name: Build extension
-      run: npm run build:extension
+    # Extension build temporarily disabled - focus on web deployment
+    # - name: Build extension
+    #   run: npm run build:extension
       
     - name: Install Web dependencies
       run: cd packages/web && npm ci

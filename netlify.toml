@@ -1,6 +1,6 @@
 [build]
   base = "packages/web"
-  command = "npm ci && npm run build"
+  command = "cd ../../ && npm ci && cd packages/web && npm run build"
   publish = ".next"
   # Auto-deploy from main branch - GitHub Actions removed
   
