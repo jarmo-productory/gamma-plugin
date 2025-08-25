@@ -12,7 +12,34 @@ import { createClient } from '@/utils/supabase/client'
 export default function AuthForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
   const supabase = createClient()
+
+  // Client-side validation functions
+  const validateEmail = (email: string): string => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email.trim()) return 'Email is required'
+    if (!emailRegex.test(email)) return 'Please enter a valid email address'
+    return ''
+  }
+
+  const validatePassword = (password: string): string => {
+    if (!password) return 'Password is required'
+    if (password.length < 8) return 'Password must be at least 8 characters long'
+    if (!/(?=.*[a-z])/.test(password)) return 'Password must contain at least one lowercase letter'
+    if (!/(?=.*[A-Z])/.test(password)) return 'Password must contain at least one uppercase letter'
+    if (!/(?=.*\d)/.test(password)) return 'Password must contain at least one number'
+    if (!/(?=.*[@$!%*?&])/.test(password)) return 'Password must contain at least one special character'
+    return ''
+  }
+
+  const validateName = (name: string, fieldName: string): string => {
+    if (!name.trim()) return `${fieldName} is required`
+    if (name.trim().length < 2) return `${fieldName} must be at least 2 characters`
+    if (name.trim().length > 50) return `${fieldName} must be less than 50 characters`
+    if (!/^[a-zA-Z\s'-]+$/.test(name.trim())) return `${fieldName} can only contain letters, spaces, hyphens and apostrophes`
+    return ''
+  }
 
   const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -38,8 +65,9 @@ export default function AuthForm() {
         setMessage(error.message)
       }
     } else {
-      // Redirect will be handled by middleware
-      window.location.href = '/dashboard'
+      // Always redirect to dashboard after successful sign-in
+      // DevicePairingDashboard will handle any stored pairing codes
+      window.location.href = '/dashboard';
     }
     setIsLoading(false)
   }
@@ -48,28 +76,65 @@ export default function AuthForm() {
     event.preventDefault()
     setIsLoading(true)
     setMessage('')
+    setValidationErrors({})
 
     const formData = new FormData(event.currentTarget)
+    const firstName = formData.get('firstName') as string
+    const lastName = formData.get('lastName') as string
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const confirmPassword = formData.get('confirmPassword') as string
 
+    // Client-side validation
+    const errors: {[key: string]: string} = {}
+    
+    const firstNameError = validateName(firstName, 'First name')
+    if (firstNameError) errors.firstName = firstNameError
+    
+    const lastNameError = validateName(lastName, 'Last name')
+    if (lastNameError) errors.lastName = lastNameError
+    
+    const emailError = validateEmail(email)
+    if (emailError) errors.email = emailError
+    
+    const passwordError = validatePassword(password)
+    if (passwordError) errors.password = passwordError
+
     if (password !== confirmPassword) {
-      setMessage('Passwords do not match')
+      errors.confirmPassword = 'Passwords do not match'
+    }
+
+    // If there are validation errors, show them and stop
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      setMessage('Please fix the errors above')
       setIsLoading(false)
       return
     }
+
+    // Always redirect to dashboard after email confirmation - DevicePairingDashboard will handle stored pairing codes
+    const emailRedirectTo = `${location.origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
 
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${location.origin}/auth/callback`,
+        emailRedirectTo,
       },
     })
 
     if (error) {
-      setMessage(error.message)
+      console.error('Signup error:', error)
+      // Handle specific signup errors
+      if (error.message.includes('email_address_invalid') || error.message.includes('invalid')) {
+        setMessage('Email address is invalid or not allowed. Please use a valid business email address.')
+      } else if (error.message.includes('Password should be')) {
+        setMessage('Password is too weak. Please use at least 8 characters with numbers and symbols.')
+      } else if (error.message.includes('User already registered')) {
+        setMessage('An account with this email already exists. Please try signing in instead.')
+      } else {
+        setMessage(`Signup failed: ${error.message}`)
+      }
     } else {
       setMessage('Account created successfully! Check your email for the confirmation link to complete registration.')
     }
@@ -78,10 +143,14 @@ export default function AuthForm() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
+    
+    // Always redirect to dashboard - DevicePairingDashboard will handle stored pairing codes
+    const redirectTo = `${location.origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo,
       },
     })
 
@@ -243,7 +312,11 @@ export default function AuthForm() {
                   name="firstName"
                   placeholder="John"
                   required
+                  className={validationErrors.firstName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                 />
+                {validationErrors.firstName && (
+                  <p className="text-sm text-red-600 mt-1">{validationErrors.firstName}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last name</Label>
@@ -252,7 +325,11 @@ export default function AuthForm() {
                   name="lastName"
                   placeholder="Doe"
                   required
+                  className={validationErrors.lastName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                 />
+                {validationErrors.lastName && (
+                  <p className="text-sm text-red-600 mt-1">{validationErrors.lastName}</p>
+                )}
               </div>
             </div>
             <div className="space-y-2">
@@ -263,7 +340,11 @@ export default function AuthForm() {
                 type="email" 
                 placeholder="john@example.com"
                 required
+                className={validationErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
               />
+              {validationErrors.email && (
+                <p className="text-sm text-red-600 mt-1">{validationErrors.email}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="create-password">Password</Label>
@@ -273,7 +354,14 @@ export default function AuthForm() {
                 type="password" 
                 placeholder="Create a secure password"
                 required
+                className={validationErrors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
               />
+              {validationErrors.password && (
+                <p className="text-sm text-red-600 mt-1">{validationErrors.password}</p>
+              )}
+              <div className="text-xs text-gray-500 mt-1">
+                Must be 8+ characters with uppercase, lowercase, number & symbol
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm password</Label>
@@ -283,7 +371,11 @@ export default function AuthForm() {
                 type="password" 
                 placeholder="Confirm your password"
                 required
+                className={validationErrors.confirmPassword ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
               />
+              {validationErrors.confirmPassword && (
+                <p className="text-sm text-red-600 mt-1">{validationErrors.confirmPassword}</p>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <input 
