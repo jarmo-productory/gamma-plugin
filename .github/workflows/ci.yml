@@ -40,11 +40,11 @@ jobs:
     - name: Build extension
       run: npm run build:extension
       
-    - name: Install Next.js dependencies
-      run: cd packages/web-next && npm ci
+    - name: Install Web dependencies
+      run: cd packages/web && npm ci
       
-    - name: Build Next.js app
-      run: npm run build:next
+    - name: Build Web app
+      run: cd packages/web && npm run build
       env:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
         CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
@@ -74,11 +74,11 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Install Next.js dependencies
-      run: cd packages/web-next && npm ci
+    - name: Install Web dependencies
+      run: cd packages/web && npm ci
       
-    - name: Build Next.js app for production
-      run: npm run build:next
+    - name: Build Web app for production
+      run: cd packages/web && npm run build
       env:
         NODE_ENV: production
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
@@ -91,7 +91,7 @@ jobs:
       id: netlify-deploy
       uses: nwtgck/actions-netlify@v3.0
       with:
-        publish-dir: './packages/web-next/.next'
+        publish-dir: './packages/web/.next'
         production-branch: main
         production-deploy: true
         deploy-message: "Deploy from GitHub Actions - ${{ github.sha }}"
