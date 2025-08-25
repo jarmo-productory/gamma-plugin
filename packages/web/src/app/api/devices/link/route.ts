@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if device registration exists
-    global.deviceRegistrations = global.deviceRegistrations || new Map();
-    const deviceInfo = global.deviceRegistrations.get(code);
+    globalThis.deviceRegistrations = globalThis.deviceRegistrations || new Map();
+    const deviceInfo = globalThis.deviceRegistrations.get(code);
 
     if (!deviceInfo) {
       return NextResponse.json(
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Check if expired
     if (new Date() > new Date(deviceInfo.expiresAt)) {
-      global.deviceRegistrations.delete(code);
+      globalThis.deviceRegistrations.delete(code);
       return NextResponse.json(
         { error: 'Code expired' },
         { status: 404 }

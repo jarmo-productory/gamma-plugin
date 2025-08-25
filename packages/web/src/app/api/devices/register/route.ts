@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
     };
 
     // Store temporarily (in production, use Redis or database)
-    global.deviceRegistrations = global.deviceRegistrations || new Map();
-    global.deviceRegistrations.set(code, deviceInfo);
+    globalThis.deviceRegistrations = globalThis.deviceRegistrations || new Map();
+    globalThis.deviceRegistrations.set(code, deviceInfo);
 
     console.log(`[Device Register] Created device: ${deviceId} with code: ${code}`);
 
