@@ -1,0 +1,14 @@
+# Next.js build output
+.next/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env.local
+.env.production.local
+
+# Editor
+.vscode/
+.DS_Store
