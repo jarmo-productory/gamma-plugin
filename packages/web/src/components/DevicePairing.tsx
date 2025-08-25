@@ -1,25 +1,22 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import PairingDialog from '@/components/PairingDialog';
 import PairingNotification from '@/components/PairingNotification';
 
 interface DevicePairingProps {
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function DevicePairing({ searchParams: searchParamsPromise }: DevicePairingProps) {
+export default function DevicePairing({ searchParams }: DevicePairingProps) {
   const clientSearchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showPairingDialog, setShowPairingDialog] = useState(false);
   const [mounted, setMounted] = useState(false);
   const supabase = createClient();
-
-  // Handle both server-side Promise and client-side searchParams
-  const searchParams = searchParamsPromise ? use(searchParamsPromise) : null;
   
   const pairingCode = searchParams?.code as string || clientSearchParams?.get('code');
   const source = searchParams?.source as string || clientSearchParams?.get('source');
