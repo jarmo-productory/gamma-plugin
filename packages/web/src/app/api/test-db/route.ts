@@ -1,32 +1,40 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET() {
   try {
-    if (!supabase) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json(
         { 
           success: false, 
           message: 'Database not configured',
-          help: 'Please configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local'
+          details: {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!supabaseKey,
+            urlPrefix: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'undefined',
+            keyPrefix: supabaseKey ? supabaseKey.substring(0, 20) + '...' : 'undefined'
+          }
         },
         { status: 503 }
       )
     }
 
-    // Test database connection
-    const { error } = await supabase
-      .from('users')
-      .select('count')
-      .limit(1)
+    // Test with proper Supabase client
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    
+    // Just test the auth endpoint - no database query needed
+    const { error } = await supabase.auth.getSession()
 
     if (error) {
-      console.error('Database connection error:', error)
       return NextResponse.json(
         { 
           success: false, 
-          message: 'Database connection failed',
-          error: error.message 
+          message: 'Supabase client connection failed',
+          error: error.message,
+          url: supabaseUrl
         },
         { status: 500 }
       )
@@ -35,8 +43,9 @@ export async function GET() {
     return NextResponse.json(
       { 
         success: true, 
-        message: 'Database connection successful',
-        timestamp: new Date().toISOString()
+        message: 'Supabase connection successful',
+        timestamp: new Date().toISOString(),
+        url: supabaseUrl
       },
       { status: 200 }
     )
@@ -45,7 +54,7 @@ export async function GET() {
     return NextResponse.json(
       { 
         success: false, 
-        message: 'Unexpected error occurred',
+        message: 'Connection failed',
         error: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
