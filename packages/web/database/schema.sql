@@ -1,4 +1,4 @@
--- Gamma Timetable Extension Database Schema
+-- Productory Powerups for Gamma Database Schema
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

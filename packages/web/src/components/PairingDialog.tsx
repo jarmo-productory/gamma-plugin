@@ -31,7 +31,7 @@ export default function PairingDialog({ isOpen, onClose, pairingCode, onLink }: 
     try {
       await onLink();
       setSuccess(true);
-      setMessage('✅ Device successfully linked! You can now sync your timetables between the extension and web dashboard.');
+      setMessage('✅ Device successfully linked! You can now sync your Productory Powerups between the extension and web dashboard.');
       
       // Auto-close after 3 seconds
       setTimeout(() => {

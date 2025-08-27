@@ -2,7 +2,7 @@
 
 ## Phase 2: Database Integration - COMPLETED ✅
 
-This directory contains the database schema and setup instructions for the Gamma Timetable Extension.
+This directory contains the database schema and setup instructions for Productory Powerups for Gamma.
 
 ### Setup Instructions
 

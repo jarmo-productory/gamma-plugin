@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Gamma Timetable - Clean Slate",
-  description: "Minimal Next.js app that actually deploys",
+  title: "Productory Powerups for Gamma",
+  description: "Supercharge your Gamma presentations with productivity enhancements built by educators, for educators",
 };
 
 export default function RootLayout({

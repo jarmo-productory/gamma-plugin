@@ -42,9 +42,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <DevicePairingDashboard />
 
         <div className="bg-card border rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Your Gamma Timetables</h2>
+          <h2 className="text-xl font-semibold mb-4">Your Productory Powerups</h2>
           <p className="text-muted-foreground">
-            This is a placeholder dashboard. Your presentations and timetables will appear here once the feature is implemented.
+            This is your dashboard for all Productory Powerups enhancements. Your Gamma presentation timetables and future productivity tools will appear here.
           </p>
         </div>
       </div>
