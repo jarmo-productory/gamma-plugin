@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manual Authentication & Pairing Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 15px; margin: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Manual Authentication & Device Pairing Test</h1>
+    
+    <div class="test-section">
+        <h2>Step 1: Check Application Status</h2>
+        <button onclick="checkApp()">Test Localhost:3000</button>
+        <div id="app-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 2: Test Device Registration API</h2>
+        <button onclick="registerDevice()">Register Device</button>
+        <div id="register-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 3: Test Pairing URL</h2>
+        <button onclick="testPairingURL()">Open Pairing URL</button>
+        <div id="pairing-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 4: Authentication Status</h2>
+        <button onclick="checkAuth()">Check Authentication</button>
+        <div id="auth-status"></div>
+    </div>
+    
+    <script>
+        async function checkApp() {
+            const status = document.getElementById('app-status');
+            try {
+                const response = await fetch('http://localhost:3000/');
+                status.innerHTML = `<div class="success">✅ Application running - HTTP ${response.status}</div>`;
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Application not accessible: ${error.message}</div>`;
+            }
+        }
+        
+        async function registerDevice() {
+            const status = document.getElementById('register-status');
+            try {
+                const response = await fetch('http://localhost:3000/api/devices/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    status.innerHTML = `<div class="success">✅ Device registered successfully</div>
+                                     <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    window.lastDeviceInfo = data; // Store for testing
+                } else {
+                    status.innerHTML = `<div class="error">❌ Registration failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Registration error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testPairingURL() {
+            const status = document.getElementById('pairing-status');
+            if (!window.lastDeviceInfo) {
+                status.innerHTML = `<div class="error">❌ Please register a device first</div>`;
+                return;
+            }
+            
+            const pairingURL = `http://localhost:3000/?source=extension&code=${window.lastDeviceInfo.code}`;
+            status.innerHTML = `<div class="success">✅ Opening pairing URL in new tab...</div>
+                              <div><strong>URL:</strong> ${pairingURL}</div>`;
+            
+            // Open in new tab for manual testing
+            window.open(pairingURL, '_blank');
+        }
+        
+        async function checkAuth() {
+            const status = document.getElementById('auth-status');
+            try {
+                // Test authentication endpoint
+                const response = await fetch('http://localhost:3000/api/test-db');
+                const data = await response.json();
+                
+                status.innerHTML = `<div class="success">✅ Auth check complete - HTTP ${response.status}</div>
+                                  <pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Auth check error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-run basic app check on load
+        window.onload = () => checkApp();
+    </script>
+</body>
+</html>

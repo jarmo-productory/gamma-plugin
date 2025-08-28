@@ -1,4 +1,6 @@
 # CLAUDE.md
+It is year 2025 august! 
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 **Important:** Track project state, progress, and tactical decisions in `PROJECT_STATE.md`. This file contains high-level mission, current sprint status, and detailed technical notes.
 
@@ -8,55 +10,76 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - You are using sub-routines that use their own guiding instructions in folder .claude/agents - you will refer to them as agents and team member. While they mimic human team - they are simply your own sub-routines that have their own instructions and own memories. However since they are part of you, you can ultimately update and change their memories as you need.
 
 ## 🗓️ CRITICAL CONTEXT INFORMATION
-**Current Date: August 23, 2025**
+**Current Date: August 24, 2025**
 - **REMEMBER: This is 2025, not 2024**
 - Always check for 2025-current documentation when researching
 - Technology decisions must consider mid-2025 standards and availability
 - Platform documentation (Netlify, Node.js, frameworks) should reflect August 2025 status
 - When in doubt about versions/compatibility, verify against 2025 current information
 
-## KEY DISCOVERIES - Agent Coordination & CI/CD Excellence PROVEN
+## KEY DISCOVERIES - Database Integration & Production Excellence PROVEN
 
-### Agent Coordination Protocol PROVEN (2025-08-17)
-**TESTED SUCCESSFULLY:** My 4-step agent coordination protocol works in practice.
-
-**What I Discovered:**
-- ✅ Agents CAN respect scope constraints when given specific boundaries
-- ✅ Pre-agent memory sync prevents stale assumptions and false foundations
-- ✅ Specific deliverable contracts (exact scope + evidence) work effectively
-- ✅ Post-agent validation catches issues without excessive overhead
-- ✅ Agents can update their own memories with actual results
-
-**Protocol Validation:**
-1. **Pre-agent memory sync** → Updated full-stack memory with current Sprint 6 status
-2. **Specific deliverable contract** → "Button component only" with exact evidence required
-3. **Post-agent validation** → Verified files exist, build works, TypeScript clean
-4. **Memory update** → Agent updated own memory with completion status
-
-### Sprint 7 CI/CD Pipeline Excellence PROVEN (2025-08-20)
-**USER-VALIDATED SUCCESS:** Complete CI/CD pipeline with production parity achieved.
+### Database Integration Excellence PROVEN (2025-08-24)
+**USER-VALIDATED SUCCESS:** Localhost development now connects directly to remote Supabase production database.
 
 **What I Discovered:**
-- ✅ DevOps agent can deliver complete CI/CD pipelines in single day
-- ✅ Next.js deployment to Netlify requires specific configuration (no standalone mode)
-- ✅ GitHub Actions integration with Netlify works seamlessly
-- ✅ Production parity validation is critical success metric
-- ✅ User feedback confirms when deployment pipeline truly works
+- ✅ Remote database connection for local development provides production parity
+- ✅ Supabase API key migration (legacy JWT → publishable keys) handled successfully
+- ✅ Environment configuration allows seamless localhost → production database flow
+- ✅ Database connection testing via API endpoints provides validation confidence
+- ✅ Simplified development workflow eliminates local Supabase instance complexity
 
-**Evidence from Sprint 7:**
-- Push to main → automatic Netlify deployment (4-minute cycle)
-- User validation: "I see in netlify the same thing I see in localhost"
-- GitHub Actions CI/CD pipeline operational with build validation
-- Next.js SSR, authentication, and all features working in production
-- Zero manual steps required for deployment
+**Evidence from Database Integration:**
+- Localhost connects to https://dknqqcnnbcqujeffbmmb.supabase.co (production database)
+- API key format migration resolved: `sb_publishable_COSbqOFu6uAcYjI1Osmg4A_vzzNAmPM`
+- Test endpoint `/api/test-db` confirms successful connection with timestamp validation
+- Development environment uses real production data for accurate testing
+- Team synchronization achieved through shared database state
 
 **Technical Solution:**
-- Removed `output: 'standalone'` from next.config.ts for Netlify compatibility
-- Added explicit `@netlify/plugin-nextjs` to netlify.toml
-- Updated GitHub Actions to build and deploy Next.js instead of vanilla app
-- Configured Clerk environment variables for production builds
+- Updated `/packages/web/.env.local` with remote Supabase credentials
+- Resolved "Legacy API keys are disabled" error by using publishable key format
+- Stopped local Supabase instance (no longer needed)
+- Validated connection through dedicated test API endpoint
+- Maintained Clerk authentication configuration for full-stack operation
 
-**Key Insight:** CI/CD success requires both technical implementation AND user validation of production parity. DevOps agent coordination protocol works when given specific infrastructure objectives.
+**Key Insight:** Database integration success requires both technical implementation AND production parity validation. Direct remote database connection simplifies development workflow while providing real-world testing conditions.
+
+### Database Connectivity Troubleshooting PROVEN (2025-08-25)
+**CRITICAL LESSON:** Don't assume environment variables are missing when "fetch failed" - investigate the actual root cause.
+
+**What I Discovered:**
+- ✅ "TypeError: fetch failed" in production doesn't mean missing env vars
+- ✅ Row Level Security (RLS) can cause database queries to fail even with valid credentials
+- ✅ Manual HTTP requests require different auth headers than Supabase client library
+- ✅ Proper Supabase client usage handles authentication automatically
+- ✅ Environment variables can be present but the connection method incorrect
+
+**Evidence from Production Authentication Debugging:**
+- Production returned: `{"error":"TypeError: fetch failed"}` 
+- Local worked: `{"success":true,"message":"Database connection successful"}`
+- Initial assumption: "Missing environment variables in Netlify"
+- **Actual cause**: Using manual `fetch()` with wrong auth headers instead of Supabase client
+- **Solution**: Switch from manual HTTP to `createClient(url, key).auth.getSession()`
+
+**Technical Root Causes:**
+1. **RLS Protection**: Database tables had Row Level Security enabled, blocking anonymous queries
+2. **Auth Method**: Manual HTTP requests used wrong headers (`apikey` vs proper client auth)
+3. **Query Target**: Querying protected `users` table instead of testing connection directly
+
+**Corrected Approach:**
+```typescript
+// Wrong: Manual HTTP with incorrect auth
+const response = await fetch(`${url}/rest/v1/`, {
+  headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+})
+
+// Right: Proper Supabase client usage  
+const supabase = createClient(url, key)
+const { error } = await supabase.auth.getSession()
+```
+
+**Key Insight:** Always use the official client library for service connections. Manual HTTP requests often miss authentication nuances that the official SDK handles correctly. Environment variable issues manifest differently (missing config errors) than connection method issues (fetch failed errors).
 
 ## AI System Coordination & Memory Management
 **CRITICAL**: You have session amnesia - this memory system prevents perpetuating false information across sessions.

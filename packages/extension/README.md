@@ -1,6 +1,6 @@
-# Gamma Timetable Chrome Extension
+# Productory Powerups for Gamma
 
-This Chrome extension extracts slide content from Gamma presentations and generates customizable timetables for educators, trainers, and presenters.
+This Chrome extension supercharges your Gamma presentations with timetable generation and productivity enhancements. Built by educators, for educators, as part of the growing Productory Powerups suite.
 
 ## Project Structure
 

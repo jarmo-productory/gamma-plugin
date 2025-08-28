@@ -4,9 +4,9 @@
  * Integrates with Clerk for authentication.
  */
 import { Clerk } from '@clerk/clerk-js';
-import { StorageManager } from '../storage';
+import { StorageManager } from '@shared/storage';
 import { deviceAuth } from './device';
-import { UserProfile, UserPreferences } from '../types/index';
+import { UserProfile, UserPreferences } from '@shared/types';
 
 // TypeScript interfaces for user and session data
 

@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
     deviceInfo.linked = true;
     deviceInfo.userId = user.id;
     deviceInfo.userEmail = user.email;
+    deviceInfo.linkedAt = new Date().toISOString();
+    deviceInfo.lastSeen = new Date().toISOString();
     
     global.deviceRegistrations.set(code, deviceInfo);
 

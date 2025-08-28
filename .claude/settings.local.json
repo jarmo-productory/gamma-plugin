@@ -84,7 +84,17 @@
       "Bash(./scripts/netlify-config-validation.sh:*)",
       "Bash(./scripts/env-variables-audit.sh:*)",
       "Bash(BUILD_TARGET=extension npx vite build)",
-      "WebFetch(domain:www.netlify.com)"
+      "WebFetch(domain:www.netlify.com)",
+      "Bash(git reset:*)",
+      "Bash(timeout 10s npm run dev)",
+      "Bash(echo:*)",
+      "Bash(git show-branch:*)",
+      "Bash(./build.sh)",
+      "WebFetch(domain:developer.chrome.com)",
+      "Bash(BUILD_TARGET=extension npm run build:extension)",
+      "Bash(git ls-tree:*)",
+      "Bash(git reset:*)",
+      "Bash(y)"
     ],
     "deny": [],
     "additionalDirectories": [

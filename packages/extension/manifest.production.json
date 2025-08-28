@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Gamma Timetable Extension",
+  "name": "Productory Powerups for Gamma",
   "version": "0.0.28",
-  "description": "Extracts slide content from Gamma presentations and generates customizable timetables.",
+  "description": "Supercharge your Gamma presentations with timetable generation and productivity enhancements. Part of the growing Productory Powerups suite.",
   "permissions": [
     "activeTab",
     "scripting",

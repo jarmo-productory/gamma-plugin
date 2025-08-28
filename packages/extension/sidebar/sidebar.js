@@ -166,18 +166,25 @@ function connectToBackground() {
       updateUIWithNewSlides(msg.slides, msg.tabId);
     } else if (msg.type === 'gamma-tab-activated') {
       currentTabId = msg.tabId;
-      document.getElementById('sidebar-main').innerHTML = '<p>Loading timetable...</p>';
+      showLoadingState('Loading timetable...');
       port.postMessage({ type: 'get-slides' });
+    } else if (msg.type === 'wrong-domain') {
+      showWrongDomainUI(msg.tabUrl);
+    } else if (msg.type === 'connection-status') {
+      showLoadingState(msg.message, msg.status);
+    } else if (msg.type === 'connection-error') {
+      showConnectionError(msg.message, msg.canRetry, msg.tabId);
+    } else if (msg.type === 'connection-warning') {
+      showConnectionWarning(msg.message);
     } else if (msg.type === 'show-message') {
       document.getElementById('sidebar-main').innerHTML = `<p>${msg.message}</p>`;
       const titleElement = document.getElementById('timetable-title');
-      if (titleElement) titleElement.textContent = 'Gamma Timetable';
+      if (titleElement) titleElement.textContent = 'Productory Powerups for Gamma';
       const durationBadge = document.getElementById('duration-badge');
       if (durationBadge) durationBadge.textContent = '0h 0m';
     } else if (msg.type === 'error') {
       console.error('[SIDEBAR] Error from background:', msg.message);
-      document.getElementById('sidebar-main').innerHTML =
-        `<p style="color: red;">${msg.message}</p>`;
+      showConnectionError(msg.message, false);
     }
   });
 
@@ -1147,4 +1154,179 @@ async function showConflictResolutionDialog(localTimetable, cloudTimetable) {
     
     resolve(useCloud);
   });
+}
+
+// ============================================================================
+// ROBUSTNESS UI FUNCTIONS - Sprint 12
+// ============================================================================
+
+/**
+ * Shows loading state with optional status indicator
+ */
+function showLoadingState(message, status = 'loading') {
+  const titleElement = document.getElementById('timetable-title');
+  if (titleElement) titleElement.textContent = 'Productory Powerups for Gamma';
+  
+  const durationBadge = document.getElementById('duration-badge');
+  if (durationBadge) durationBadge.textContent = '0h 0m';
+  
+  const statusIcon = status === 'connecting' ? '🔄' : '⏳';
+  
+  document.getElementById('sidebar-main').innerHTML = `
+    <div class="loading-state">
+      <div class="loading-icon">${statusIcon}</div>
+      <p class="loading-message">${message}</p>
+    </div>
+  `;
+}
+
+/**
+ * Shows professional "wrong domain" UI when not on gamma.app
+ */
+function showWrongDomainUI(tabUrl) {
+  const titleElement = document.getElementById('timetable-title');
+  if (titleElement) titleElement.textContent = 'Productory Powerups for Gamma';
+  
+  const durationBadge = document.getElementById('duration-badge');
+  if (durationBadge) durationBadge.textContent = '';
+  
+  const currentDomain = tabUrl ? new URL(tabUrl).hostname : 'unknown site';
+  
+  document.getElementById('sidebar-main').innerHTML = `
+    <div class="wrong-domain-ui">
+      <div class="wrong-domain-header">
+        <div class="brand-logo">📊</div>
+        <h3>Productory Powerups for Gamma</h3>
+        <p class="brand-tagline">Built by educators, for educators</p>
+      </div>
+      
+      <div class="wrong-domain-content">
+        <div class="info-section">
+          <div class="status-indicator">ℹ️</div>
+          <div class="status-text">
+            <h4>This extension works on Gamma presentations</h4>
+            <p>You're currently on: <strong>${currentDomain}</strong></p>
+          </div>
+        </div>
+        
+        <div class="action-section">
+          <p>To use Productory Powerups:</p>
+          <ol class="instructions-list">
+            <li>Navigate to <strong>gamma.app</strong></li>
+            <li>Open or create a presentation</li>
+            <li>Use the extension to generate timetables</li>
+          </ol>
+        </div>
+        
+        <div class="button-section">
+          <button id="open-gamma-btn" class="primary-action-btn">
+            <span class="btn-icon">🚀</span>
+            <span class="btn-text">Open Gamma</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="wrong-domain-footer">
+        <p class="help-text">Transform your Gamma presentations into structured timetables with smart timing and export capabilities.</p>
+      </div>
+    </div>
+  `;
+  
+  // Add click handler for the "Open Gamma" button
+  const openGammaBtn = document.getElementById('open-gamma-btn');
+  if (openGammaBtn) {
+    openGammaBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: 'https://gamma.app' });
+    });
+  }
+  
+  updateDebugInfo([], 'Wrong domain UI shown');
+}
+
+/**
+ * Shows connection error with retry option
+ */
+function showConnectionError(message, canRetry = false, tabId = null) {
+  const titleElement = document.getElementById('timetable-title');
+  if (titleElement) titleElement.textContent = 'Productory Powerups for Gamma';
+  
+  const durationBadge = document.getElementById('duration-badge');
+  if (durationBadge) durationBadge.textContent = '0h 0m';
+  
+  const retryButtonHTML = canRetry ? `
+    <button id="retry-connection-btn" class="retry-btn">
+      <span class="btn-icon">🔄</span>
+      <span class="btn-text">Try Again</span>
+    </button>
+  ` : '';
+  
+  document.getElementById('sidebar-main').innerHTML = `
+    <div class="connection-error">
+      <div class="error-header">
+        <div class="error-icon">⚠️</div>
+        <h4>Connection Issue</h4>
+      </div>
+      <div class="error-content">
+        <p class="error-message">${message}</p>
+        ${retryButtonHTML}
+      </div>
+      <div class="error-footer">
+        <p class="help-text">If the problem persists, try refreshing the Gamma presentation page.</p>
+      </div>
+    </div>
+  `;
+  
+  // Add retry button handler
+  if (canRetry) {
+    const retryBtn = document.getElementById('retry-connection-btn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        showLoadingState('Reconnecting...');
+        if (port && tabId) {
+          port.postMessage({ type: 'retry-connection', tabId: tabId });
+        }
+      });
+    }
+  }
+  
+  updateDebugInfo([], `Connection error: ${message}`);
+}
+
+/**
+ * Shows connection warning (non-fatal)
+ */
+function showConnectionWarning(message) {
+  // Create a temporary warning banner
+  const warningBanner = document.createElement('div');
+  warningBanner.className = 'connection-warning-banner';
+  warningBanner.innerHTML = `
+    <div class="warning-content">
+      <span class="warning-icon">⚠️</span>
+      <span class="warning-text">${message}</span>
+      <button class="warning-close">×</button>
+    </div>
+  `;
+  
+  // Insert at the top of the sidebar
+  const sidebarRoot = document.getElementById('sidebar-root');
+  if (sidebarRoot) {
+    sidebarRoot.insertBefore(warningBanner, sidebarRoot.firstChild);
+  }
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (warningBanner.parentNode) {
+      warningBanner.parentNode.removeChild(warningBanner);
+    }
+  }, 5000);
+  
+  // Add close button handler
+  const closeBtn = warningBanner.querySelector('.warning-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (warningBanner.parentNode) {
+        warningBanner.parentNode.removeChild(warningBanner);
+      }
+    });
+  }
 }

@@ -1,12 +1,12 @@
 /**
  * Configuration Management System
  *
- * Provides feature flags and configuration management for the Gamma Timetable Extension
+ * Provides feature flags and configuration management for Productory Powerups for Gamma
  * Sprint 0: All cloud/auth features disabled by default
  * Future Sprints: Enable features gradually with flags
  */
 
-import { StorageManager } from '../storage';
+import { StorageManager } from '@shared/storage';
 
 // Feature flag definitions
 export interface FeatureFlags {

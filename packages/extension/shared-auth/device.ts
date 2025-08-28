@@ -1,4 +1,4 @@
-import { StorageManager } from '../storage';
+import { StorageManager } from '@shared/storage';
 /* global Headers, Response, RequestInit */
 
 export interface DeviceInfo {

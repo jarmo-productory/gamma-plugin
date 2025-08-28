@@ -1,5 +1,5 @@
 /**
- * Storage abstraction layer for the Gamma Timetable Extension
+ * Storage abstraction layer for Productory Powerups for Gamma
  * This wraps chrome.storage and adds cloud sync capabilities (enabled in Sprint 2)
  */
 

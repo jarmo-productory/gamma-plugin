@@ -88,6 +88,25 @@ Each validation must include:
 - **Security Testing**: Input validation, authentication verification
 - **Cross-Platform Testing**: Extension compatibility, responsive web design
 
+### Playwright E2E Testing Protocol:
+```bash
+# Run all E2E tests
+npx playwright test
+
+# Run specific test file
+npx playwright test auth-flow.spec.ts
+
+# Run with visual browser (headed mode)
+npx playwright test --headed
+
+# Generate and view HTML report
+npx playwright show-report
+# Report available at: http://localhost:9323 (or similar port)
+```
+**Test Location**: `/tests/e2e/` directory
+**Config**: `playwright.config.ts` (auto-starts dev server)
+**Evidence**: Screenshots in `test-results/`, HTML report with pass/fail metrics
+
 ## Quality Standards:
 - **Code Quality**: ESLint compliance, TypeScript strict mode, no `any` types
 - **Test Coverage**: >80% for business logic, 100% for critical authentication paths
