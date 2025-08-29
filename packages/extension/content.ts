@@ -187,6 +187,7 @@ if (window.location.hostname.endsWith('gamma.app')) {
 
   let port: chrome.runtime.Port | null = null;
   let reconnectTimeout: number | undefined;
+  let lastKnownSlides: SlideData[] = []; // Cache last extracted slides for heartbeat responses
 
   const connectToBackground = () => {
     try {
@@ -209,16 +210,25 @@ if (window.location.hostname.endsWith('gamma.app')) {
       });
 
       // This function now sends slide data through the background script
-      const sendSlidesToBackground = () => {
+      const sendSlidesToBackground = (forceUpdate = false) => {
         if (!port) {
           console.error('[CONTENT] No port available, cannot send slides');
           return;
         }
 
         const slides = extractSlides();
-        console.log('[CONTENT] Sending slides to background:', slides.length, 'slides');
+        
+        // Update cache with latest slides
+        const hasChanges = JSON.stringify(lastKnownSlides) !== JSON.stringify(slides);
+        lastKnownSlides = slides;
+        
+        console.log('[CONTENT] Sending slides to background:', slides.length, 'slides', hasChanges ? '(changes detected)' : '(heartbeat response)');
         try {
-          port.postMessage({ type: 'slide-data', slides: slides });
+          port.postMessage({ 
+            type: 'slide-data', 
+            slides: slides,
+            hasChanges: hasChanges || forceUpdate // Signal if this is a real change or just heartbeat
+          });
         } catch (error) {
           console.error('[CONTENT] Error sending slides:', error);
         }
@@ -228,7 +238,8 @@ if (window.location.hostname.endsWith('gamma.app')) {
       port.onMessage.addListener(msg => {
         console.log('[CONTENT] Received message from background:', msg);
         if (msg.type === 'get-slides') {
-          console.log('[CONTENT] Content script received get-slides request from background.');
+          console.log('[CONTENT] Content script received get-slides request from background (responding to maintain health connection).');
+          // Always respond to keep the health monitor happy, even if no changes
           sendSlidesToBackground();
         }
       });
@@ -238,7 +249,7 @@ if (window.location.hostname.endsWith('gamma.app')) {
       // Send initial slide data after a short delay
       setTimeout(() => {
         console.log('[CONTENT] Sending initial slide data...');
-        sendSlidesToBackground();
+        sendSlidesToBackground(true); // Force update flag for initial load
       }, 1000);
 
       // Start observing for DOM changes and pass the sender function

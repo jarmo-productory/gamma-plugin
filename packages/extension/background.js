@@ -12,8 +12,9 @@ let activeTabId = null;
 
 // Connection health tracking
 const connectionHealth = {
-  contentScripts: new Map(), // tabId -> { lastPing: timestamp, retryCount: number }
+  contentScripts: new Map(), // tabId -> { lastPing: timestamp, retryCount: number, failureCount: number }
   sidebarLastPing: null,
+  sidebarFailureCount: 0,
   healthCheckInterval: null,
 };
 
@@ -78,20 +79,45 @@ function startHealthMonitoring() {
   connectionHealth.healthCheckInterval = setInterval(() => {
     const now = Date.now();
     const HEALTH_TIMEOUT = 15000; // 15 seconds
+    const MAX_FAILURES_BEFORE_ALERT = 5; // Require 5 consecutive failures before showing alert
     
     // Check content script connections
     for (const [tabId, healthData] of connectionHealth.contentScripts.entries()) {
       if (now - healthData.lastPing > HEALTH_TIMEOUT) {
-        console.warn(`[BACKGROUND] Content script for tab ${tabId} appears unhealthy, attempting recovery`);
-        recoverContentScriptConnection(tabId);
+        healthData.failureCount = (healthData.failureCount || 0) + 1;
+        console.log(`[BACKGROUND] Content script for tab ${tabId} missed ping (failure ${healthData.failureCount}/${MAX_FAILURES_BEFORE_ALERT})`);
+        
+        // Only attempt recovery after multiple consecutive failures
+        if (healthData.failureCount >= MAX_FAILURES_BEFORE_ALERT) {
+          console.warn(`[BACKGROUND] Content script for tab ${tabId} unhealthy after ${healthData.failureCount} failures, attempting recovery`);
+          recoverContentScriptConnection(tabId);
+        }
+      } else {
+        // Reset failure count on successful ping
+        if (healthData.failureCount > 0) {
+          console.log(`[BACKGROUND] Content script for tab ${tabId} recovered, resetting failure count`);
+          healthData.failureCount = 0;
+        }
       }
     }
     
     // Check sidebar connection
     if (sidebarPort && connectionHealth.sidebarLastPing && 
         now - connectionHealth.sidebarLastPing > HEALTH_TIMEOUT) {
-      console.warn('[BACKGROUND] Sidebar connection appears unhealthy');
-      notifySidebarOfConnectionIssue();
+      connectionHealth.sidebarFailureCount++;
+      console.log(`[BACKGROUND] Sidebar missed ping (failure ${connectionHealth.sidebarFailureCount}/${MAX_FAILURES_BEFORE_ALERT})`);
+      
+      // Only show warning after multiple consecutive failures
+      if (connectionHealth.sidebarFailureCount >= MAX_FAILURES_BEFORE_ALERT) {
+        console.warn(`[BACKGROUND] Sidebar connection unhealthy after ${connectionHealth.sidebarFailureCount} failures`);
+        notifySidebarOfConnectionIssue();
+      }
+    } else if (sidebarPort && connectionHealth.sidebarLastPing) {
+      // Reset failure count on successful ping
+      if (connectionHealth.sidebarFailureCount > 0) {
+        console.log(`[BACKGROUND] Sidebar recovered, resetting failure count`);
+        connectionHealth.sidebarFailureCount = 0;
+      }
     }
     
   }, 10000); // Check every 10 seconds
@@ -128,12 +154,21 @@ function updateConnectionHealth(source, tabId = null) {
   
   if (source === 'content-script' && tabId) {
     if (!connectionHealth.contentScripts.has(tabId)) {
-      connectionHealth.contentScripts.set(tabId, { lastPing: now, retryCount: 0 });
+      connectionHealth.contentScripts.set(tabId, { lastPing: now, retryCount: 0, failureCount: 0 });
     } else {
-      connectionHealth.contentScripts.get(tabId).lastPing = now;
+      const healthData = connectionHealth.contentScripts.get(tabId);
+      healthData.lastPing = now;
+      // Reset failure count on any message received
+      if (healthData.failureCount > 0) {
+        healthData.failureCount = 0;
+      }
     }
   } else if (source === 'sidebar') {
     connectionHealth.sidebarLastPing = now;
+    // Reset sidebar failure count on any message received
+    if (connectionHealth.sidebarFailureCount > 0) {
+      connectionHealth.sidebarFailureCount = 0;
+    }
   }
 }
 

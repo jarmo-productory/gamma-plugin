@@ -38,41 +38,48 @@
         <p>Loading slides...</p>
       </main>
       <footer id="sidebar-footer" class="sidebar-footer">
-        <!-- Cloud Sync Controls (Hidden in Sprint 0) -->
+        <!-- Cloud Sync Controls - Simplified UX -->
         <div id="cloud-sync-section" class="cloud-sync-section" style="display: none">
-          <div class="sync-controls">
+          <div class="sync-main-control">
             <button
-              id="save-to-cloud-btn"
-              class="sync-btn"
-              disabled
-              title="Save current timetable to cloud"
-            >
-              <span class="sync-btn-icon">☁️</span>
-              <span class="sync-btn-text">Save to Cloud</span>
-            </button>
-            <button
-              id="load-from-cloud-btn"
-              class="sync-btn"
-              disabled
-              title="Load timetable from cloud"
-            >
-              <span class="sync-btn-icon">⬇️</span>
-              <span class="sync-btn-text">Load from Cloud</span>
-            </button>
-            <button
-              id="auto-sync-toggle"
+              id="cloud-sync-toggle"
               class="sync-btn sync-toggle"
               disabled
-              title="Toggle automatic sync"
+              title="Enable cloud sync to keep timetables synced across devices"
             >
-              <span class="sync-btn-icon">🔄</span>
-              <span class="sync-btn-text">Auto Sync: Off</span>
+              <span class="sync-btn-icon">☁️</span>
+              <span class="sync-btn-text">Cloud Sync: Off</span>
             </button>
           </div>
           <div class="sync-status-info">
-            <span id="last-sync-time" class="last-sync">Last sync: Never</span>
+            <span id="sync-status-message" class="sync-status-message">Login to enable cloud sync</span>
             <span id="sync-indicator" class="sync-indicator">●</span>
           </div>
+          
+          <!-- Advanced Controls (Hidden by default) -->
+          <details id="advanced-sync-controls" class="advanced-controls" style="margin-top: 8px;">
+            <summary style="font-size: 12px; color: #666; cursor: pointer;">Advanced sync controls</summary>
+            <div class="advanced-sync-buttons" style="margin-top: 8px; display: flex; gap: 4px;">
+              <button
+                id="save-to-cloud-btn"
+                class="sync-btn advanced-btn"
+                disabled
+                title="Manually save current timetable to cloud"
+                style="font-size: 11px; padding: 4px 8px;"
+              >
+                <span class="sync-btn-text">Save Now</span>
+              </button>
+              <button
+                id="load-from-cloud-btn"
+                class="sync-btn advanced-btn"
+                disabled
+                title="Manually load timetable from cloud"
+                style="font-size: 11px; padding: 4px 8px;"
+              >
+                <span class="sync-btn-text">Load Now</span>
+              </button>
+            </div>
+          </details>
         </div>
 
         <!-- Settings Panel Toggle (Hidden in Sprint 0) -->
@@ -156,8 +163,19 @@
           </div>
         </div>
 
-        <!-- Debug info will be injected here -->
-        <div id="debug-info" class="debug-info"></div>
+        <!-- Essential Status (Clean View) -->
+        <div id="essential-status" class="essential-status">
+          <div class="status-item">
+            <span id="slide-count">12 slides detected</span>
+            <span id="connection-status" class="status-indicator">✓</span>
+          </div>
+        </div>
+
+        <!-- Debug info (Progressive disclosure) -->
+        <details id="debug-section" class="debug-section" style="margin-top: 8px;">
+          <summary style="font-size: 12px; color: #666; cursor: pointer;">Developer details</summary>
+          <div id="debug-info" class="debug-info" style="margin-top: 8px; font-size: 11px; color: #555;"></div>
+        </details>
       </footer>
     </div>
     <script src="lib/xlsx.full.min.js"></script>

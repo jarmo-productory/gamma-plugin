@@ -400,31 +400,90 @@ function createTimeInput(timetable, onTimeChange) {
   return container;
 }
 
-function getDebugInfoHTML(slides = [], lastAction = 'none', options = {}) {
+async function getDebugInfoHTML(slides = [], lastAction = 'none', options = {}) {
   const { authFeatureEnabled = false, isAuthenticated = false, userEmail = '' } = options;
   const { debugMode = false } = options;
   const slideCount = slides.length;
   const firstSlide = slides[0] ? JSON.stringify(slides[0], null, 2) : 'N/A';
-  const authFeatureFlag = authFeatureEnabled;
-  const authControls =
-    authFeatureFlag && debugMode
-      ? isAuthenticated
-        ? `<div style="margin-top:6px;"><span>Logged in as <strong>${userEmail || 'user'}</strong></span> <button id="debug-logout-btn" class="export-btn" style="margin-left:8px;">Logout</button></div>`
-        : `<div style="margin-top:6px;"><button id="debug-login-btn" class="export-btn">Login</button></div>`
-      : '';
+  
+  // Get detailed auth debug info
+  let authDebugInfo = '';
+  if (authFeatureEnabled) {
+    try {
+      const deviceToken = await deviceAuth.getStoredToken();
+      const deviceInfo = await deviceAuth.getStoredDeviceInfo();
+      const config = configManager.getConfig();
+      
+      authDebugInfo = `
+        <details open><summary><strong>🔐 Authentication Status</strong></summary>
+        <div style="font-family: monospace; font-size: 11px; margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+          <div><strong>Device Token:</strong> ${deviceToken ? 
+            `✅ Present (expires: ${new Date(deviceToken.expiresAt).toLocaleString()})` : 
+            '❌ Missing'}</div>
+          <div><strong>Device ID:</strong> ${deviceInfo ? deviceInfo.deviceId : 'Not registered'}</div>
+          <div><strong>Pairing Code:</strong> ${deviceInfo && deviceInfo.code ? deviceInfo.code : 'None'}</div>
+          <div><strong>API Base URL:</strong> ${config.environment.apiBaseUrl}</div>
+          <div><strong>User Profile:</strong> ${isAuthenticated ? 
+            (userEmail !== 'user@example.com' ? `✅ ${userEmail}` : '⚠️ Fallback email (API failed)') : 
+            '❌ Not authenticated'}</div>
+        </div>
+        </details>`;
+      
+      // Add troubleshooting actions
+      const authActions = isAuthenticated ? 
+        `<button id="debug-refresh-profile" class="export-btn" style="font-size: 11px; padding: 4px 8px; margin: 2px;">Refresh Profile</button>
+         <button id="debug-logout-btn" class="export-btn" style="font-size: 11px; padding: 4px 8px; margin: 2px;">Logout</button>
+         <button id="debug-clear-auth" class="export-btn" style="font-size: 11px; padding: 4px 8px; margin: 2px;">Clear Auth Data</button>` :
+        `<button id="debug-login-btn" class="export-btn" style="font-size: 11px; padding: 4px 8px; margin: 2px;">Login/Pair Device</button>`;
+      
+      authDebugInfo += `<div style="margin-top: 8px;">${authActions}</div>`;
+      
+    } catch (error) {
+      authDebugInfo = `<div style="color: red;">Auth debug error: ${error.message}</div>`;
+    }
+  }
 
   return `
         <strong>Debug Info (v${EXT_VERSION})</strong><br>
-        Auth Feature: <strong style="color: ${authFeatureFlag ? 'green' : 'red'}">${authFeatureFlag ? 'ENABLED' : 'DISABLED'}</strong><br>
+        Auth Feature: <strong style="color: ${authFeatureEnabled ? 'green' : 'red'}">${authFeatureEnabled ? 'ENABLED' : 'DISABLED'}</strong><br>
         Slides Detected: <strong>${slideCount}</strong><br>
         Connection Status: <span style="color:${connected ? 'green' : 'red'};font-weight:bold;">${connected ? 'Connected' : 'Disconnected'}</span><br>
         Last Action: <span style="font-family: monospace;">${lastAction}</span><br>
-        ${authControls}
+        ${authDebugInfo}
         <details><summary>First Slide Preview</summary><pre>${firstSlide}</pre></details>
     `;
 }
 
+/**
+ * Updates essential status information in clean, user-friendly format
+ */
+function updateEssentialStatus(slides = []) {
+  const slideCountElement = document.getElementById('slide-count');
+  const connectionStatusElement = document.getElementById('connection-status');
+  
+  if (slideCountElement) {
+    const slideCount = slides.length;
+    slideCountElement.textContent = slideCount === 1 ? '1 slide detected' : `${slideCount} slides detected`;
+  }
+  
+  if (connectionStatusElement) {
+    if (connected) {
+      connectionStatusElement.textContent = '✓';
+      connectionStatusElement.style.color = 'green';
+      connectionStatusElement.title = 'Extension connected and working';
+    } else {
+      connectionStatusElement.textContent = '⚠️';
+      connectionStatusElement.style.color = 'orange';
+      connectionStatusElement.title = 'Connection issue - try refreshing';
+    }
+  }
+}
+
 async function updateDebugInfo(slides = [], lastAction = 'none') {
+  // Update essential status (clean view for all users)
+  updateEssentialStatus(slides);
+  
+  // Update debug info (technical details for developers)
   const debugInfoContainer = document.getElementById('debug-info');
   if (!debugInfoContainer) return;
 
@@ -437,19 +496,21 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
       isAuthed = await authManager.isAuthenticated();
       const user = await authManager.getCurrentUser();
       email = user?.email || '';
-    } catch {
-      // noop
+      console.log('[SIDEBAR] Auth check complete:', { isAuthed, email });
+    } catch (error) {
+      console.error('[SIDEBAR] Auth check failed:', error);
+      email = 'user@example.com'; // fallback
     }
   }
 
-  debugInfoContainer.innerHTML = getDebugInfoHTML(slides, lastAction, {
+  debugInfoContainer.innerHTML = await getDebugInfoHTML(slides, lastAction, {
     authFeatureEnabled,
     isAuthenticated: isAuthed,
     userEmail: email,
     debugMode,
   });
 
-  // Wire login/logout buttons in debug box
+  // Wire debug action buttons
   const loginBtn = document.getElementById('debug-login-btn');
   if (loginBtn) {
     loginBtn.addEventListener('click', async () => {
@@ -457,11 +518,51 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
       await authManager.login();
     });
   }
+
   const logoutBtn = document.getElementById('debug-logout-btn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
       console.log('[SIDEBAR] Debug logout button clicked');
       await authManager.logout();
+      // Refresh debug info to show updated state
+      await updateDebugInfo(slides, 'Manual logout');
+    });
+  }
+
+  const refreshProfileBtn = document.getElementById('debug-refresh-profile');
+  if (refreshProfileBtn) {
+    refreshProfileBtn.addEventListener('click', async () => {
+      console.log('[SIDEBAR] Debug refresh profile button clicked');
+      try {
+        const user = await authManager.getCurrentUser();
+        console.log('[SIDEBAR] Refreshed user profile:', user);
+        await updateDebugInfo(slides, 'Profile refreshed');
+        // Also update the toolbar display
+        await updateSyncControlsVisibility();
+      } catch (error) {
+        console.error('[SIDEBAR] Profile refresh failed:', error);
+        await updateDebugInfo(slides, `Profile refresh failed: ${error.message}`);
+      }
+    });
+  }
+
+  const clearAuthBtn = document.getElementById('debug-clear-auth');
+  if (clearAuthBtn) {
+    clearAuthBtn.addEventListener('click', async () => {
+      console.log('[SIDEBAR] Debug clear auth data button clicked');
+      try {
+        await deviceAuth.clearToken();
+        // Also clear other auth-related storage
+        await new Promise((resolve) => {
+          chrome.storage.local.remove(['device_info_v1', 'device_token_v1', 'gamma_auth_state'], resolve);
+        });
+        console.log('[SIDEBAR] Auth data cleared');
+        await updateDebugInfo(slides, 'Auth data cleared');
+        await updateSyncControlsVisibility();
+      } catch (error) {
+        console.error('[SIDEBAR] Clear auth failed:', error);
+        await updateDebugInfo(slides, `Clear auth failed: ${error.message}`);
+      }
     });
   }
 }
@@ -540,7 +641,10 @@ function renderTimetable(timetable) {
       console.log('[DEBUG] User authentication status:', authed);
       
       if (authed) {
+        // Just show "Logout" in header, user info will be in cloud sync section
         loginToolbarText.textContent = 'Logout';
+        loginToolbarBtn.title = 'Click to logout';
+        
         loginToolbarBtn.onclick = async () => {
           console.log('[SIDEBAR] Toolbar logout button clicked');
           await authManager.logout();
@@ -549,6 +653,7 @@ function renderTimetable(timetable) {
         console.log('[DEBUG] Logout handler attached');
       } else {
         loginToolbarText.textContent = 'Login';
+        loginToolbarBtn.title = 'Click to login and enable cloud sync';
         loginToolbarBtn.onclick = async () => {
           console.log('[SIDEBAR] Toolbar login button clicked (web-first pairing)');
           try {
@@ -825,11 +930,50 @@ async function updateSyncControlsVisibility() {
       // Enable sync buttons
       const saveBtn = document.getElementById('save-to-cloud-btn');
       const loadBtn = document.getElementById('load-from-cloud-btn');
-      const autoSyncBtn = document.getElementById('auto-sync-toggle');
+      const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
       
       if (saveBtn) saveBtn.disabled = false;
       if (loadBtn) loadBtn.disabled = false;
-      if (autoSyncBtn) autoSyncBtn.disabled = false;
+      if (cloudSyncToggle) {
+        cloudSyncToggle.disabled = false;
+        
+        // Smart default: Enable cloud sync automatically for authenticated users
+        // Only auto-enable if not already initialized and user is genuinely authenticated
+        if (!cloudSyncToggle.dataset.initialized) {
+          try {
+            // Double-check authentication using device token
+            const token = await import('../shared-auth/device.js').then(m => m.deviceAuth.getStoredToken());
+            if (token && token.token) {
+              cloudSyncToggle.classList.add('active');
+              const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
+              
+              // Get user email to display in cloud sync section
+              try {
+                const user = await authManager.getCurrentUser();
+                const email = user?.email || 'user@example.com';
+                const displayEmail = email.length > 25 ? email.substring(0, 22) + '...' : email;
+                if (textSpan) textSpan.textContent = `Cloud Sync: ${displayEmail}`;
+              } catch (error) {
+                console.warn('[SIDEBAR] Could not get user email for cloud sync:', error);
+                if (textSpan) textSpan.textContent = 'Cloud Sync: On';
+              }
+              
+              showSyncMessage('Cloud sync enabled - timetables will sync across devices', 'success');
+              updateSyncIndicator('synced');
+            } else {
+              // Not authenticated, show disabled state
+              cloudSyncToggle.classList.remove('active');
+              const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
+              if (textSpan) textSpan.textContent = 'Cloud Sync: Off';
+              showSyncMessage('Login to enable cloud sync', 'info');
+              updateSyncIndicator('offline');
+            }
+          } catch (error) {
+            console.warn('[SIDEBAR] Error checking auth for smart defaults:', error);
+          }
+          cloudSyncToggle.dataset.initialized = 'true';
+        }
+      }
       
       // Set up event listeners if not already done
       setupSyncEventListeners();
@@ -837,7 +981,20 @@ async function updateSyncControlsVisibility() {
       // Update sync status display
       await updateSyncStatusDisplay();
     } else {
-      cloudSyncSection.style.display = 'none';
+      // Show sync section with login prompt for non-authenticated users
+      cloudSyncSection.style.display = 'block';
+      
+      const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
+      if (cloudSyncToggle) {
+        cloudSyncToggle.disabled = true;
+        cloudSyncToggle.classList.remove('active');
+        const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
+        if (textSpan) textSpan.textContent = 'Cloud Sync: Login Required';
+        cloudSyncToggle.title = 'Login first to enable cloud sync';
+      }
+      
+      showSyncMessage('Login to enable cloud sync and keep timetables synced across devices', 'info');
+      updateSyncIndicator('offline');
     }
   } catch (error) {
     console.warn('[SIDEBAR] Failed to check auth state for sync controls:', error);
@@ -851,7 +1008,7 @@ async function updateSyncControlsVisibility() {
 function setupSyncEventListeners() {
   const saveBtn = document.getElementById('save-to-cloud-btn');
   const loadBtn = document.getElementById('load-from-cloud-btn');
-  const autoSyncBtn = document.getElementById('auto-sync-toggle');
+  const autoSyncBtn = document.getElementById('cloud-sync-toggle');
 
   // Avoid duplicate listeners
   if (saveBtn && !saveBtn.dataset.listenerAttached) {
@@ -865,7 +1022,7 @@ function setupSyncEventListeners() {
   }
 
   if (autoSyncBtn && !autoSyncBtn.dataset.listenerAttached) {
-    autoSyncBtn.addEventListener('click', handleAutoSyncToggle);
+    autoSyncBtn.addEventListener('click', handleCloudSyncToggle);
     autoSyncBtn.dataset.listenerAttached = 'true';
   }
 }
@@ -1015,26 +1172,50 @@ async function handleLoadFromCloud() {
 /**
  * Handles auto-sync toggle
  */
-async function handleAutoSyncToggle() {
-  const autoSyncBtn = document.getElementById('auto-sync-toggle');
-  const textSpan = autoSyncBtn?.querySelector('.sync-btn-text');
+async function handleCloudSyncToggle() {
+  const syncToggleBtn = document.getElementById('cloud-sync-toggle');
+  const textSpan = syncToggleBtn?.querySelector('.sync-btn-text');
   
-  // For Sprint 2, we'll just toggle the UI state since auto-sync is already implemented
-  // in the debouncedSave function via saveDataWithSync
-  const isActive = autoSyncBtn?.classList.contains('active');
-  
-  if (isActive) {
-    autoSyncBtn.classList.remove('active');
-    if (textSpan) textSpan.textContent = 'Auto Sync: Off';
-    showSyncMessage('Auto-sync disabled', 'info');
-  } else {
-    autoSyncBtn.classList.add('active');
-    if (textSpan) textSpan.textContent = 'Auto Sync: On';
-    showSyncMessage('Auto-sync enabled', 'success');
+  // Check if user is authenticated before enabling cloud sync
+  try {
+    const isAuthenticated = await authManager.isAuthenticated();
+    if (!isAuthenticated) {
+      showSyncMessage('Please login first to enable cloud sync', 'info');
+      return;
+    }
+  } catch (error) {
+    showSyncMessage('Authentication check failed', 'error');
+    return;
   }
   
-  // Auto-sync is enabled by default in debouncedSave, so this is mostly UI feedback
-  console.log('[SIDEBAR] Auto-sync toggled:', !isActive);
+  // Toggle cloud sync state
+  const isActive = syncToggleBtn?.classList.contains('active');
+  
+  if (isActive) {
+    syncToggleBtn.classList.remove('active');
+    if (textSpan) textSpan.textContent = 'Cloud Sync: Off';
+    showSyncMessage('Cloud sync disabled', 'info');
+    updateSyncIndicator('offline');
+  } else {
+    syncToggleBtn.classList.add('active');
+    
+    // Show user email when enabling cloud sync
+    try {
+      const user = await authManager.getCurrentUser();
+      const email = user?.email || 'user@example.com';
+      const displayEmail = email.length > 25 ? email.substring(0, 22) + '...' : email;
+      if (textSpan) textSpan.textContent = `Cloud Sync: ${displayEmail}`;
+    } catch (error) {
+      console.warn('[SIDEBAR] Could not get user email for sync toggle:', error);
+      if (textSpan) textSpan.textContent = 'Cloud Sync: On';
+    }
+    
+    showSyncMessage('Cloud sync enabled - timetables will sync across devices', 'success');
+    updateSyncIndicator('synced');
+    updateLastSyncTime();
+  }
+  
+  console.log('[SIDEBAR] Cloud sync toggled:', !isActive);
 }
 
 /**
@@ -1322,10 +1503,16 @@ function showConnectionWarning(message) {
     </div>
   `;
   
-  // Insert at the top of the sidebar
+  // Insert at the bottom of the sidebar (footer area)
+  const sidebarFooter = document.getElementById('sidebar-footer');
   const sidebarRoot = document.getElementById('sidebar-root');
-  if (sidebarRoot) {
-    sidebarRoot.insertBefore(warningBanner, sidebarRoot.firstChild);
+  
+  if (sidebarFooter) {
+    // Insert before the footer content but still visible
+    sidebarFooter.insertBefore(warningBanner, sidebarFooter.firstChild);
+  } else if (sidebarRoot) {
+    // Fallback: append to the end of sidebar root
+    sidebarRoot.appendChild(warningBanner);
   }
   
   // Auto-remove after 5 seconds

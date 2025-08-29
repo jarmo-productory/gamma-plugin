@@ -118,13 +118,63 @@ export class AuthManager {
   }
 
   async isAuthenticated(): Promise<boolean> {
-    // Treat device token presence as authenticated in Sprint 1 pairing flow
+    // For device-based auth, validate token with server instead of just checking presence
     const token = await deviceAuth.getStoredToken();
-    if (token && token.token) return true;
+    if (token && token.token) {
+      try {
+        // Try to get user profile to validate token
+        const user = await this.getCurrentUser();
+        return !!user; // Returns true only if we can successfully get user data
+      } catch (error) {
+        console.warn('[AuthManager] Token validation failed:', error);
+        return false;
+      }
+    }
     return this.authState.isAuthenticated;
   }
 
   async getCurrentUser(): Promise<UserProfile | null> {
+    // For device-based auth, get user info from profile API
+    const token = await deviceAuth.getStoredToken();
+    if (token && token.token) {
+      try {
+        const config = await import('../shared-config/index.js').then(m => m.configManager.getConfig());
+        const apiBaseUrl = config.environment.apiBaseUrl || 'http://localhost:3000';
+        
+        console.log('[AuthManager] Attempting to fetch user profile from:', apiBaseUrl + '/api/user/profile');
+        console.log('[AuthManager] Using device token:', token.token.substring(0, 10) + '...');
+        
+        const response = await deviceAuth.authorizedFetch(apiBaseUrl, '/api/user/profile');
+        console.log('[AuthManager] API response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          const user: UserProfile = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name || data.user.email.split('@')[0],
+            createdAt: data.user.linkedAt || new Date().toISOString(),
+          };
+          
+          // Cache the user data in authState
+          this.authState.user = user;
+          return user;
+        } else {
+          console.warn('[AuthManager] Failed to get user profile:', response.status);
+          // If token is invalid (404/401), clear it so user can get a fresh one
+          if (response.status === 404 || response.status === 401) {
+            console.log('[AuthManager] Clearing invalid device token');
+            await deviceAuth.clearToken();
+          }
+        }
+      } catch (error) {
+        console.error('[AuthManager] Error getting user profile:', error);
+        // Clear token on network errors too - might be stale
+        await deviceAuth.clearToken();
+      }
+    }
+    
+    // Fallback to Clerk user (if available) or null
     return this.authState.user;
   }
 

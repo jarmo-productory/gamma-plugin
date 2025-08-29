@@ -60,6 +60,44 @@ export type Database = {
           updated_at?: string
         }
       }
+      device_tokens: {
+        Row: {
+          token: string
+          device_id: string
+          user_id: string
+          user_email: string
+          device_name: string | null
+          issued_at: string
+          expires_at: string
+          last_used: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          token: string
+          device_id: string
+          user_id: string
+          user_email: string
+          device_name?: string | null
+          issued_at?: string
+          expires_at: string
+          last_used?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          token?: string
+          device_id?: string
+          user_id?: string
+          user_email?: string
+          device_name?: string | null
+          issued_at?: string
+          expires_at?: string
+          last_used?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

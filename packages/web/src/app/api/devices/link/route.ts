@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     deviceInfo.linkedAt = new Date().toISOString();
     deviceInfo.lastSeen = new Date().toISOString();
     
-    global.deviceRegistrations.set(code, deviceInfo);
+    globalThis.deviceRegistrations.set(code, deviceInfo);
 
     console.log(`[Device Link] Linked device ${deviceInfo.deviceId} to user ${user.email}`);
 

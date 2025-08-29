@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { storeToken } from '@/utils/tokenStore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,10 +53,25 @@ export async function POST(request: NextRequest) {
     const token = `token_${deviceId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
 
-    console.log(`[Device Exchange] Successful exchange for device: ${deviceId}`);
+    // SPRINT 16 FIX: Store token data in database for persistent validation
+    const tokenData = {
+      token,
+      deviceId,
+      userId: deviceInfo.userId,
+      userEmail: deviceInfo.userEmail,
+      issuedAt: new Date().toISOString(),
+      expiresAt: tokenExpiresAt,
+      lastUsed: new Date().toISOString()
+    };
+    storeToken(tokenData);
 
-    // Clean up the registration
-    globalThis.deviceRegistrations.delete(code);
+    console.log(`[Device Exchange] Successful exchange for device: ${deviceId}, stored token for user: ${deviceInfo.userEmail}`);
+
+    // SPRINT 16 FIX: Keep registration until token expires (don't delete immediately)
+    // Mark as exchanged but keep user linking data for token validation
+    deviceInfo.tokenIssued = true;
+    deviceInfo.tokenIssuedAt = new Date().toISOString();
+    globalThis.deviceRegistrations.set(code, deviceInfo);
 
     return NextResponse.json({
       token,

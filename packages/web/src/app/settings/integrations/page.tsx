@@ -9,8 +9,13 @@ export default async function IntegrationsPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/')
+    redirect('/login')
   }
 
-  return <IntegrationsClient user={user} />
+  const userData = {
+    email: user.email,
+    name: user.user_metadata?.full_name || user.email?.split('@')[0],
+  }
+
+  return <IntegrationsClient user={userData} />
 }

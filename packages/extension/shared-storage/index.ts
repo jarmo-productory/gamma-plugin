@@ -292,9 +292,11 @@ export class StorageManager implements IStorageManager {
 
         // Prepare request data
         const requestData = {
-          presentationUrl,
+          gamma_url: presentationUrl,
           title: title || timetableData.title || 'Untitled Presentation',
-          timetableData: {
+          start_time: timetableData.startTime || '09:00',
+          total_duration: timetableData.totalDuration || 0,
+          timetable_data: {
             title: timetableData.title,
             items: normalizedItems,
             startTime: timetableData.startTime,
