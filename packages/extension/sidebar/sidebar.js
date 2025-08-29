@@ -1164,6 +1164,13 @@ async function showConflictResolutionDialog(localTimetable, cloudTimetable) {
  * Shows loading state with optional status indicator
  */
 function showLoadingState(message, status = 'loading') {
+  // Restore header and footer visibility
+  const header = document.querySelector('.sidebar-header');
+  if (header) header.style.display = 'flex';
+  
+  const footer = document.querySelector('.sidebar-footer');
+  if (footer) footer.style.display = 'block';
+  
   const titleElement = document.getElementById('timetable-title');
   if (titleElement) titleElement.textContent = 'Productory Powerups for Gamma';
   
@@ -1184,11 +1191,12 @@ function showLoadingState(message, status = 'loading') {
  * Shows professional "wrong domain" UI when not on gamma.app
  */
 function showWrongDomainUI(tabUrl) {
-  const titleElement = document.getElementById('timetable-title');
-  if (titleElement) titleElement.textContent = 'Productory Powerups for Gamma';
+  // Hide header and footer elements
+  const header = document.querySelector('.sidebar-header');
+  if (header) header.style.display = 'none';
   
-  const durationBadge = document.getElementById('duration-badge');
-  if (durationBadge) durationBadge.textContent = '';
+  const footer = document.querySelector('.sidebar-footer');
+  if (footer) footer.style.display = 'none';
   
   const currentDomain = tabUrl ? new URL(tabUrl).hostname : 'unknown site';
   
@@ -1247,6 +1255,13 @@ function showWrongDomainUI(tabUrl) {
  * Shows connection error with retry option
  */
 function showConnectionError(message, canRetry = false, tabId = null) {
+  // Restore header and footer visibility
+  const header = document.querySelector('.sidebar-header');
+  if (header) header.style.display = 'flex';
+  
+  const footer = document.querySelector('.sidebar-footer');
+  if (footer) footer.style.display = 'block';
+  
   const titleElement = document.getElementById('timetable-title');
   if (titleElement) titleElement.textContent = 'Productory Powerups for Gamma';
   

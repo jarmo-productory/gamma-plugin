@@ -46,6 +46,27 @@ testing = ["lighthouse", "axe-core", "percy"]
 animation = ["framer-motion", "css-transitions"]
 styleguide = "http://localhost:3000/styleguide"
 
+# SPRINT 14 DISCOVERED PATTERNS (2025-08-28)
+current_layout = "AppLayout with SidebarProvider + AppSidebar"
+header_pattern = "16px height, SidebarTrigger + title + actions"
+content_pattern = "flex-1 flex-col gap-4 p-4"
+navigation = "Sidebar with collapsible icons, grouped menu items"
+card_system = "shadcn Card components with rounded-lg border shadow-sm"
+
+[current_timetables_ui]
+# Current placeholder state analyzed
+status = "placeholder with 'under development' message"
+layout = "centered card with Calendar icon + description"
+issues = ["Back to Dashboard button unwanted", "no actual data display", "generic placeholder"]
+components_used = ["AppLayout", "Card", "Button", "Calendar icon"]
+
+[data_structure]
+# From shared types analysis
+presentation_fields = ["id", "title", "url", "total_slides", "created_at", "updated_at"]
+timetable_fields = ["startTime", "items", "totalDuration"]
+timetable_item_fields = ["id", "title", "content", "startTime", "duration", "endTime"]
+
 [next]
-tasks = ["Design presentation card component", "Create empty states"]
-priority = "Maintain smooth loading experience"
+tasks = ["Design timetable card grid layout", "Create loading skeletons", "Design empty states", "Remove Back to Dashboard button"]
+priority = "Transform placeholder into functional timetables management interface"
+sprint = "14 - Timetables View Implementation"

@@ -5,12 +5,16 @@ import AppSidebar from "@/components/layouts/AppSidebar"
 
 interface AppLayoutProps {
   children: React.ReactNode
+  user?: {
+    email?: string
+    name?: string
+  }
 }
 
-export default function AppLayout({ children }: AppLayoutProps) {
+export default function AppLayout({ children, user }: AppLayoutProps) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar user={user} />
       <SidebarInset>
         {children}
       </SidebarInset>

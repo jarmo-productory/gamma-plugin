@@ -628,9 +628,10 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .wrong-domain-ui {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
   padding: 24px;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .wrong-domain-header {
