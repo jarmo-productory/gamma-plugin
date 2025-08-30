@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { getAuthenticatedUser, getDatabaseUserId, createAuthenticatedSupabaseClient } from '@/utils/auth-helpers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,39 +20,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user is authenticated
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    // Authenticate user (device token or Supabase session)
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    // Get user record from database
-    const { data: userRecord, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('clerk_id', user.id)
-      .single();
-
-    if (userError || !userRecord) {
-      console.error('[Presentations Save] User not found:', userError);
+    // Get database user ID for RLS
+    const dbUserId = await getDatabaseUserId(authUser);
+    console.log('[DEBUG] authUser:', authUser);
+    console.log('[DEBUG] dbUserId:', dbUserId);
+    
+    if (!dbUserId) {
       return NextResponse.json(
-        { error: 'User not found in database' },
+        { error: `User not found in database. AuthUser: ${JSON.stringify(authUser)}, dbUserId: ${dbUserId}` },
         { status: 404 }
       );
     }
 
+    const supabase = await createAuthenticatedSupabaseClient(authUser);
+
+    // We already have the correct database user ID from getDatabaseUserId
+    const userRecord = { id: dbUserId };
+
     // Check if presentation already exists (upsert behavior)
-    const { data: existingPresentation } = await supabase
+    let existingQuery = supabase
       .from('presentations')
       .select('id')
       .eq('gamma_url', gamma_url)
-      .eq('user_id', userRecord.id)
-      .single();
+      .eq('user_id', userRecord.id);
+
+    const { data: existingPresentation } = await existingQuery.single();
 
     let result;
     if (existingPresentation) {

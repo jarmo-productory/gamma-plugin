@@ -1,26 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { getAuthenticatedUser, getDatabaseUserId, createAuthenticatedSupabaseClient } from '@/utils/auth-helpers';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify user is authenticated
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    // Authenticate user (device token or Supabase session)
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    const { id } = params;
+    // Get database user ID for RLS
+    const dbUserId = await getDatabaseUserId(authUser);
+    if (!dbUserId) {
+      return NextResponse.json(
+        { error: 'User not found in database' },
+        { status: 404 }
+      );
+    }
 
-    // Fetch specific presentation with RLS automatically enforced
-    const { data: presentation, error } = await supabase
+    const { id } = params;
+    const supabase = await createAuthenticatedSupabaseClient(authUser);
+
+    // Fetch specific presentation with proper user filtering
+    let query = supabase
       .from('presentations')
       .select(`
         id,
@@ -32,8 +40,14 @@ export async function GET(
         created_at,
         updated_at
       `)
-      .eq('id', id)
-      .single();
+      .eq('id', id);
+
+    // Add user constraint for device token auth (RLS won't work automatically)
+    if (authUser.source === 'device-token') {
+      query = query.eq('user_id', dbUserId);
+    }
+
+    const { data: presentation, error } = await query.single();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -80,24 +94,39 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify user is authenticated
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    // Authenticate user (device token or Supabase session)
+    const authUser = await getAuthenticatedUser(request);
+    if (!authUser) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    const { id } = params;
+    // Get database user ID for RLS
+    const dbUserId = await getDatabaseUserId(authUser);
+    if (!dbUserId) {
+      return NextResponse.json(
+        { error: 'User not found in database' },
+        { status: 404 }
+      );
+    }
 
-    // Delete presentation with RLS automatically enforced
-    const { error } = await supabase
+    const { id } = params;
+    const supabase = await createAuthenticatedSupabaseClient(authUser);
+
+    // Delete presentation with proper user filtering
+    let deleteQuery = supabase
       .from('presentations')
       .delete()
       .eq('id', id);
+
+    // Add user constraint for device token auth (RLS won't work automatically)
+    if (authUser.source === 'device-token') {
+      deleteQuery = deleteQuery.eq('user_id', dbUserId);
+    }
+
+    const { error } = await deleteQuery;
 
     if (error) {
       console.error('[Presentations Delete] Database error:', error);

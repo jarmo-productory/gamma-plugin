@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     // SPRINT 16 FIX: Use database-based token validation
-    const tokenData = validateToken(token);
+    const tokenData = await validateToken(token);
     if (!tokenData) {
       return NextResponse.json(
         { error: 'Invalid or expired token' },

@@ -15,8 +15,8 @@ import {
 import { saveData, loadData, debounce } from '../lib/storage.js';
 
 // Import authentication and configuration infrastructure
-import { authManager } from '../shared-auth/index.js';
-import { deviceAuth } from '../shared-auth/device.js';
+import { authManager } from '@shared/auth';
+import { deviceAuth } from '@shared/auth/device';
 import { configManager } from '../shared-config/index.js';
 import { defaultStorageManager, saveDataWithSync } from '../shared-storage/index.js';
 
@@ -942,7 +942,7 @@ async function updateSyncControlsVisibility() {
         if (!cloudSyncToggle.dataset.initialized) {
           try {
             // Double-check authentication using device token
-            const token = await import('../shared-auth/device.js').then(m => m.deviceAuth.getStoredToken());
+            const token = await deviceAuth.getStoredToken();
             if (token && token.token) {
               cloudSyncToggle.classList.add('active');
               const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');

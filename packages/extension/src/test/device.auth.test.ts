@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DeviceAuth } from '../shared-auth/device';
+import { DeviceAuth } from '@shared/auth/device';
 import { StorageManager } from '../storage';
 
 // Mock StorageManager

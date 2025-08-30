@@ -214,6 +214,60 @@ evidence_sources = [
 root_cause_resolution = "Fixed Next.js 15 compatibility by handling searchParams as Promise using use() hook"
 impact = "LOW - Core functionality restored, only minor E2E test selector refinements needed"
 
+# EXTENSION PORT CONFIGURATION CRISIS (2025-08-29)
+extension_port_mismatch_resolution = "RESOLVED: Extension configured for port 3003 but built artifacts still contain port 3000"
+incident_type = "Configuration inconsistency - extension cannot connect to web API due to port mismatch" 
+root_causes_identified = [
+  "Source configuration correctly specifies http://localhost:3003 in shared-config/index.ts",
+  "Built extension files (dist/popup.js, dist/sidebar.js) still contain http://localhost:3000",
+  "Web application runs on port 3000 but extension expects port 3003",
+  "Extension build process does not properly inject configuration during compilation",
+  "Runtime fallback in sidebar.js defaults to port 3000 when config fails"
+]
+resolution_method = "Extension requires proper build system to inject configuration at build time"
+evidence_collected = [
+  "Source config: LOCAL_ENVIRONMENT_CONFIG.apiBaseUrl = 'http://localhost:3003' ✅",
+  "Built config: dist/popup.js contains 'localhost:3000' ❌", 
+  "Web app: localhost:3000 returns HTTP 200, /api/user/profile returns HTTP 404",
+  "Mystery discovery: localhost:3003/api/user/profile returns HTTP 401 (API exists!)",
+  "API endpoint properly implemented with Bearer token validation"
+]
+technical_solution_required = [
+  "Implement proper build system for extension (currently just echo placeholder)",
+  "Add configuration injection during build process using __BUILD_ENV__ or similar",
+  "Remove hardcoded fallbacks to localhost:3000 in runtime code",
+  "Update web application to run on port 3003 in development environment",
+  "Test complete extension-to-web authentication flow after fixes"
+]
+
+# PRODUCTION EMERGENCY RESOLUTION (2025-08-29 - EARLIER)
+production_crash_resolution = "RESOLVED: Critical production site crash - static asset 404 errors"
+incident_type = "Production emergency - complete client-side failure due to missing JS/CSS assets"
+root_causes_identified = [
+  "Next.js cache corruption causing build manifest/static asset mismatch",
+  "Production deployment using stale/corrupted build artifacts", 
+  "JavaScript chunks (webpack-57184fb61c721c11.js, 4bd1b696-b90033c6f36b8473.js) returning 404",
+  "CSS files returning 404, causing styling failures",
+  "Client-side hydration impossible due to missing assets"
+]
+resolution_method = "rm -rf .next node_modules/.cache && npm run build - proven cache corruption fix"
+evidence_of_success = [
+  "HTTP 200 responses for all critical static assets confirmed",
+  "webpack-57184fb61c721c11.js: HTTP 200 (3430 bytes, content-type: application/javascript)",
+  "4bd1b696-b90033c6f36b8473.js: HTTP 200 (172728 bytes, immutable cache headers)",  
+  "CSS (d42b1075e38a3d72.css): HTTP 200 (38527 bytes, proper content-type: text/css)",
+  "Production site fully operational at https://productory-powerups.netlify.app", 
+  "Build manifest now matches deployed assets correctly"
+]
+deployment_timeline = [
+  "07:06 - Local cache clean and rebuild completed successfully",
+  "07:08 - Git commit and push triggered Netlify deployment", 
+  "07:10 - Assets still showing 404 (deployment in progress)",
+  "07:12 - All static assets confirmed HTTP 200 (deployment complete)",
+  "07:13 - Full site functionality validated"
+]
+prevention_pattern = "Cache corruption pattern identical to Sprint 8/9 - always clean restart for webpack module errors"
+
 # Sprint 8 Deployment Crisis Incident (2025-08-23)
 deployment_failure_analysis = "Next.js dev server MODULE_NOT_FOUND errors caused by corrupted .next cache"
 resolution_method = "rm -rf .next node_modules/.cache && npm run dev - clean restart resolved all issues"

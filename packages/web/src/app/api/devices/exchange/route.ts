@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       expiresAt: tokenExpiresAt,
       lastUsed: new Date().toISOString()
     };
-    storeToken(tokenData);
+    await storeToken(tokenData);
 
     console.log(`[Device Exchange] Successful exchange for device: ${deviceId}, stored token for user: ${deviceInfo.userEmail}`);
 

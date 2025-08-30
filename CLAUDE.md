@@ -17,6 +17,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Platform documentation (Netlify, Node.js, frameworks) should reflect August 2025 status
 - When in doubt about versions/compatibility, verify against 2025 current information
 
+## 🚨 CRITICAL DEVELOPMENT RULES
+
+### **PORT 3000 MANDATE (SPRINT 17 LESSON)**
+**ABSOLUTE RULE:** The web app MUST ALWAYS run on port 3000 - NEVER any other port!
+
+**Why This Matters:**
+- Extension configuration is hardcoded to `http://localhost:3000` for API calls
+- Device authentication system expects port 3000
+- Cloud sync functionality breaks on any other port
+- Extension-to-web communication fails if port differs
+
+**Mandatory Process:**
+```bash
+# ALWAYS kill anything on port 3000 first
+lsof -ti:3000 | xargs kill -9
+
+# ALWAYS start dev server with explicit port
+PORT=3000 npm run dev
+
+# NEVER let Next.js auto-select another port
+```
+
+**Anti-Pattern:** 
+- ❌ NEVER run `npm run dev` without PORT=3000
+- ❌ NEVER accept Next.js suggestion to use port 3001, 3002, etc.
+- ❌ NEVER ignore "Port 3000 is in use" warnings
+
+**If port 3000 conflicts occur:**
+1. Kill the conflicting process: `lsof -ti:3000 | xargs kill -9`
+2. Start with explicit port: `PORT=3000 npm run dev`
+3. Never work around by using different ports
+
 ## KEY DISCOVERIES - Database Integration & Production Excellence PROVEN
 
 ### Database Integration Excellence PROVEN (2025-08-24)
@@ -80,6 +112,26 @@ const { error } = await supabase.auth.getSession()
 ```
 
 **Key Insight:** Always use the official client library for service connections. Manual HTTP requests often miss authentication nuances that the official SDK handles correctly. Environment variable issues manifest differently (missing config errors) than connection method issues (fetch failed errors).
+
+## 📁 PROJECT STRUCTURE RESPECT RULE
+**CRITICAL**: Before creating any new files or folders, ALWAYS check existing project structure and reuse appropriately.
+
+**Mandatory Process:**
+1. Use `LS` tool to check existing folder structure
+2. Use `Glob` or `Grep` to find similar files
+3. Reuse existing organizational patterns
+4. Never create duplicate folders (e.g., `/roadmap/` when `/documents/roadmap/` exists)
+5. Follow established naming conventions
+
+**Example Violations to Avoid:**
+- ❌ Creating `/roadmap/` when `/documents/roadmap/` exists
+- ❌ Creating `/docs/` when `/documents/` exists  
+- ❌ Creating new folder structures without checking existing patterns
+
+**Correct Approach:**
+- ✅ Use `LS /Users/jarmotuisk/Projects/gamma-plugin` to see top-level structure
+- ✅ Use `LS /Users/jarmotuisk/Projects/gamma-plugin/documents` for document organization
+- ✅ Follow existing patterns like `/documents/roadmap/SPRINT-X.md`
 
 ## AI System Coordination & Memory Management
 **CRITICAL**: You have session amnesia - this memory system prevents perpetuating false information across sessions.
