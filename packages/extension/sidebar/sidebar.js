@@ -18,7 +18,7 @@ import { saveData, loadData, debounce } from '../lib/storage.js';
 import { authManager } from '@shared/auth';
 import { deviceAuth } from '@shared/auth/device';
 import { configManager } from '../shared-config/index.js';
-import { defaultStorageManager, saveDataWithSync } from '../shared-storage/index.js';
+import { defaultStorageManager, saveDataWithSync } from '@shared/storage';
 
 let connected = false;
 let lastSlides = [];

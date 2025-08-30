@@ -98,7 +98,8 @@
       "Bash(BUILD_TARGET=extension npm run build)",
       "Bash(git log:*)",
       "Bash(PORT=3000 npm run dev)",
-      "Bash(brew upgrade:*)"
+      "Bash(brew upgrade:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "additionalDirectories": [

@@ -9,8 +9,7 @@
     "storage",
     "downloads",
     "sidePanel",
-    "tabs",
-    "cookies"
+    "tabs"
   ],
   "host_permissions": [
     "https://gamma.app/*",
