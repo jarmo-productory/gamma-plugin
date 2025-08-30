@@ -52,3 +52,15 @@ certs/
 .early.coverage
 # Local Netlify folder
 .netlify
+
+# Build artifacts - Sprint 18 cleanup
+packages/extension/dist/
+packages/web/.next/
+packages/web/out/
+*.tsbuildinfo
+
+# Backup directories - Sprint 18 cleanup  
+backup/
+temp-backup/
+**/old-*-backup-*/
+**/*-backup-*

@@ -24,6 +24,18 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Check for build artifacts in Git (Sprint 18 safeguard)
+      run: |
+        echo "🔍 Checking for accidentally committed build artifacts..."
+        if git ls-files | grep -E "(packages/extension/dist/|packages/web/\.next/|backup/)" | head -10; then
+          echo "❌ FAIL: Build artifacts or backup directories found in Git!"
+          echo "These should be in .gitignore and not committed:"
+          git ls-files | grep -E "(packages/extension/dist/|packages/web/\.next/|backup/)"
+          exit 1
+        else
+          echo "✅ PASS: No build artifacts found in Git"
+        fi
+      
     # Type check temporarily skipped for web-next migration
     # TODO: Re-enable after fixing module resolution in web-next
     # - name: Type check
