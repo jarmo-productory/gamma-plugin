@@ -95,11 +95,16 @@
       "Bash(git ls-tree:*)",
       "Bash(git reset:*)",
       "Bash(y)",
+<<<<<<< Updated upstream
       "Bash(BUILD_TARGET=extension npm run build)",
       "Bash(git log:*)",
       "Bash(PORT=3000 npm run dev)",
       "Bash(brew upgrade:*)",
       "Bash(git mv:*)"
+=======
+      "Bash(git merge:*)",
+      "Bash(git stash:*)"
+>>>>>>> Stashed changes
     ],
     "deny": [],
     "additionalDirectories": [
