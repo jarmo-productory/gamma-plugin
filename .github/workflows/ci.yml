@@ -63,7 +63,7 @@ jobs:
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     
-    - name: Guard: Block Clerk Dependencies (code only)
+    - name: Guard - Block Clerk Dependencies (code only)
       run: |
         echo "🔍 Scanning code paths for Clerk usage..."
         PATHS="packages src"
@@ -75,7 +75,7 @@ jobs:
           echo "✅ PASS: No Clerk dependencies found in code"
         fi
 
-    - name: Guard: Block service-role usage in user routes
+    - name: Guard - Block service-role usage in user routes
       run: |
         if rg -n "createServiceRoleClient\(" packages/web/src/app/api | rg -v "/debug/|/admin/|/test-|/migrate/"; then
           echo "❌ ERROR: Service-role client used in user-facing API routes. Use SSR client or SECURITY DEFINER RPCs."
