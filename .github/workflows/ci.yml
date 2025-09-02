@@ -27,10 +27,11 @@ jobs:
     - name: Check for build artifacts in Git (Sprint 18 safeguard)
       run: |
         echo "🔍 Checking for accidentally committed build artifacts..."
-        if git ls-files | grep -E "(packages/extension/dist/|packages/web/\.next/|backup/)" | head -10; then
+        # Use -q to test for matches; avoid pipelines in the condition
+        if git ls-files | grep -E -q "(packages/extension/dist/|packages/web/\.next/|backup/)"; then
           echo "❌ FAIL: Build artifacts or backup directories found in Git!"
-          echo "These should be in .gitignore and not committed:"
-          git ls-files | grep -E "(packages/extension/dist/|packages/web/\.next/|backup/)"
+          echo "These should be in .gitignore and not committed (showing up to 200):"
+          git ls-files | grep -E "(packages/extension/dist/|packages/web/\.next/|backup/)" | sed -n '1,200p'
           exit 1
         else
           echo "✅ PASS: No build artifacts found in Git"
