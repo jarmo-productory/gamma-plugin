@@ -73,3 +73,5 @@ backup/
 temp-backup/
 **/old-*-backup-*/
 **/*-backup-*
+*.backup
+**/*.backup
