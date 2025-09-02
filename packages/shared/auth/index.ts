@@ -1,9 +1,8 @@
 /**
  * Authentication Manager
  *
- * Integrates with Clerk for authentication.
+ * Integrates with Supabase Auth for authentication.
  */
-import { Clerk } from '@clerk/clerk-js';
 import { StorageManager } from '../storage';
 import { deviceAuth } from './device';
 import { UserProfile, UserPreferences } from '../types/index';
@@ -37,7 +36,6 @@ export interface AuthEvent {
  */
 export class AuthManager {
   private storage: StorageManager;
-  private clerk: Clerk | null = null;
   private listeners: Set<(event: AuthEvent) => void> = new Set();
   private authState: AuthState = {
     isAuthenticated: false,
@@ -51,71 +49,54 @@ export class AuthManager {
   }
 
   async initialize(): Promise<void> {
-    console.log('[AuthManager] initialize() called');
-    const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-    if (!publishableKey) {
-      console.error('[AuthManager] Clerk publishable key not found.');
-      return;
-    }
-
+    console.log('[AuthManager] initialize() called - Supabase Auth mode');
+    
     try {
-      // Use full ClerkJS (with UI components) so we can open modal in the extension
-      this.clerk = new Clerk(publishableKey);
-      console.log('[AuthManager] Clerk instance created');
-      await this.clerk.load();
-      console.log('[AuthManager] Clerk loaded');
-
-      this.clerk.addListener(event => {
-        this.handleClerkStateChange(event);
-      });
-
-      // Set initial state
-      this.updateAuthState();
+      // Initialize with device-based authentication state
+      await this.updateAuthState();
       console.log('[AuthManager] Initialization complete');
     } catch (error) {
-      console.error('[AuthManager] Failed to load Clerk:', error);
-      this.clerk = null;
+      console.error('[AuthManager] Failed to initialize:', error);
     }
   }
 
-  private updateAuthState() {
-    if (!this.clerk) return;
+  private async updateAuthState() {
+    try {
+      // Check device token authentication
+      const token = await deviceAuth.getStoredToken();
+      const isAuthenticated = !!(token && token.token);
+      
+      let user: UserProfile | null = null;
+      if (isAuthenticated) {
+        try {
+          user = await this.getCurrentUser();
+        } catch (error) {
+          console.warn('[AuthManager] Failed to get current user:', error);
+        }
+      }
 
-    const user = this.clerk.user;
-    const session = this.clerk.session;
+      this.authState = {
+        isAuthenticated: !!user,
+        user,
+        session: token ? {
+          userId: user?.id || '',
+          token: token.token,
+          expiresAt: token.expiresAt,
+          isActive: new Date(token.expiresAt) > new Date(),
+        } : null,
+        lastChecked: new Date().toISOString(),
+      };
 
-    this.authState = {
-      isAuthenticated: !!user && !!session,
-      user: user
-        ? {
-            id: user.id,
-            email: user.primaryEmailAddress?.emailAddress || '',
-            name: user.fullName || '',
-            createdAt: user.createdAt?.toISOString() || new Date().toISOString(),
-          }
-        : null,
-      session: session
-        ? {
-            userId: session.user.id,
-            token: session.lastActiveToken?.getRawString() || '',
-            expiresAt: session.expireAt.toISOString(),
-            isActive: session.status === 'active',
-          }
-        : null,
-      lastChecked: new Date().toISOString(),
-    };
-
-    this.emitAuthEvent({
-      type: this.authState.isAuthenticated ? 'login' : 'logout',
-      user: this.authState.user,
-      timestamp: new Date().toISOString(),
-    });
+      this.emitAuthEvent({
+        type: this.authState.isAuthenticated ? 'login' : 'logout',
+        user: this.authState.user,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('[AuthManager] Error updating auth state:', error);
+    }
   }
 
-  private handleClerkStateChange(event: unknown) {
-    console.log('[AuthManager] Clerk state changed:', event);
-    this.updateAuthState();
-  }
 
   async isAuthenticated(): Promise<boolean> {
     // For device-based auth, validate token with server instead of just checking presence
@@ -174,7 +155,7 @@ export class AuthManager {
       }
     }
     
-    // Fallback to Clerk user (if available) or null
+    // Return cached user data or null
     return this.authState.user;
   }
 

@@ -13,7 +13,6 @@ This document centralizes all environment URLs, settings, and required variables
 3. [Service Providers](#service-providers)
    - [Netlify](#netlify)
    - [Supabase](#supabase)
-   - [Clerk](#clerk)
 4. [Environment Variable Reference](#environment-variable-reference)
 5. [Setup Instructions](#setup-instructions)
 
@@ -27,21 +26,28 @@ This document is the single source of truth for all environment-specific setting
 
 ## Environments
 
+### Local Pairing Quickstart (Port 3000)
+
+For extension ↔ web pairing during development, run the web app on port 3000 and open links with pairing params:
+
+- Kill port 3000 if busy: `lsof -ti:3000 | xargs kill -9`
+- Start dev server explicitly: `PORT=3000 npm run dev` (Next.js)
+- Extension config defaults to `http://localhost:3000` for both API and Web base URLs.
+- Deep link format: `http://localhost:3000/?source=extension&code=ABC123` (legacy `/sign-in?...` also redirects).
+- Pairing flow: extension registers → open link → sign in → Link Device (calls `/api/devices/link`) → extension polls `/api/devices/exchange`.
+
+
 ### Development
 
 - **Web Dashboard & App URL:** `http://localhost:8888` (via Netlify Dev)
 - **Extension:** `chrome-extension://<DEVELOPMENT_EXTENSION_ID>`
 - **Supabase:** Local instance run via Docker. URL is provided by the `supabase start` command (e.g., `http://localhost:54321`).
-- **Clerk:** Development instance from `dashboard.clerk.dev`.
 - **Example `.env.local` values:**
   ```env
   # Provided by `supabase start`
   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 
-  # From your Clerk development instance
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-  CLERK_SECRET_KEY=sk_test_...
 
   # Corresponds to the Netlify Dev server
   NEXT_PUBLIC_APP_URL=http://localhost:8888
@@ -73,6 +79,8 @@ This document is the single source of truth for all environment-specific setting
 - **Project URL (Production):** `https://dknqqcnnbcqujeffbmmb.supabase.co`
 - **API Key variable:** `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - **Service Role Key variable:** `SUPABASE_SERVICE_ROLE_KEY` (backend only, never expose in frontend)
+  - Required for local development to complete device token issuance in `/api/devices/exchange`.
+  - Add to `packages/web/.env.local` as `SUPABASE_SERVICE_ROLE_KEY=<service role key>`.
 
 ### Clerk
 

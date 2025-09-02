@@ -1,8 +1,8 @@
 # Project State & Mission: Gamma Timetable Extension
 
-**Last Updated:** 2025-08-24 by Claude Code  
-**Current Sprint:** Phase 2 Database Integration COMPLETE ✅  
-**Recent Focus:** Localhost development connected to remote Supabase production database
+**Last Updated:** 2025-09-01 by Codex Auditor  
+**Current Sprint:** Sprint-21 Clerk Removal & Supabase Standardization COMPLETE ✅  
+**Recent Focus:** Supabase-only authentication; removal of all Clerk traces; CI guardrails
 
 ---
 
@@ -14,13 +14,13 @@ Transform the Gamma Timetable Extension from a standalone browser tool into a cl
 
 ## 📊 Current Project Status
 
-### **Latest Updates - Database Integration COMPLETE ✅**
-- ✅ **Remote Database Connection**: Localhost now connects directly to production Supabase database
-- ✅ **API Key Migration**: Successfully resolved legacy JWT → publishable key transition
-- ✅ **Environment Configuration**: `/packages/web/.env.local` configured with remote credentials
-- ✅ **Connection Validation**: Test API endpoint confirms successful database connectivity
-- ✅ **Development Workflow**: Simplified - no local Supabase instance required
-- ✅ **Production Parity**: Development environment uses real production data
+### **Latest Updates - Sprint-21 Clerk Removal COMPLETE ✅**
+- ✅ **Supabase-only Auth**: Codebase uses Supabase Auth exclusively (no `@clerk/*`)
+- ✅ **ESLint/CI Guards**: ESLint forbids Clerk imports; CI scans code paths for Clerk usage
+- ✅ **Schema Policies**: Migrations switch RLS to `auth_id` and drop `clerk_id`
+- ✅ **Extension Manifests**: No Clerk allowlists; builds validated clean
+- ✅ **Docs Updated**: Core guidance updated to reflect Supabase-only auth
+- 🔎 **Evidence**: See `documents/SPRINT-21-IMPLEMENTATION-EVIDENCE.md`
 
 ---
 
@@ -58,10 +58,9 @@ supabase db reset        # Reset with latest migrations
 - **Extension Production**: Load unpacked from `dist-prod/` folder in Edge (production APIs)
 
 ### **Authentication Status**
-- **Clerk Integration**: ✅ Working (koolitus@productory.eu test account)
-- **Database Sync**: ✅ Real user data in Supabase from Clerk API
-- **E2E Testing**: ✅ Automated with Playwright using real credentials
-- **FOUC Prevention**: ✅ Smooth loading states implemented
+- **Supabase Auth**: ✅ Active for web; device tokens for extension via secure RPCs
+- **RLS Compliance**: ✅ Enforced with `auth_id` policies
+- **E2E Testing**: ✅ Device pairing and profile flows validated
 
 ---
 

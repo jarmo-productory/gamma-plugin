@@ -101,7 +101,8 @@ export class DeviceAuth {
   }
 
   buildSignInUrl(webBaseUrl: string, code: string): string {
-    const url = new URL(`${webBaseUrl.replace(/\/$/, '')}/sign-in`);
+    // Open the root path and pass pairing params; web app handles redirect/UI
+    const url = new URL(`${webBaseUrl.replace(/\/$/, '')}/`);
     url.searchParams.set('source', 'extension');
     url.searchParams.set('code', code);
     return url.toString();
@@ -179,5 +180,4 @@ export class DeviceAuth {
 }
 
 export const deviceAuth = new DeviceAuth();
-
 

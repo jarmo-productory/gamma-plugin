@@ -195,13 +195,13 @@ describe('Device Authentication System', () => {
   });
 
   describe('Sign-in URL Generation (Pure Function)', () => {
-    it('should build correct sign-in URL with code parameter', () => {
+    it('should build correct root URL with code parameter', () => {
       const webBaseUrl = 'https://web.example.com';
       const code = 'TEST123';
 
       const result = deviceAuth.buildSignInUrl(webBaseUrl, code);
 
-      const expectedUrl = new URL('https://web.example.com/sign-in');
+      const expectedUrl = new URL('https://web.example.com/');
       expectedUrl.searchParams.set('source', 'extension');
       expectedUrl.searchParams.set('code', 'TEST123');
 
@@ -214,7 +214,7 @@ describe('Device Authentication System', () => {
 
       const result = deviceAuth.buildSignInUrl(webBaseUrl, code);
 
-      expect(result).toContain('https://web.example.com/sign-in');
+      expect(result).toContain('https://web.example.com/');
       expect(result).toContain('source=extension');
       expect(result).toContain('code=TEST123');
     });

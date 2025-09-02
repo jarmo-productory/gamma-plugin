@@ -1,5 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { storeToken } from '@/utils/tokenStore';
+import { generateSecureToken, generateDeviceInfo } from '@/utils/secureTokenStore';
+import { createClient } from '@/utils/supabase/server';
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+const corsHeaders: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+function withCors(res: NextResponse) {
+  Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v))
+  return res
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders })
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,81 +26,45 @@ export async function POST(request: NextRequest) {
     const { deviceId, code } = body;
 
     if (!deviceId || !code) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'deviceId and code are required' },
         { status: 400 }
-      );
+      ));
     }
 
-    // Check if device registration exists
-    globalThis.deviceRegistrations = globalThis.deviceRegistrations || new Map();
-    const deviceInfo = globalThis.deviceRegistrations.get(code);
+    // SPRINT 19 SECURITY: Generate cryptographically secure opaque token
+    const token = generateSecureToken(); // 256-bit entropy, no embedded info
+    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    if (!deviceInfo) {
-      return NextResponse.json(
-        { error: 'Invalid or expired code' },
-        { status: 404 }
-      );
-    }
+    // Generate secure device info
+    const { deviceName } = generateDeviceInfo(request.headers.get('user-agent') || undefined);
 
-    // Check if expired
-    if (new Date() > new Date(deviceInfo.expiresAt)) {
-      globalThis.deviceRegistrations.delete(code);
-      return NextResponse.json(
-        { error: 'Code expired' },
-        { status: 404 }
-      );
-    }
-
-    // Check if device matches
-    if (deviceInfo.deviceId !== deviceId) {
-      return NextResponse.json(
-        { error: 'Invalid device ID' },
-        { status: 400 }
-      );
-    }
-
-    // Check if device has been linked
-    if (!deviceInfo.linked) {
-      return NextResponse.json(
-        { error: 'Device not linked yet' },
-        { status: 425 } // Too Early
-      );
-    }
-
-    // Generate a simple JWT-like token (in production, use proper JWT)
-    const token = `token_${deviceId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
-
-    // SPRINT 16 FIX: Store token data in database for persistent validation
-    const tokenData = {
-      token,
-      deviceId,
-      userId: deviceInfo.userId,
-      userEmail: deviceInfo.userEmail,
-      issuedAt: new Date().toISOString(),
-      expiresAt: tokenExpiresAt,
-      lastUsed: new Date().toISOString()
-    };
-    await storeToken(tokenData);
-
-    console.log(`[Device Exchange] Successful exchange for device: ${deviceId}, stored token for user: ${deviceInfo.userEmail}`);
-
-    // SPRINT 16 FIX: Keep registration until token expires (don't delete immediately)
-    // Mark as exchanged but keep user linking data for token validation
-    deviceInfo.tokenIssued = true;
-    deviceInfo.tokenIssuedAt = new Date().toISOString();
-    globalThis.deviceRegistrations.set(code, deviceInfo);
-
-    return NextResponse.json({
-      token,
-      expiresAt: tokenExpiresAt,
+    // Store token via SECURITY DEFINER RPC without service role
+    const supabase = await createClient();
+    const { data: rpcOk, error: rpcErr } = await supabase.rpc('exchange_device_code', {
+      input_code: code,
+      input_device_id: deviceId,
+      input_device_name: deviceName || `Chrome Extension (${deviceId.slice(0, 8)}...)`,
+      raw_token: token,
+      p_expires_at: tokenExpiresAt.toISOString(),
     });
+
+    if (rpcErr || rpcOk !== true) {
+      console.error('[Device Exchange] RPC failed:', rpcErr?.message || 'returned false');
+      return withCors(NextResponse.json({ error: 'Failed to exchange token' }, { status: 500 }));
+    }
+
+    console.log(`[Device Exchange] SECURE: Generated secure token for device: ${deviceId}`);
+
+    return withCors(NextResponse.json({
+      token, // Return raw token to client (only stored as hash in database)
+      expiresAt: tokenExpiresAt.toISOString(),
+    }));
   } catch (error) {
     console.error('[Device Exchange] Error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to exchange token' },
       { status: 500 }
-    );
+    ));
   }
 }

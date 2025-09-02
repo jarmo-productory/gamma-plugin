@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, getDatabaseUserId, createAuthenticatedSupabaseClient } from '@/utils/auth-helpers';
+import { createClient } from '@/utils/supabase/server';
+import { canonicalizeGammaUrl } from '@/utils/url';
+
+export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,30 +36,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Query presentation by URL with user constraint
-    const supabase = await createAuthenticatedSupabaseClient(authUser);
-    
-    // For device token auth, we need to manually filter by user_id since RLS won't work
-    let query = supabase
-      .from('presentations')
-      .select(`
-        id,
-        title,
-        gamma_url,
-        start_time,
-        total_duration,
-        timetable_data,
-        created_at,
-        updated_at
-      `)
-      .eq('gamma_url', url);
+    const canonicalUrl = canonicalizeGammaUrl(url);
 
-    // Add user constraint for device token auth
     if (authUser.source === 'device-token') {
-      query = query.eq('user_id', dbUserId);
+      const supabase = await createClient();
+      const { data, error } = await supabase.rpc('rpc_get_presentation_by_url', {
+        p_user_id: dbUserId,
+        p_gamma_url: canonicalUrl,
+      });
+      if (error) {
+        console.error('[Presentations Get] RPC error:', error);
+        return NextResponse.json({ error: 'Failed to fetch presentation' }, { status: 500 });
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) {
+        return NextResponse.json({ error: 'Presentation not found' }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, timetableData: row.timetable_data });
     }
 
-    const { data: presentation, error } = await query.single();
+    // Web session path: RLS via SSR client
+    const supabase = await createAuthenticatedSupabaseClient(authUser);
+    const { data: presentation, error } = await supabase
+      .from('presentations')
+      .select('timetable_data')
+      .eq('gamma_url', canonicalUrl)
+      .single();
 
     if (error) {
       if (error.code === 'PGRST116') {

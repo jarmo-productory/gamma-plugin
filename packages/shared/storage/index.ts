@@ -292,14 +292,16 @@ export class StorageManager implements IStorageManager {
 
         // Prepare request data
         const requestData = {
-          presentationUrl,
+          // Server contract (snake_case) — Sprint 26
+          gamma_url: presentationUrl,
           title: title || timetableData.title || 'Untitled Presentation',
-          timetableData: {
+          start_time: timetableData.startTime,
+          total_duration: timetableData.totalDuration,
+          timetable_data: {
             title: timetableData.title,
             items: normalizedItems,
             startTime: timetableData.startTime,
             totalDuration: timetableData.totalDuration,
-            lastModified: new Date().toISOString(),
           },
         };
 

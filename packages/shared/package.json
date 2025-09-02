@@ -11,7 +11,5 @@
     "./config": "./config/index.ts",
     "./types": "./types/index.ts"
   },
-  "dependencies": {
-    "@clerk/clerk-js": "^5.0.0"
-  }
+  "dependencies": {}
 }

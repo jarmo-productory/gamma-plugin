@@ -1,6 +1,6 @@
 {
   "name": "gamma-timetable-extension",
-  "version": "0.0.37",
+  "version": "0.0.38",
   "description": "Chrome extension to extract Gamma slides and generate timetables.",
   "scripts": {
     "build": "echo 'Add your build script here'",

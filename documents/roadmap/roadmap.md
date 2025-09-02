@@ -1,7 +1,7 @@
 # Gamma Timetable Extension Roadmap
 
-**Last Updated:** 2025-08-23  
-**Current Status:** Sprint 9 PLANNING 📝 (Authentication Pairing Re-establishment)
+**Last Updated:** 2025-09-01  
+**Current Status:** Sprint 23 COMPLETE ✅ (Internal/Admin APIs Hardening)
 
 ---
 
@@ -122,25 +122,30 @@ Transform the Gamma Timetable Extension from a standalone browser tool into a cl
 
 **Note:** Original security hardening scope postponed for production stability priority
 
-### **Sprint 9: Authentication Pairing Re-establishment** 📝 **PLANNING**
-**Duration:** 1-2 days (planned)  
-**Status:** Planning phase - ready for execution  
-**Details:** See `/roadmap/SPRINT-9.md`
+### **Sprint 9-18: Authentication & Infrastructure** ✅ **COMPLETE**
+**Combined Status:** Series of sprints completed, various infrastructure improvements  
+**Note:** Individual sprint documentation available in roadmap folder
+
+### **Sprint 19: Database Excellence & Architecture Consolidation** 📝 **PLANNING**
+**Duration:** 2-3 days (planned)  
+**Status:** Planning phase - needs team review and approval  
+**Details:** See `/roadmap/SPRINT-19-DATABASE-EXCELLENCE.md`
 
 **Primary Objective:**
-Re-establish the device pairing authentication flow between Chrome extension and web application
+Consolidate database architecture, resolve audit findings, and establish comprehensive database documentation
 
 **Key Deliverables:**
-- 🎯 Fix device pairing mechanism between extension and web
-- 🎯 Restore token exchange and storage functionality
-- 🎯 Ensure persistent authentication across sessions
-- 🎯 Implement clear user feedback during pairing process
+- 🎯 Fix hybrid storage model (database vs in-memory inconsistencies)  
+- 🎯 Resolve service-role security vulnerability in tokenStore.ts
+- 🎯 Create comprehensive database architecture documentation
+- 🎯 Centralize auth guard patterns for API routes
+- 🎯 Establish database knowledge foundation for agent team
 
 **Success Criteria:**
-- User can initiate pairing from extension
-- Web app recognizes pairing codes
-- Tokens properly exchanged and stored
-- Authentication persists after browser restart
+- All device token operations use database consistently (no in-memory storage)
+- Security review confirms proper RLS or service-role usage
+- Agent team can understand database architecture without code diving
+- Centralized auth patterns implemented across API routes
 
 ---
 
@@ -176,31 +181,32 @@ Re-establish the device pairing authentication flow between Chrome extension and
 
 ## 🎯 Current Focus
 
-### **Sprint 9 Planning - Authentication Pairing Focus**
+### **Sprint 19 Planning - Database Excellence Focus**
 
 **Status:** 
-Sprint 8 complete with stable production. Sprint 9 planning ready for execution.
+Infrastructure sprints (9-18) completed with stable foundation. Sprint 19 planning addresses critical database audit findings.
 
-**Sprint 9 Focus:**
-**Sole Objective:** Re-establish device pairing authentication between Chrome extension sidebar and web application.
+**Sprint 19 Focus:**
+**Primary Objective:** Consolidate database architecture and resolve critical security/consistency issues discovered in comprehensive audit.
 
 **Why This Sprint:**
-- Authentication pairing is broken between extension and web
-- Users cannot sync data between devices
-- Core functionality blocked without working authentication
-- Foundation for all future collaborative features
+- Audit revealed hybrid storage model causing inconsistent state
+- Service-role security vulnerability needs immediate attention  
+- Agent team lacks comprehensive database architecture understanding
+- Foundation required for future database-dependent features
 
 **Technical Scope:**
-1. **Diagnose** current pairing flow failures
-2. **Fix** token exchange mechanism
-3. **Restore** persistent authentication
-4. **Validate** end-to-end pairing process
+1. **Consolidate** hybrid storage model (eliminate in-memory device storage)
+2. **Resolve** service-role import/usage security issue
+3. **Document** comprehensive database architecture for team knowledge
+4. **Centralize** auth guard patterns across API routes
 
-**Sprint 9 Timeline:** 1-2 days focused execution
+**Sprint 19 Timeline:** 2-3 days focused execution
 
-**Post-Sprint 9 Options:**
-1. **Security Hardening**: Resume Sprint 8's original security scope (XSS cleanup, secrets management)
-2. **Feature Development**: Enhanced sync and collaboration features
+**Post-Sprint 19 Options:**
+1. **Feature Development**: Enhanced presentation management with solid database foundation
+2. **Advanced Authentication**: Multi-device sync capabilities
+3. **Performance Optimization**: Database query and schema optimization
 
 ---
 
@@ -216,7 +222,8 @@ Sprint 8 complete with stable production. Sprint 9 planning ready for execution.
 - ✅ **Sprint 6**: Next.js Clean Rewrite (Complete)
 - ✅ **Sprint 7**: CI/CD Pipeline Excellence (Complete)
 - ✅ **Sprint 8**: Production Crisis Resolution (Complete)
-- 📝 **Sprint 9**: Authentication Pairing Re-establishment (Planning)
+- ✅ **Sprint 9-18**: Authentication & Infrastructure (Complete)
+- 📝 **Sprint 19**: Database Excellence & Architecture Consolidation (Planning)
 
 ### **Current Velocity**
 - **Sprint 2**: 2 days (authentication system)
@@ -251,3 +258,41 @@ Sprint 8 complete with stable production. Sprint 9 planning ready for execution.
 **IMPORTANT:** Main roadmap folder must remain clean with only core sprint documents.
 
 For feature specifications and technical details, see `/documents/` folder.
+
+---
+
+### Sprint 23: Internal/Admin APIs Hardening ✅ COMPLETE
+**Duration:** 2025-08-31 → 2025-09-01  
+**Status:** Security hardening delivered and validated  
+**Details:** See `documents/roadmap/SPRINT-23-INTERNAL-APIS-HARDENING.md`
+
+**Key Outcomes:**
+- Internal guard utility (`requireInternalAccess`, `requireAdminAccess`) with 404‑by‑default posture.
+- Middleware blocks legacy `/api/(debug|test-*|migrate)` when disabled.
+- Internal diagnostics relocated to `/api/_internal/*` and gated by token.
+- Admin service‑role usage isolated to `POST /api/admin/tokens/cleanup`.
+- Minimal public health endpoint `/api/health`.
+- CI/build guardrails to block regressions.
+
+**Environment Guidance:**
+- Staging: `ENABLE_INTERNAL_APIS=true` with `INTERNAL_API_TOKEN` set.
+- Production: `ENABLE_INTERNAL_APIS=false` (default); enable temporarily only for incident response.
+
+---
+
+### Sprint 26: Presentations Save Flow Fix 📝 PLANNED
+**Duration:** 1–2 days  
+**Status:** Planning approved → ready to start  
+**Details:** See `documents/roadmap/SPRINT-26-PRESENTATIONS-SAVE-FLOW-FIX.md`
+
+**Objective:**
+Unblock extension saves and reads by aligning payload contracts and adding SECURITY DEFINER RPCs for device-token paths (no service-role in user routes).
+
+**Key Deliverables:**
+- Extension payload uses `gamma_url`, `timetable_data`, `start_time`, `total_duration`.
+- Server accepts camelCase and snake_case during transition; zod validation.
+- RPC `upsert_presentation_from_device` implemented; save route calls RPC for device-token.
+- GET/LIST/[id] use RPC-backed reads for device-token with anon client.
+
+**Acceptance:**
+- Save returns 200 and upserts by `(user_id, gamma_url)`; reads return only user’s rows; RLS respected.

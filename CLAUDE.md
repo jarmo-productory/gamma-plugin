@@ -19,6 +19,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🚨 CRITICAL DEVELOPMENT RULES
 
+### **🔒 SECURITY VIOLATION FORBIDDEN - ROW LEVEL SECURITY (RLS) BYPASS**
+**ABSOLUTE RULE:** NEVER EVER EVER BYPASS ROW LEVEL SECURITY (RLS) POLICIES!
+
+**FORBIDDEN ACTIONS:**
+- ❌ NEVER use service role client to bypass RLS for user operations
+- ❌ NEVER use `createServiceRoleClient()` for user data operations 
+- ❌ NEVER bypass security policies with administrative privileges
+- ❌ NEVER circumvent database security with "it's easier" justifications
+
+**Why This is CRITICAL:**
+- RLS policies exist for security and data protection
+- Bypassing RLS creates massive security vulnerabilities
+- Service role should only be used for administrative/system operations
+- User data operations must respect all security boundaries
+
+**CORRECT APPROACH:**
+- ✅ Always work within existing RLS policies
+- ✅ Use regular Supabase client for user operations
+- ✅ Return authentication data when database records don't exist
+- ✅ Respect security frameworks even if more complex
+
+**If RLS blocks an operation:**
+1. **NEVER bypass it** - find the compliant solution
+2. Check if the operation is actually necessary
+3. Use authentication system data as fallback
+4. Work with existing security policies, not against them
+
+### Internal/Admin APIs Policy (Sprint 23)
+- Internal endpoints live under `/api/_internal/*` and require `X-Internal-Auth: Bearer ${INTERNAL_API_TOKEN}` with `ENABLE_INTERNAL_APIS === 'true'`; unauthorized/disabled returns 404.
+- Admin endpoints live under `/api/admin/*`, use `requireAdminAccess` (token + optional `INTERNAL_ADMIN_EMAILS`) and must declare `runtime = 'nodejs'`.
+- Service role usage is restricted to admin/system tasks only (never user flows). Fail builds if `createServiceRoleClient(` appears outside `/api/admin/*`.
+- Legacy public surfaces (`/api/debug/*`, `/api/test-*`, `/api/migrate`) are blocked by middleware when internal APIs are disabled. Do not create public debug/test routes.
+- See `documents/core/technical/security-implementation-summary.md` (Sprint 23) for details and examples.
+
 ### **PORT 3000 MANDATE (SPRINT 17 LESSON)**
 **ABSOLUTE RULE:** The web app MUST ALWAYS run on port 3000 - NEVER any other port!
 
@@ -73,7 +107,7 @@ PORT=3000 npm run dev
 - Resolved "Legacy API keys are disabled" error by using publishable key format
 - Stopped local Supabase instance (no longer needed)
 - Validated connection through dedicated test API endpoint
-- Maintained Clerk authentication configuration for full-stack operation
+- Standardized on Supabase Auth for full-stack operation
 
 **Key Insight:** Database integration success requires both technical implementation AND production parity validation. Direct remote database connection simplifies development workflow while providing real-world testing conditions.
 
@@ -303,7 +337,6 @@ The Gamma Timetable Extension is a comprehensive full-stack application that tra
 - **Chrome Extension** (MV3): Extracts slide content and generates timetables locally
 - **Web Dashboard** (Next.js): User authentication, presentation management, settings
 - **Backend Infrastructure** (Supabase + Netlify): Secure data persistence and API services
-- **Authentication System** (Clerk): User management and device pairing
+- **Authentication System** (Supabase Auth): User management and device pairing
 - **Shared Component Library**: Common utilities, types, and abstractions across platforms
 - **CI/CD Pipeline** (GitHub Actions + Netlify): Automatic deployment on push to main (4-minute cycle)
-

@@ -1,24 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, getDatabaseUserId, createAuthenticatedSupabaseClient } from '@/utils/auth-helpers';
+import { getAuthenticatedUser, getDatabaseUserId } from '@/utils/auth-helpers';
+import { createClient } from '@/utils/supabase/server';
+import { ensureUserRecord } from '@/utils/user';
+import { canonicalizeGammaUrl } from '@/utils/url';
+import { normalizeSaveRequest } from '@/schemas/presentations';
+import { ZodError } from 'zod';
+
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { 
-      title, 
-      gamma_url, 
-      start_time, 
-      total_duration, 
-      timetable_data 
-    } = body;
-
-    // Validate required fields
-    if (!title || !gamma_url || !timetable_data) {
-      return NextResponse.json(
-        { error: 'Title, gamma_url, and timetable_data are required' },
-        { status: 400 }
-      );
+    const rawBody = await request.json();
+    const { deprecatedCamelUsed, ...payload } = normalizeSaveRequest(rawBody);
+    if (deprecatedCamelUsed) {
+      console.warn('DEPRECATED_CAMEL_PAYLOAD: presentations.save will drop camelCase on 2025-10-01');
     }
+
+    // Canonicalize URL
+    const canonicalUrl = canonicalizeGammaUrl(payload.gamma_url);
 
     // Authenticate user (device token or Supabase session)
     const authUser = await getAuthenticatedUser(request);
@@ -29,28 +28,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get database user ID for RLS
-    const dbUserId = await getDatabaseUserId(authUser);
-    console.log('[DEBUG] authUser:', authUser);
-    console.log('[DEBUG] dbUserId:', dbUserId);
-    
-    if (!dbUserId) {
-      return NextResponse.json(
-        { error: `User not found in database. AuthUser: ${JSON.stringify(authUser)}, dbUserId: ${dbUserId}` },
-        { status: 404 }
-      );
+    // RLS COMPLIANCE: Device-token path requires RPC-based ops; block direct table access
+    if (authUser.source === 'device-token') {
+      const dbUserId = await getDatabaseUserId(authUser);
+      if (!dbUserId) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+      // Device-token path uses SECURITY DEFINER RPC via anon client (RLS compliant)
+      const supabase = await createClient();
+      const { data, error } = await supabase.rpc('rpc_upsert_presentation_from_device', {
+        p_user_id: dbUserId,
+        p_gamma_url: canonicalUrl,
+        p_title: payload.title,
+        p_start_time: payload.start_time ?? null,
+        p_total_duration: payload.total_duration ?? null,
+        p_timetable_data: payload.timetable_data,
+      });
+
+      if (error) {
+        console.error('presentations_save_rpc_fail', error);
+        return NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 });
+      }
+
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) {
+        return NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 });
+      }
+
+      console.log('presentations_save_rpc_success');
+      const formattedPresentation = {
+        id: row.id,
+        title: row.title,
+        presentationUrl: row.gamma_url,
+        startTime: row.start_time,
+        totalDuration: row.total_duration,
+        slideCount: row.timetable_data?.items?.length || 0,
+        timetableData: row.timetable_data,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+      return NextResponse.json({ success: true, presentation: formattedPresentation, message: 'Presentation saved' });
     }
 
-    const supabase = await createAuthenticatedSupabaseClient(authUser);
-
-    // We already have the correct database user ID from getDatabaseUserId
-    const userRecord = { id: dbUserId };
+    // Web session path: use SSR client and ensure first-party users row
+    const supabase = await createClient();
+    const appUser = await ensureUserRecord(supabase, { id: authUser.userId, email: authUser.userEmail });
+    const userRecord = { id: appUser.id };
 
     // Check if presentation already exists (upsert behavior)
     let existingQuery = supabase
       .from('presentations')
       .select('id')
-      .eq('gamma_url', gamma_url)
+      .eq('gamma_url', canonicalUrl)
       .eq('user_id', userRecord.id);
 
     const { data: existingPresentation } = await existingQuery.single();
@@ -61,10 +90,10 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase
         .from('presentations')
         .update({
-          title,
-          start_time: start_time || '09:00',
-          total_duration: total_duration || 0,
-          timetable_data,
+          title: payload.title,
+          start_time: payload.start_time || '09:00',
+          total_duration: payload.total_duration || 0,
+          timetable_data: payload.timetable_data,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingPresentation.id)
@@ -78,11 +107,11 @@ export async function POST(request: NextRequest) {
         .from('presentations')
         .insert({
           user_id: userRecord.id,
-          title,
-          gamma_url,
-          start_time: start_time || '09:00',
-          total_duration: total_duration || 0,
-          timetable_data
+          title: payload.title,
+          gamma_url: canonicalUrl,
+          start_time: payload.start_time || '09:00',
+          total_duration: payload.total_duration || 0,
+          timetable_data: payload.timetable_data
         })
         .select()
         .single();
@@ -118,10 +147,11 @@ export async function POST(request: NextRequest) {
       message: existingPresentation ? 'Presentation updated successfully' : 'Presentation created successfully'
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      console.warn('presentations_validation_error', error.issues);
+      return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid body', details: error.issues }, { status: 400 });
+    }
     console.error('[Presentations Save] Unexpected error:', error);
-    return NextResponse.json(
-      { error: 'Failed to save presentation' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 });
   }
 }

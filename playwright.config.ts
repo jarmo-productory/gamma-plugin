@@ -18,7 +18,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'cd packages/web && npm run dev',
+    command: 'cd packages/web && PORT=3000 npm run dev',
     url: process.env.BASE_URL || 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },

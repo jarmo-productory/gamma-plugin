@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { validateToken } from '@/utils/tokenStore';
+import { validateSecureToken } from '@/utils/secureTokenStore';
 
 export interface AuthenticatedUser {
   userId: string;
@@ -18,7 +18,7 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<Authen
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     
-    const tokenData = await validateToken(token);
+    const tokenData = await validateSecureToken(token);
     if (tokenData) {
       return {
         userId: tokenData.userId,
@@ -52,13 +52,18 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<Authen
  * Maps both auth types to the correct user_id field in the database
  */
 export async function getDatabaseUserId(authUser: AuthenticatedUser): Promise<string | null> {
-  if (authUser.source === 'device-token') {
-    // Device token userId is actually a Supabase auth user ID
-    // It can be used directly for RLS policies since presentations table uses auth.uid()
-    return authUser.userId;
-  } else {
-    // Supabase session - userId is already the correct database user_id
-    return authUser.userId;
+  try {
+    const supabase = await createClient();
+    // Map Supabase auth user ID -> first-party users.id via SECURITY DEFINER RPC
+    const { data, error } = await supabase.rpc('rpc_get_user_id_by_auth_id', { p_auth_id: authUser.userId });
+    if (error) {
+      console.warn('[Auth Helper] rpc_get_user_id_by_auth_id error:', error);
+      return null;
+    }
+    return data || null;
+  } catch (e) {
+    console.warn('[Auth Helper] getDatabaseUserId failed:', e);
+    return null;
   }
 }
 
@@ -67,18 +72,9 @@ export async function getDatabaseUserId(authUser: AuthenticatedUser): Promise<st
  */
 export async function createAuthenticatedSupabaseClient(authUser: AuthenticatedUser) {
   if (authUser.source === 'device-token') {
-    // For device token auth, use service role client to bypass RLS
-    // We'll manually ensure user_id matches the authenticated device token user
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    
-    const { createClient: createServiceClient } = await import('@supabase/supabase-js');
-    return createServiceClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    });
+    // RLS COMPLIANCE: Service role is forbidden for user operations.
+    // Device-token flows must use SECURITY DEFINER RPCs that validate the token internally.
+    throw new Error('Device-token operations must use RPCs; service-role client is forbidden for user operations');
   } else {
     // For Supabase session, use normal client (RLS will work automatically)
     return await createClient();

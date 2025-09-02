@@ -1,3 +1,8 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "plugins": ["local-rules"],
+  "rules": {
+    "local-rules/no-service-role-in-client": "error",
+    "local-rules/secure-token-patterns": "warn"
+  }
 }

@@ -1,4 +1,8 @@
-// Sprint 16 Phase 2: Database-Based Token Store Management
+// ⚠️  DEPRECATED - USE secureTokenStore.ts INSTEAD
+// This file contains legacy token validation that bypasses Sprint 19 security fixes
+// All functions here use direct database queries that will fail after security migration
+// Use secureTokenStore.ts for secure RPC-based token operations
+
 import { createClient } from '@/utils/supabase/server';
 import { createServiceRoleClient } from '@/utils/supabase/service';
 
@@ -14,62 +18,22 @@ export interface TokenData {
 }
 
 /**
- * Validate a device token and return associated user data
- * NOW USING DATABASE STORAGE
+ * ⚠️ DEPRECATED - Use validateSecureToken() from secureTokenStore.ts instead
+ * This function uses direct database queries that bypass security measures
+ * @deprecated Use secureTokenStore.validateSecureToken() for secure validation
  */
 export async function validateToken(token: string): Promise<TokenData | null> {
-  if (!token || !token.startsWith('token_')) {
-    return null;
-  }
-
-  try {
-    // For token validation, we need to bypass RLS since device tokens are used without user sessions
-    // TODO: This needs proper service role key or RLS policy adjustment
-    const supabase = await createClient();
-    
-    // Query database for token
-    const { data: tokenRecord, error } = await supabase
-      .from('device_tokens')
-      .select('*')
-      .eq('token', token)
-      .gte('expires_at', new Date().toISOString()) // Only non-expired tokens
-      .single();
-
-    if (error || !tokenRecord) {
-      return null;
-    }
-
-    // Update last_used timestamp
-    await supabase
-      .from('device_tokens')
-      .update({ 
-        last_used: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('token', token);
-
-    // Map database record to TokenData interface
-    return {
-      token: tokenRecord.token,
-      deviceId: tokenRecord.device_id,
-      userId: tokenRecord.user_id,
-      userEmail: tokenRecord.user_email,
-      deviceName: tokenRecord.device_name,
-      issuedAt: tokenRecord.issued_at,
-      expiresAt: tokenRecord.expires_at,
-      lastUsed: new Date().toISOString() // Use current timestamp
-    };
-  } catch (error) {
-    console.error('[Token Validation] Database error:', error);
-    return null;
-  }
+  console.warn('[DEPRECATED] tokenStore.validateToken() - Use secureTokenStore.validateSecureToken() instead');
+  return null; // Disabled to prevent accidental use
 }
 
 /**
- * Store a new device token with user association
- * NOW USING DATABASE STORAGE (requires authenticated user session)
+ * ⚠️ DEPRECATED - Use storeSecureToken() from secureTokenStore.ts instead
+ * @deprecated Use secureTokenStore.storeSecureToken() for secure storage
  */
 export async function storeToken(tokenData: TokenData): Promise<void> {
+  console.warn('[DEPRECATED] tokenStore.storeToken() - Use secureTokenStore.storeSecureToken() instead');
+  throw new Error('DEPRECATED: Use secureTokenStore.storeSecureToken() instead');
   try {
     const supabase = await createClient();
     
@@ -100,10 +64,12 @@ export async function storeToken(tokenData: TokenData): Promise<void> {
 }
 
 /**
- * Remove expired tokens (cleanup utility)
- * NOW USING DATABASE STORAGE
+ * ⚠️ DEPRECATED - Use secure RPC cleanup instead
+ * @deprecated Use secureTokenStore RPC functions for cleanup
  */
 export async function cleanupExpiredTokens(): Promise<number> {
+  console.warn('[DEPRECATED] tokenStore.cleanupExpiredTokens() - Use secure RPC cleanup instead');
+  return 0; // Disabled to prevent accidental use
   try {
     const supabase = await createClient();
     
@@ -133,14 +99,16 @@ export async function cleanupExpiredTokens(): Promise<number> {
 }
 
 /**
- * Get current token store status (for debugging)
- * NOW USING DATABASE STORAGE
+ * ⚠️ DEPRECATED - Use secure service role client instead
+ * @deprecated Use service role client for debugging
  */
 export async function getTokenStoreStatus(): Promise<{ 
   totalTokens: number; 
   activeTokens: number; 
   expiredTokens: number; 
 }> {
+  console.warn('[DEPRECATED] tokenStore.getTokenStoreStatus() - Use service role client instead');
+  return { totalTokens: 0, activeTokens: 0, expiredTokens: 0 }; // Disabled to prevent accidental use
   try {
     const supabase = await createClient();
     const now = new Date().toISOString();

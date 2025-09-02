@@ -18,7 +18,6 @@ export default [
         XLSX: 'readonly',
         __APP_VERSION__: 'readonly',
         __BUILD_TARGET__: 'readonly',
-        __HAS_CLERK_KEY__: 'readonly',
         console: 'readonly',
         window: 'readonly',
         document: 'readonly',
@@ -62,6 +61,13 @@ export default [
       '@typescript-eslint': typescript,
     },
     rules: {
+      // Enforce Supabase-only auth: forbid any Clerk imports
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: ['@clerk/*']
+        }
+      ],
       ...typescript.configs.recommended.rules,
       // Security: Allow only error/warn console statements
       // TypeScript specific
@@ -84,6 +90,15 @@ export default [
       
       // Prevent sensitive data exposure
       'no-console': ['warn', { allow: ['error', 'warn'] }], // Allow errors/warnings only
+      
+      // Sprint 19 Security: Prevent direct device_tokens table access
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.property.name='from'][arguments.0.value='device_tokens']",
+          message: 'Direct device_tokens table access forbidden. Use secureTokenStore RPC functions instead.'
+        }
+      ],
       
       // TypeScript security
       '@typescript-eslint/no-unsafe-assignment': 'off', // Allow for flexibility
@@ -182,6 +197,17 @@ export default [
       'no-console': 'off', // Shared library and test files need console logging
       '@typescript-eslint/no-require-imports': 'off',
       'no-alert': 'off', // Allow alerts in test/debug files
+    },
+  },
+  {
+    files: [
+      '**/api/debug/**/*.ts',
+      '**/api/test-*/*.ts',
+      'packages/web/src/utils/tokenStore.ts' // Legacy file marked as deprecated
+    ],
+    rules: {
+      'no-restricted-syntax': 'off', // Allow direct database access in debug/test files
+      'no-console': 'off', // Debug files need console logging
     },
   },
   {

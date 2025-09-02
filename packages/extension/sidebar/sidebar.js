@@ -837,13 +837,8 @@ async function initializeInfrastructure() {
     await authManager.initialize();
     authInitialized = true;
     console.log('[SIDEBAR] AuthManager initialized');
-    // Surface build-time Clerk key presence for debugging
-    // Note: value is inlined at build time
-    // Compile-time flag from Vite define
-  console.log(
-      '[SIDEBAR] Clerk key present at build:',
-      typeof __HAS_CLERK_KEY__ !== 'undefined' ? __HAS_CLERK_KEY__ : 'unknown'
-    );
+    // Auth system: Supabase Auth with device token flow
+    console.log('[SIDEBAR] Authentication: Supabase Auth (device token flow)');
 
     await renderSidebar();
 

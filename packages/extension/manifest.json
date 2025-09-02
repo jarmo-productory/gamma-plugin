@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Productory Powerups for Gamma",
-  "version": "0.0.37",
+  "version": "0.0.39",
   "description": "Supercharge your Gamma presentations with timetable generation and productivity enhancements. Part of the growing Productory Powerups suite.",
   "permissions": [
     "activeTab",
@@ -13,8 +13,7 @@
   ],
   "host_permissions": [
     "https://gamma.app/*",
-    "http://localhost/*",
-    "https://*.clerk.accounts.dev/*"
+    "http://localhost/*"
   ],
   "background": {
     "service_worker": "background.js"

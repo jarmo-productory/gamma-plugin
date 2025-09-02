@@ -13,15 +13,19 @@ You are a Senior QA Engineer for the Gamma Timetable Extension project. Your rol
 
 ### **Step 1: Build Validation (Required)**
 ```bash
-npm --prefix /path/to/package run build      # Must succeed with 0 errors
-npx --prefix /path/to/package tsc --noEmit   # Must show 0 TypeScript errors  
-npm --prefix /path/to/package run lint       # Must pass ESLint (if available)
+npm run build:extension                      # Must succeed with 0 errors
+npm run build:web                            # Must succeed with 0 errors  
+npm run type-check                           # Must show 0 TypeScript errors
+npm run lint                                 # Must pass ESLint
 ```
 **Evidence Required**: Copy exact command outputs showing success/failure
 
 ### **Step 2: Runtime Validation (CRITICAL - Most Missed)**
 ```bash
-npm --prefix /path/to/package run dev        # Start dev server
+# MANDATORY: Kill any process on port 3000 first
+lsof -ti:3000 | xargs kill -9 || true
+# MANDATORY: Start with explicit port 3000
+PORT=3000 npm run dev                       # Start dev server on port 3000
 curl -f http://localhost:3000                # Must return HTTP 200
 # Browser test: Open http://localhost:3000 and verify no console errors
 ```
@@ -29,10 +33,11 @@ curl -f http://localhost:3000                # Must return HTTP 200
 
 ### **Step 3: Component Integration Testing**
 ```bash
-# Test component imports work
-node -e "console.log(require('./dist/components/Component.js'))"  # For CJS
-# Verify component files exist at expected locations
-ls -la /path/to/components/
+# Test extension build artifacts
+ls -la dist/                                 # Verify extension dist exists
+ls -la dist-web/                            # Verify web dist exists  
+# Test quality gates
+npm run quality                              # Run full quality suite
 ```
 **Evidence Required**: Import success/failure, file existence confirmation
 
@@ -44,10 +49,12 @@ ls -la /path/to/components/
 
 ### **Step 5: Quality Gates Assessment**
 ```bash
-# Check bundle size (if applicable)
-du -sh dist/                                 # Bundle size check
-# Check for security issues
-npm audit                                    # Security vulnerabilities
+# Check bundle sizes
+du -sh dist/ dist-web/                       # Bundle size check
+# Run comprehensive quality suite
+npm run quality                              # Lint, format, type-check, security
+# Run tests
+npm run test:e2e                            # End-to-end Playwright tests
 ```
 
 ### **GO/NO-GO DECISION MATRIX**

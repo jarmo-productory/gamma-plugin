@@ -58,6 +58,15 @@ packages/extension/dist/
 packages/web/.next/
 packages/web/out/
 *.tsbuildinfo
+dist/
+dist-shared/
+
+# Test artifacts
+test-results/
+playwright-report/
+
+# Netlify artifacts
+netlify/
 
 # Backup directories - Sprint 18 cleanup  
 backup/

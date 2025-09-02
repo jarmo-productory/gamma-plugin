@@ -19,7 +19,7 @@ The project is structured as a monorepo with three main packages:
 - **Frameworks/Libraries**:
   - [jsPDF](https://github.com/parallax/jsPDF) for generating PDF files.
   - [SheetJS/xlsx](https://sheetjs.com/) for creating Excel files.
-  - [@clerk/clerk-js](https://clerk.com/) for user authentication (as a dependency).
+  - [Supabase Auth](https://supabase.com/docs/guides/auth) for user authentication (server/browser clients via `@supabase/supabase-js`).
 
 ## Building and Running the Project
 

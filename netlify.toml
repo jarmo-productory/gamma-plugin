@@ -9,7 +9,6 @@
   NODE_VERSION = "22"
   # NO COMPLEX ENV VARS - MINIMAL BUILD ONLY
   SECRETS_SCAN_OMIT_PATHS = ".netlify/edge-functions/**,.github/workflows/**,node_modules/**"
-  # SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
 
 # Next.js plugin configuration
 [[plugins]]

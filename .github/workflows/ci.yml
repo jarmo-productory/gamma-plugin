@@ -59,11 +59,30 @@ jobs:
     - name: Build Web app
       run: cd packages/web && npm run build
       env:
-        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-        CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
         NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    
+    - name: Guard: Block Clerk Dependencies (code only)
+      run: |
+        echo "🔍 Scanning code paths for Clerk usage..."
+        PATHS="packages src"
+        if grep -R "@clerk\|CLERK_\|ClerkProvider\|auth.third_party.clerk" $PATHS \
+          --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=.next; then
+          echo "❌ ERROR: Clerk dependencies detected in code paths"
+          exit 1
+        else
+          echo "✅ PASS: No Clerk dependencies found in code"
+        fi
+
+    - name: Guard: Block service-role usage in user routes
+      run: |
+        if rg -n "createServiceRoleClient\(" packages/web/src/app/api | rg -v "/debug/|/admin/|/test-|/migrate/"; then
+          echo "❌ ERROR: Service-role client used in user-facing API routes. Use SSR client or SECURITY DEFINER RPCs."
+          exit 1
+        else
+          echo "✅ PASS: No service-role usage in user-facing routes"
+        fi
       
     - name: Build shared library
       run: npm run build:shared
@@ -94,8 +113,6 @@ jobs:
       run: cd packages/web && npm run build
       env:
         NODE_ENV: production
-        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-        CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
         NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

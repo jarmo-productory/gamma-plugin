@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTokenStoreStatus } from '@/utils/tokenStore';
+import { getUserDeviceTokens, revokeDeviceToken } from '@/utils/secureTokenStore';
 import { createClient } from '@/utils/supabase/server';
+
+// Declare Node.js runtime for secure operations
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,30 +20,26 @@ export async function GET(request: NextRequest) {
 
     const userId = user.id;
 
-    // Get all tokens from in-memory storage and filter by user
-    globalThis.deviceTokens = globalThis.deviceTokens || new Map();
-    const userDevices = [];
+    // SPRINT 19 SECURITY: Use secure RPC to get user devices (no direct table access)
+    const userDevices = await getUserDeviceTokens(userId);
     
-    for (const [token, tokenData] of globalThis.deviceTokens.entries()) {
-      if (tokenData.userId === userId) {
-        userDevices.push({
-          deviceId: tokenData.deviceId,
-          deviceName: tokenData.deviceName || `Chrome Extension (${tokenData.deviceId.slice(0, 8)}...)`,
-          connectedAt: tokenData.issuedAt,
-          lastUsed: tokenData.lastUsed,
-          expiresAt: tokenData.expiresAt,
-          token: tokenData.token,
-          isActive: new Date(tokenData.expiresAt) > new Date()
-        });
-      }
-    }
+    // Map to expected API format (remove token field for security)
+    const deviceList = userDevices.map(device => ({
+      deviceId: device.deviceId,
+      deviceName: device.deviceName,
+      connectedAt: device.issuedAt,
+      lastUsed: device.lastUsed,
+      expiresAt: device.expiresAt,
+      // Security: Never return token or hash in device listing
+      isActive: device.isActive
+    }));
 
-    console.log(`[User Devices] Retrieved ${userDevices.length} devices for user: ${userId}`);
+    console.log(`[User Devices] SECURE: Retrieved ${deviceList.length} devices via RPC for user: ${userId}`);
 
     return NextResponse.json({
-      devices: userDevices,
-      totalDevices: userDevices.length,
-      activeDevices: userDevices.filter(d => d.isActive).length
+      devices: deviceList,
+      totalDevices: deviceList.length,
+      activeDevices: deviceList.filter(d => d.isActive).length
     });
   } catch (error) {
     console.error('[User Devices] Error fetching devices:', error);
@@ -67,28 +66,26 @@ export async function DELETE(request: NextRequest) {
     const userId = user.id;
 
     const body = await request.json();
-    const { token } = body;
+    const { deviceId } = body;
 
-    if (!token) {
+    if (!deviceId) {
       return NextResponse.json(
-        { error: 'Token is required for revocation' },
+        { error: 'Device ID is required for revocation' },
         { status: 400 }
       );
     }
 
-    // Revoke the device token from in-memory storage
-    globalThis.deviceTokens = globalThis.deviceTokens || new Map();
-    const tokenData = globalThis.deviceTokens.get(token);
+    // SPRINT 19 SECURITY: Use secure RPC for token revocation
+    const success = await revokeDeviceToken(userId, deviceId);
 
-    if (!tokenData || tokenData.userId !== userId) {
+    if (!success) {
       return NextResponse.json(
-        { error: 'Token not found or access denied' },
+        { error: 'Device not found or access denied' },
         { status: 404 }
       );
     }
 
-    globalThis.deviceTokens.delete(token);
-    console.log(`[User Devices] Revoked device token for user: ${userId}`);
+    console.log(`[User Devices] SECURE: Revoked device ${deviceId} for user: ${userId}`);
 
     return NextResponse.json({
       success: true,

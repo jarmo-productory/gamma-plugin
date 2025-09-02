@@ -14,8 +14,7 @@
   ],
   "host_permissions": [
     "https://gamma.app/*",
-    "https://productory-powerups.netlify.app/*",
-    "https://*.clerk.accounts.dev/*"
+    "https://productory-powerups.netlify.app/*"
   ],
   "background": {
     "service_worker": "background.js"
