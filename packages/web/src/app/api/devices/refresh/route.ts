@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
+// Declare Node.js runtime for secure operations
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     // Extract Bearer token from Authorization header
@@ -14,38 +17,44 @@ export async function POST(request: NextRequest) {
 
     const currentToken = authHeader.substring(7); // Remove 'Bearer ' prefix
     
-    // Verify user is authenticated via Supabase
+    // Use regular Supabase client - RPC handles validation internally
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    // Call secure token rotation RPC
+    const { data, error } = await supabase.rpc('rotate_device_token', {
+      input_token: currentToken
+    });
 
-    if (authError || !user) {
+    if (error) {
+      // Handle specific error cases for proper HTTP responses
+      if (error.message === 'TOKEN_INVALID') {
+        return NextResponse.json(
+          { error: 'Invalid or expired token' },
+          { status: 401 }
+        );
+      }
+      
+      console.error('[Device Refresh] RPC error:', error);
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Token refresh failed' },
+        { status: 500 }
+      );
+    }
+
+    if (!data || data.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
         { status: 401 }
       );
     }
 
-    // For Sprint 9 implementation, we'll generate a new token
-    // In production, this would validate the existing token and refresh it properly
-    const newToken = `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
-
-    // Store the new token (in production, use proper token management)
-    globalThis.deviceTokens = globalThis.deviceTokens || new Map();
-    globalThis.deviceTokens.set(newToken, {
-      token: newToken,
-      userId: user.id,
-      userEmail: user.email,
-      expiresAt,
-      refreshedAt: new Date().toISOString(),
-      previousToken: currentToken,
-    });
-
-    console.log(`[Device Refresh] Refreshed token for user ${user.email}`);
+    const rotationResult = data[0];
+    
+    console.log(`[Device Refresh] SECURE: Token rotated for device ${rotationResult.device_id}, user ${rotationResult.user_id}`);
 
     return NextResponse.json({
-      token: newToken,
-      expiresAt,
+      token: rotationResult.token,
+      expiresAt: rotationResult.expires_at
     });
   } catch (error) {
     console.error('[Device Refresh] Error:', error);

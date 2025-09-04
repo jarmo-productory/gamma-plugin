@@ -2,22 +2,16 @@
 
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { 
-  Calendar, 
-  Clock, 
-  Presentation, 
-  Download, 
-  MoreHorizontal,
-  Trash2,
-  Eye 
-} from 'lucide-react'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  Calendar,
+  Clock,
+  Presentation,
+  Trash2,
+  Eye,
+  Bookmark,
+  UploadCloud
+} from 'lucide-react'
+// No overflow menu in list cards; keep actions minimal
 import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
 import { TimetableCardProps } from '../types'
@@ -35,14 +29,32 @@ export default function TimetableCard({
     return remainingMins > 0 ? `${hours}h ${remainingMins}min` : `${hours}h`
   }
 
+  const formatDurationCompact = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`
+    const h = Math.floor(minutes / 60)
+    const m = minutes % 60
+    return m > 0 ? `${h}h${m}m` : `${h}h`
+  }
+
+  const formatUpdatedCompact = (date: Date) => {
+    const diffMs = Date.now() - date.getTime()
+    const minutes = Math.floor(diffMs / 60000)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 7) return `${days}d ago`
+    const weeks = Math.floor(days / 7)
+    if (weeks < 5) return `${weeks}w ago`
+    const months = Math.floor(days / 30)
+    return `${months}mo ago`
+  }
+
   const handleCardClick = () => {
     onView(presentation.id)
   }
 
-  const handleExport = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onExport(presentation.id)
-  }
+  // Export action is not shown in list card footer per UX guideline (max 1-2 actions; list uses primary only)
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -50,107 +62,56 @@ export default function TimetableCard({
   }
 
   return (
-    <Card 
-      className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:shadow-purple-100 border-2 hover:border-purple-200"
+    <Card
+      className="group cursor-pointer transition-all duration-200 border hover:shadow-md flex h-full flex-col"
       onClick={handleCardClick}
     >
-      <CardContent className="p-6">
-        <div className="flex items-start gap-3">
-          {/* Icon */}
-          <div className="flex-shrink-0 p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
-            <Presentation className="h-5 w-5 text-purple-600" />
+      <CardContent className="p-4">
+        {/* Title row */}
+        <div className="flex items-start gap-3 mb-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <Bookmark className="h-4 w-4" />
           </div>
-          
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-700 transition-colors">
-              {presentation.title}
-            </h3>
-            
-            <div className="flex flex-col gap-2 text-sm text-gray-600">
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4 text-gray-400" />
-                <span>
-                  Updated {formatDistanceToNow(new Date(presentation.updatedAt), { addSuffix: true })}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <Presentation className="h-4 w-4 text-gray-400" />
-                  <span>{presentation.slideCount} slides</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <span>{formatDuration(presentation.totalDuration)} total</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Start Time Badge */}
-            <div className="mt-3">
-              <Badge variant="secondary" className="text-xs">
-                Starts at {presentation.startTime}
-              </Badge>
-            </div>
-          </div>
+          <h3 className="flex-1 min-w-0 font-semibold text-lg text-foreground line-clamp-2">
+            {presentation.title}
+          </h3>
+        </div>
+
+        {/* Compact meta row: Updated • Duration • Starts at */}
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title={`Updated ${formatDistanceToNow(new Date(presentation.updatedAt), { addSuffix: true })}`}>
+            <UploadCloud className="h-3.5 w-3.5" />
+            {formatUpdatedCompact(new Date(presentation.updatedAt))}
+          </span>
+          <span className="text-muted-foreground/70">•</span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Total duration">
+            <Clock className="h-3.5 w-3.5" />
+            {formatDurationCompact(presentation.totalDuration)}
+          </span>
+          <span className="text-muted-foreground/70">•</span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Starts at">
+            <Calendar className="h-3.5 w-3.5" />
+            {presentation.startTime}
+          </span>
+        </div>
+
+        {/* Slides summary row */}
+        <div className="mt-2 text-xs text-muted-foreground inline-flex items-center gap-2">
+          <span>Total</span>
+          <Badge variant="secondary" className="px-2 py-0.5 rounded-full text-[10px] font-medium">
+            {presentation.slideCount}
+          </Badge>
+          <span>slides</span>
         </div>
       </CardContent>
 
-      <CardFooter className="px-6 py-4 bg-gray-50 group-hover:bg-purple-50 transition-colors border-t">
-        <div className="flex items-center justify-between w-full">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleCardClick}
-            className="flex items-center gap-1 hover:bg-purple-100 hover:text-purple-700 hover:border-purple-300"
-          >
-            <Eye className="h-4 w-4" />
+      <CardFooter className="px-2 py-2 bg-muted/40 border-t mt-auto">
+        <div className="flex w-full items-center justify-end gap-2">
+          {/* Primary action only in list view, aligned right */}
+          <Button onClick={handleCardClick}>
+            <Eye className="h-4 w-4 mr-2" />
             View
           </Button>
-          
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleExport}
-              className="flex items-center gap-1 hover:bg-green-100 hover:text-green-700 hover:border-green-300"
-            >
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="hover:bg-gray-200"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleCardClick}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExport}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export XLSX
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleDelete}
-                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
       </CardFooter>
     </Card>

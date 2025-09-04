@@ -21,6 +21,7 @@ export interface RegisterResponse {
 const STORAGE_KEYS = {
   deviceInfo: 'device_info_v1',
   deviceToken: 'device_token_v1',
+  installId: 'install_id_v1', // Sprint 27: Stable device identity
 } as const;
 
 const DEFAULT_POLL_INTERVAL_MS = 2500;
@@ -55,6 +56,67 @@ export class DeviceAuth {
     await this.storage.save(STORAGE_KEYS.deviceToken, null as unknown as DeviceToken);
   }
 
+  /**
+   * Sprint 27: Get or generate stable install ID for device fingerprinting
+   */
+  async getOrGenerateInstallId(): Promise<string> {
+    let installId = await this.storage.load(STORAGE_KEYS.installId) as string;
+    if (!installId) {
+      // Generate a new UUID-like install ID
+      installId = 'inst_' + Array.from({ length: 32 }, () => 
+        Math.floor(Math.random() * 16).toString(16)
+      ).join('');
+      await this.storage.save(STORAGE_KEYS.installId, installId);
+    }
+    return installId;
+  }
+
+  /**
+   * Sprint 27: Generate device fingerprint from install ID and user agent
+   */
+  async generateDeviceFingerprint(): Promise<string> {
+    const installId = await this.getOrGenerateInstallId();
+    const userAgentMajor = this.extractUserAgentMajor();
+    const fingerprint = await this.sha256Hash(installId + '|' + userAgentMajor);
+    return fingerprint;
+  }
+
+  private extractUserAgentMajor(): string {
+    if (typeof navigator === 'undefined') {
+      return 'unknown';
+    }
+    // Extract major browser version for fingerprinting
+    const ua = navigator.userAgent;
+    const chromeMatch = ua.match(/Chrome\/(\d+)/);
+    const firefoxMatch = ua.match(/Firefox\/(\d+)/);
+    
+    if (chromeMatch) return `Chrome${chromeMatch[1]}`;
+    if (firefoxMatch) return `Firefox${firefoxMatch[1]}`;
+    return 'Browser';
+  }
+
+  private async sha256Hash(input: string): Promise<string> {
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      // Modern browser crypto API
+      const encoder = new TextEncoder();
+      const data = encoder.encode(input);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    } else {
+      // Fallback for environments without crypto.subtle
+      console.warn('[DeviceAuth] crypto.subtle not available, using fallback hash');
+      let hash = 0;
+      for (let i = 0; i < input.length; i++) {
+        const char = input.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      return Math.abs(hash).toString(16).padStart(8, '0').repeat(8); // Simulate 64-char hex
+    }
+  }
+
   private isExpired(iso: string): boolean {
     const exp = Date.parse(iso);
     if (Number.isNaN(exp)) return true;
@@ -75,10 +137,13 @@ export class DeviceAuth {
   }
 
   async registerDevice(apiBaseUrl: string): Promise<DeviceInfo> {
+    // Sprint 27: Include device fingerprint in registration
+    const deviceFingerprint = await this.generateDeviceFingerprint();
+    
     const res = await fetch(`${apiBaseUrl}/api/devices/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ device_fingerprint: deviceFingerprint }),
       credentials: 'include',
     });
     if (!res.ok) {
@@ -96,7 +161,9 @@ export class DeviceAuth {
 
   async getOrRegisterDevice(apiBaseUrl: string): Promise<DeviceInfo> {
     const existing = await this.getStoredDeviceInfo();
-    if (existing) return existing;
+    if (existing && !this.isExpired(existing.expiresAt)) {
+      return existing;
+    }
     return this.registerDevice(apiBaseUrl);
   }
 

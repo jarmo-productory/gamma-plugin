@@ -492,14 +492,23 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
   let isAuthed = false;
   let email = '';
   if (authFeatureEnabled) {
-    try {
-      isAuthed = await authManager.isAuthenticated();
-      const user = await authManager.getCurrentUser();
-      email = user?.email || '';
-      console.log('[SIDEBAR] Auth check complete:', { isAuthed, email });
-    } catch (error) {
-      console.error('[SIDEBAR] Auth check failed:', error);
-      email = 'user@example.com'; // fallback
+    // Sprint 27 Fix: Use cached auth state to prevent excessive API calls
+    if (globalAuthState !== null) {
+      isAuthed = globalAuthState.isAuthenticated;
+      email = globalAuthState.email;
+      console.log('[SIDEBAR] Using cached auth state:', { isAuthed, email });
+    } else {
+      try {
+        isAuthed = await authManager.isAuthenticated();
+        const user = await authManager.getCurrentUser();
+        email = user?.email || '';
+        globalAuthState = { isAuthenticated: isAuthed, email };
+        console.log('[SIDEBAR] Auth check complete (cached for future):', { isAuthed, email });
+      } catch (error) {
+        console.error('[SIDEBAR] Auth check failed:', error);
+        email = 'user@example.com'; // fallback
+        globalAuthState = { isAuthenticated: false, email };
+      }
     }
   }
 
@@ -564,6 +573,147 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
         await updateDebugInfo(slides, `Clear auth failed: ${error.message}`);
       }
     });
+  }
+}
+
+// Global auth UI state to prevent flickering
+let authButtonsWired = false;
+let globalAuthState = null;
+let authUIUpdateTimeout = null;
+
+// Sprint 27 Fix: One-time auth system setup (event listeners, etc.)
+function setupAuthSystemOnce() {
+  console.log('[DEBUG] Setting up auth system for the first time...');
+  
+  // Listen to auth events for decoupled UI updates
+  authManager.addEventListener((event) => {
+    console.log('[DEBUG] Auth event received:', event.type);
+    if (event.type === 'login' || event.type === 'logout' || event.type === 'session_expired') {
+      const isAuthenticated = event.type === 'login';
+      globalAuthState = { 
+        isAuthenticated, 
+        email: event.type === 'login' ? (globalAuthState?.email || '') : ''
+      };
+      
+      // Update all current button instances with debouncing
+      debouncedUpdateAllAuthButtons(isAuthenticated);
+    }
+  });
+  
+  console.log('[DEBUG] Auth system setup complete');
+}
+
+// Sprint 27 Fix: Wire click events to current DOM elements (called on each render)
+function wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText) {
+  // Always wire fresh event handlers to the current DOM elements
+  const currentState = globalAuthState;
+  
+  if (currentState && currentState.isAuthenticated) {
+    // Logout handler
+    loginToolbarBtn.onclick = async () => {
+      console.log('[SIDEBAR] Toolbar logout button clicked');
+      try {
+        await authManager.logout();
+        globalAuthState = { isAuthenticated: false, email: '' };
+        
+        // Update button immediately
+        updateAuthButtonState(loginToolbarBtn, loginToolbarText, globalAuthState);
+        
+        // Sprint 27 Fix: Also update cloud sync section immediately
+        updateSyncControlsVisibilityWithCache();
+        
+        console.log('[SIDEBAR] Logout completed, globalAuthState updated:', globalAuthState);
+      } catch (err) {
+        console.error('[SIDEBAR] Logout failed:', err);
+      }
+    };
+  } else {
+    // Login handler
+    loginToolbarBtn.onclick = async () => {
+      console.log('[SIDEBAR] Toolbar login button clicked');
+      try {
+        const cfg = configManager.getConfig();
+        const apiUrl = cfg.environment.apiBaseUrl || 'http://localhost:3000';
+        const webUrl = cfg.environment.webBaseUrl || 'http://localhost:3000';
+        const info = await deviceAuth.getOrRegisterDevice(apiUrl);
+        const url = deviceAuth.buildSignInUrl(webUrl, info.code);
+        
+        if (chrome?.tabs?.create) {
+          chrome.tabs.create({ url });
+        } else if (window?.open) {
+          window.open(url, '_blank');
+        }
+        
+        const token = await deviceAuth.pollExchangeUntilLinked(apiUrl, info.deviceId, info.code);
+        if (token) {
+          console.log('[SIDEBAR] Device linked; token stored.');
+          const user = await authManager.getCurrentUser();
+          const userEmail = user?.email || '';
+          globalAuthState = { isAuthenticated: true, email: userEmail };
+          
+          // Update button immediately
+          updateAuthButtonState(loginToolbarBtn, loginToolbarText, globalAuthState);
+          
+          // Sprint 27 Fix: Also update cloud sync section immediately
+          updateSyncControlsVisibilityWithCache();
+          
+          console.log('[SIDEBAR] Login completed, globalAuthState updated:', globalAuthState);
+        } else {
+          console.warn('[SIDEBAR] Device linking timed out.');
+        }
+      } catch (err) {
+        console.error('[SIDEBAR] Web-first login failed:', err);
+      }
+    };
+  }
+}
+
+// Sprint 27 Fix: Debounced update for ALL auth-related UI components
+function debouncedUpdateAllAuthButtons(authState) {
+  clearTimeout(authUIUpdateTimeout);
+  authUIUpdateTimeout = setTimeout(() => {
+    // Update toolbar login/logout button
+    const currentBtn = document.getElementById('auth-login-toolbar-btn');
+    const currentText = document.getElementById('auth-toolbar-text');
+    
+    if (currentBtn && currentText) {
+      updateAuthButtonState(currentBtn, currentText, { isAuthenticated: authState, email: globalAuthState?.email || '' });
+      wireButtonEventsToCurrentDOM(currentBtn, currentText);
+    }
+    
+    // Sprint 27 Fix: ALSO update cloud sync section with cached state
+    updateSyncControlsVisibilityWithCache();
+  }, 150); // 150ms debounce
+}
+
+// Sprint 27 Fix: Perform auth check and update UI (only when needed)
+async function performAuthCheckAndUpdateUI(loginToolbarBtn, loginToolbarText) {
+  console.log('[DEBUG] Performing auth check and UI update...');
+  try {
+    const authed = await authManager.isAuthenticated();
+    const user = await authManager.getCurrentUser();
+    globalAuthState = { isAuthenticated: authed, email: user?.email || '' };
+    
+    updateAuthButtonState(loginToolbarBtn, loginToolbarText, globalAuthState);
+    wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText);
+    
+    console.log('[DEBUG] Auth check and UI update complete:', globalAuthState);
+  } catch (err) {
+    console.error('[DEBUG] Auth check failed:', err);
+    globalAuthState = { isAuthenticated: false, email: '' };
+    updateAuthButtonState(loginToolbarBtn, loginToolbarText, globalAuthState);
+    wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText);
+  }
+}
+
+// Sprint 27 Fix: Fast button state update without rewiring events
+function updateAuthButtonState(loginToolbarBtn, loginToolbarText, authState) {
+  if (authState.isAuthenticated) {
+    loginToolbarText.textContent = 'Logout';
+    loginToolbarBtn.title = 'Click to logout';
+  } else {
+    loginToolbarText.textContent = 'Login';
+    loginToolbarBtn.title = 'Click to login and enable cloud sync';
   }
 }
 
@@ -633,71 +783,23 @@ function renderTimetable(timetable) {
     loginToolbarText: !!loginToolbarText
   });
   
+  // Sprint 27 Fix: Wire event handlers to new DOM elements but avoid redundant auth checks
   if (loginToolbarBtn && loginToolbarText) {
-    console.log('[DEBUG] Attempting to wire auth action...');
-    const wireAuthAction = async () => {
-      console.log('[DEBUG] wireAuthAction() called');
-      const authed = await authManager.isAuthenticated();
-      console.log('[DEBUG] User authentication status:', authed);
-      
-      if (authed) {
-        // Just show "Logout" in header, user info will be in cloud sync section
-        loginToolbarText.textContent = 'Logout';
-        loginToolbarBtn.title = 'Click to logout';
-        
-        loginToolbarBtn.onclick = async () => {
-          console.log('[SIDEBAR] Toolbar logout button clicked');
-          await authManager.logout();
-          await wireAuthAction();
-        };
-        console.log('[DEBUG] Logout handler attached');
-      } else {
-        loginToolbarText.textContent = 'Login';
-        loginToolbarBtn.title = 'Click to login and enable cloud sync';
-        loginToolbarBtn.onclick = async () => {
-          console.log('[SIDEBAR] Toolbar login button clicked (web-first pairing)');
-          try {
-            const cfg = configManager.getConfig();
-            const apiUrl = cfg.environment.apiBaseUrl || 'http://localhost:3000';
-            const webUrl = cfg.environment.webBaseUrl || 'http://localhost:3000';
-            // Always register a fresh code to avoid stale codes if the dev server restarted
-            const info = await deviceAuth.registerDevice(apiUrl);
-            const url = deviceAuth.buildSignInUrl(webUrl, info.code);
-            if (chrome?.tabs?.create) {
-              chrome.tabs.create({ url });
-            } else if (window?.open) {
-              window.open(url, '_blank');
-            }
-            // Start polling for linkage
-            const token = await deviceAuth.pollExchangeUntilLinked(
-              apiUrl,
-              info.deviceId,
-              info.code
-            );
-            if (token) {
-              console.log('[SIDEBAR] Device linked; token stored.');
-              // Reflect authed state in UI immediately
-              await wireAuthAction();
-            } else {
-              console.warn('[SIDEBAR] Device linking timed out.');
-            }
-          } catch (err) {
-            console.error('[SIDEBAR] Web-first login failed:', err);
-          }
-        };
-        console.log('[DEBUG] Login handler attached');
-      }
-    };
+    if (!authButtonsWired) {
+      console.log('[DEBUG] First time setting up auth system...');
+      setupAuthSystemOnce();
+      authButtonsWired = true;
+    }
     
-    console.log('[DEBUG] About to call wireAuthAction()...');
-    try {
-      wireAuthAction().then(() => {
-        console.log('[DEBUG] wireAuthAction() completed successfully');
-      }).catch(err => {
-        console.error('[DEBUG] wireAuthAction() failed:', err);
-      });
-    } catch (err) {
-      console.error('[DEBUG] wireAuthAction() failed immediately:', err);
+    console.log('[DEBUG] Wiring button events to current DOM elements...');
+    wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText);
+    
+    // Apply current auth state to button
+    if (globalAuthState !== null) {
+      updateAuthButtonState(loginToolbarBtn, loginToolbarText, globalAuthState);
+    } else {
+      // Trigger initial auth check if we don't have cached state yet
+      performAuthCheckAndUpdateUI(loginToolbarBtn, loginToolbarText);
     }
   } else {
     console.error('[DEBUG] Login button elements NOT found - cannot wire auth action');
@@ -902,7 +1004,31 @@ function setupAuthButtons() {
 }
 
 /**
- * Updates the visibility and state of sync controls based on authentication
+ * Sprint 27 Fix: Updates sync controls using cached auth state (fast, no API calls)
+ */
+function updateSyncControlsVisibilityWithCache() {
+  const cloudSyncSection = document.getElementById('cloud-sync-section');
+  if (!cloudSyncSection) return;
+
+  const config = configManager.getConfig();
+  const isCloudSyncEnabled = config.features.cloudSync && config.environment.apiBaseUrl;
+  
+  if (!isCloudSyncEnabled) {
+    cloudSyncSection.style.display = 'none';
+    return;
+  }
+
+  // Sprint 27 Fix: Use cached auth state instead of API call
+  const isAuthenticated = globalAuthState ? globalAuthState.isAuthenticated : false;
+  const userEmail = globalAuthState ? globalAuthState.email : '';
+
+  console.log('[DEBUG] Updating sync controls with cached auth state:', { isAuthenticated, userEmail });
+  
+  updateSyncControlsWithState(isAuthenticated, userEmail);
+}
+
+/**
+ * Updates the visibility and state of sync controls based on authentication (legacy, still used for initial load)
  */
 async function updateSyncControlsVisibility() {
   const cloudSyncSection = document.getElementById('cloud-sync-section');
@@ -918,82 +1044,93 @@ async function updateSyncControlsVisibility() {
 
   try {
     const isAuthenticated = await authManager.isAuthenticated();
+    const user = await authManager.getCurrentUser();
+    const userEmail = user?.email || '';
     
-    if (isAuthenticated) {
-      cloudSyncSection.style.display = 'block';
-      
-      // Enable sync buttons
-      const saveBtn = document.getElementById('save-to-cloud-btn');
-      const loadBtn = document.getElementById('load-from-cloud-btn');
-      const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
-      
-      if (saveBtn) saveBtn.disabled = false;
-      if (loadBtn) loadBtn.disabled = false;
-      if (cloudSyncToggle) {
-        cloudSyncToggle.disabled = false;
-        
-        // Smart default: Enable cloud sync automatically for authenticated users
-        // Only auto-enable if not already initialized and user is genuinely authenticated
-        if (!cloudSyncToggle.dataset.initialized) {
-          try {
-            // Double-check authentication using device token
-            const token = await deviceAuth.getStoredToken();
-            if (token && token.token) {
-              cloudSyncToggle.classList.add('active');
-              const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
-              
-              // Get user email to display in cloud sync section
-              try {
-                const user = await authManager.getCurrentUser();
-                const email = user?.email || 'user@example.com';
-                const displayEmail = email.length > 25 ? email.substring(0, 22) + '...' : email;
-                if (textSpan) textSpan.textContent = `Cloud Sync: ${displayEmail}`;
-              } catch (error) {
-                console.warn('[SIDEBAR] Could not get user email for cloud sync:', error);
-                if (textSpan) textSpan.textContent = 'Cloud Sync: On';
-              }
-              
-              showSyncMessage('Cloud sync enabled - timetables will sync across devices', 'success');
-              updateSyncIndicator('synced');
-            } else {
-              // Not authenticated, show disabled state
-              cloudSyncToggle.classList.remove('active');
-              const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
-              if (textSpan) textSpan.textContent = 'Cloud Sync: Off';
-              showSyncMessage('Login to enable cloud sync', 'info');
-              updateSyncIndicator('offline');
-            }
-          } catch (error) {
-            console.warn('[SIDEBAR] Error checking auth for smart defaults:', error);
-          }
-          cloudSyncToggle.dataset.initialized = 'true';
-        }
-      }
-      
-      // Set up event listeners if not already done
-      setupSyncEventListeners();
-      
-      // Update sync status display
-      await updateSyncStatusDisplay();
-    } else {
-      // Show sync section with login prompt for non-authenticated users
-      cloudSyncSection.style.display = 'block';
-      
-      const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
-      if (cloudSyncToggle) {
-        cloudSyncToggle.disabled = true;
-        cloudSyncToggle.classList.remove('active');
-        const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
-        if (textSpan) textSpan.textContent = 'Cloud Sync: Login Required';
-        cloudSyncToggle.title = 'Login first to enable cloud sync';
-      }
-      
-      showSyncMessage('Login to enable cloud sync and keep timetables synced across devices', 'info');
-      updateSyncIndicator('offline');
-    }
+    // Cache the result for future use
+    globalAuthState = { isAuthenticated, email: userEmail };
+    
+    updateSyncControlsWithState(isAuthenticated, userEmail);
   } catch (error) {
     console.warn('[SIDEBAR] Failed to check auth state for sync controls:', error);
-    cloudSyncSection.style.display = 'none';
+    const cloudSyncSection = document.getElementById('cloud-sync-section');
+    if (cloudSyncSection) {
+      cloudSyncSection.style.display = 'none';
+    }
+  }
+}
+
+/**
+ * Sprint 27 Fix: Common logic for updating sync controls UI based on auth state
+ */
+function updateSyncControlsWithState(isAuthenticated, userEmail) {
+  const cloudSyncSection = document.getElementById('cloud-sync-section');
+  if (!cloudSyncSection) return;
+
+  if (isAuthenticated) {
+    cloudSyncSection.style.display = 'block';
+    
+    // Enable sync buttons
+    const saveBtn = document.getElementById('save-to-cloud-btn');
+    const loadBtn = document.getElementById('load-from-cloud-btn');
+    const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
+    
+    if (saveBtn) saveBtn.disabled = false;
+    if (loadBtn) loadBtn.disabled = false;
+    if (cloudSyncToggle) {
+      cloudSyncToggle.disabled = false;
+      
+      // Smart default: Enable cloud sync automatically for authenticated users
+      // Only auto-enable if not already initialized
+      if (!cloudSyncToggle.dataset.initialized) {
+        cloudSyncToggle.classList.add('active');
+        const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
+        
+        // Sprint 27 Fix: Use cached email instead of API call
+        if (textSpan) {
+          if (userEmail && userEmail !== 'user@example.com') {
+            const displayEmail = userEmail.length > 25 ? userEmail.substring(0, 22) + '...' : userEmail;
+            textSpan.textContent = `Cloud Sync: ${displayEmail}`;
+          } else {
+            textSpan.textContent = 'Cloud Sync: On';
+          }
+        }
+        
+        showSyncMessage('Cloud sync enabled - timetables will sync across devices', 'success');
+        updateSyncIndicator('synced');
+        cloudSyncToggle.dataset.initialized = 'true';
+      } else {
+        // Update existing display with current user email
+        const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
+        if (textSpan && userEmail && userEmail !== 'user@example.com') {
+          const displayEmail = userEmail.length > 25 ? userEmail.substring(0, 22) + '...' : userEmail;
+          textSpan.textContent = `Cloud Sync: ${displayEmail}`;
+        }
+      }
+    }
+    
+    // Set up event listeners if not already done
+    setupSyncEventListeners();
+    
+    // Update sync status display
+    updateSyncIndicator('synced');
+  } else {
+    // Show sync section with login prompt for non-authenticated users
+    cloudSyncSection.style.display = 'block';
+    
+    const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
+    if (cloudSyncToggle) {
+      cloudSyncToggle.disabled = true;
+      cloudSyncToggle.classList.remove('active');
+      const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
+      if (textSpan) textSpan.textContent = 'Cloud Sync: Login Required';
+      cloudSyncToggle.title = 'Login first to enable cloud sync';
+      // Reset initialized flag so it can be set up again when user logs in
+      cloudSyncToggle.dataset.initialized = 'false';
+    }
+    
+    showSyncMessage('Login to enable cloud sync and keep timetables synced across devices', 'info');
+    updateSyncIndicator('offline');
   }
 }
 

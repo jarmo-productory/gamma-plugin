@@ -46,6 +46,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. Use authentication system data as fallback
 4. Work with existing security policies, not against them
 
+### **🔄 TEMPORARY CHANGE REVERSION RULE (SPRINT 26 LESSON)**
+**ABSOLUTE RULE:** ALWAYS revert temporary changes after successful testing!
+
+**CRITICAL PROCESS:**
+1. **Before making temporary changes** - Document what will be reverted
+2. **After successful test** - IMMEDIATELY revert the temporary changes
+3. **Never leave temporary fixes** - They become permanent technical debt
+4. **Always comment temporary changes** - Mark them clearly as temporary
+
+**Why This is CRITICAL:**
+- Temporary fixes accumulate and become permanent bugs
+- Other developers/sessions don't know what's temporary vs intentional
+- Schema cache refresh issues require temporary workarounds
+- User needs to manually test with proper authentication flows
+
+**CORRECT PROCESS:**
+- ✅ Make temporary change with clear TODO comment
+- ✅ Test the fix works
+- ✅ IMMEDIATELY revert to original working state
+- ✅ Document the underlying issue that needs proper resolution
+- ✅ Let user manually test with their authentication
+
+**Example - Supabase Schema Cache Issues:**
+When database migrations add columns but Supabase API cache hasn't refreshed:
+1. Comment out the new column temporarily: `// device_fingerprint: fingerprint // TODO: Re-enable after cache refresh`
+2. Test API works without the column
+3. **IMMEDIATELY revert** to commented-out state
+4. Let user test manually with authentication
+5. Plan proper re-enablement once cache refreshes
+
 ### Internal/Admin APIs Policy (Sprint 23)
 - Internal endpoints live under `/api/_internal/*` and require `X-Internal-Auth: Bearer ${INTERNAL_API_TOKEN}` with `ENABLE_INTERNAL_APIS === 'true'`; unauthorized/disabled returns 404.
 - Admin endpoints live under `/api/admin/*`, use `requireAdminAccess` (token + optional `INTERNAL_ADMIN_EMAILS`) and must declare `runtime = 'nodejs'`.
@@ -53,35 +83,56 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Legacy public surfaces (`/api/debug/*`, `/api/test-*`, `/api/migrate`) are blocked by middleware when internal APIs are disabled. Do not create public debug/test routes.
 - See `documents/core/technical/security-implementation-summary.md` (Sprint 23) for details and examples.
 
-### **PORT 3000 MANDATE (SPRINT 17 LESSON)**
-**ABSOLUTE RULE:** The web app MUST ALWAYS run on port 3000 - NEVER any other port!
+### **🚨 DEVELOPMENT SERVERS MANDATE (SPRINT 17 + 26 LESSONS)**
+**CRITICAL RULE:** Know which dev server you're starting and from which directory!
 
-**Why This Matters:**
-- Extension configuration is hardcoded to `http://localhost:3000` for API calls
-- Device authentication system expects port 3000
-- Cloud sync functionality breaks on any other port
-- Extension-to-web communication fails if port differs
+**PROJECT STRUCTURE:**
+- **ROOT DIRECTORY** (`/`) → Extension development (Vite on port 5173)
+- **WEB DIRECTORY** (`/packages/web/`) → Web app development (Next.js on port 3000)
 
-**Mandatory Process:**
+**ABSOLUTE RULES:**
+1. **Web app MUST ALWAYS run on port 3000** - Extension hardcoded to this port
+2. **Extension dev runs on port 5173** - Only for extension development/testing
+3. **NEVER confuse the two** - Always check your working directory
+
+**MANDATORY PROCESSES:**
+
+**To start WEB APP (for extension integration):**
 ```bash
-# ALWAYS kill anything on port 3000 first
+# CRITICAL: Must be in packages/web directory
+cd packages/web
+
+# Kill anything on port 3000 first
 lsof -ti:3000 | xargs kill -9
 
-# ALWAYS start dev server with explicit port
+# Start Next.js web app on port 3000
 PORT=3000 npm run dev
 
-# NEVER let Next.js auto-select another port
+# Verify: http://localhost:3000 should show the web app
 ```
 
-**Anti-Pattern:** 
-- ❌ NEVER run `npm run dev` without PORT=3000
-- ❌ NEVER accept Next.js suggestion to use port 3001, 3002, etc.
-- ❌ NEVER ignore "Port 3000 is in use" warnings
+**To start EXTENSION DEV (for extension development only):**
+```bash
+# From root directory
+cd /path/to/gamma-plugin
 
-**If port 3000 conflicts occur:**
-1. Kill the conflicting process: `lsof -ti:3000 | xargs kill -9`
-2. Start with explicit port: `PORT=3000 npm run dev`
-3. Never work around by using different ports
+# Start Vite dev server on port 5173
+npm run dev
+
+# Verify: http://localhost:5173 shows extension dev environment
+```
+
+**ANTI-PATTERNS TO AVOID:**
+- ❌ Running `npm run dev` from root and expecting port 3000
+- ❌ Running web app on any port other than 3000
+- ❌ Not knowing which dev server you're starting
+- ❌ Assuming "dev server is running" without checking which one
+
+**Why Port 3000 is CRITICAL:**
+- Extension configuration is hardcoded to `http://localhost:3000` for API calls
+- Device authentication system expects port 3000  
+- Cloud sync functionality breaks on any other port
+- Extension-to-web communication fails if port differs
 
 ## KEY DISCOVERIES - Database Integration & Production Excellence PROVEN
 

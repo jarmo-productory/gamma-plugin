@@ -1,455 +1,231 @@
-# UI/UX Design Specification: Gamma Timetable Chrome Extension
+# UI/UX Design Specification: Gamma Timetable (Web + Extension)
+
+This document codifies our current UI system and the design patterns that both the web dashboard and the Chrome extension follow. It is implementation-aligned with the codebase as of August 2025.
 
 ## 1. Design Overview
 
 ### Design Philosophy
 
-- **Minimalist**: Clean interface that doesn't overwhelm
-- **Intuitive**: Self-explanatory controls and flow
-- **Efficient**: Quick access to all features
-- **Consistent**: Follows Chrome extension patterns
+- Minimalist: clean, low‑friction interfaces
+- Intuitive: obvious affordances, progressive disclosure
+- Efficient: frequent actions are one click or a single shortcut away
+- Consistent: shared components and tokens across surfaces
+- Accessible: keyboard and screen reader friendly by default
 
 ### Visual Style
 
-- Modern, clean aesthetic
-- Matches Gamma's design language where appropriate
-- Support for light/dark themes
-- Accessible color contrasts
-
-## 2. User Interface Components
-
-### 2.1 Authentication & Onboarding
-
-#### Web-First Login Flow
-
-The primary user authentication journey begins in the extension and transitions to the web dashboard.
-
-```mermaid
-graph TD
-    A[User in Extension Sidebar] -- Clicks 'Login' --> B{New tab opens};
-    B --> C[Web Dashboard Login Page];
-    C -- User authenticates via Clerk --> D[Dashboard shows 'Device Connected'];
-    A -- Receives token --> E[Sidebar UI updates to 'Logged In'];
-```
-
-#### Web Dashboard - Device Pairing UI
-
-```
-┌──────────────────────────────────────────┐
-│  ✅ Device Connected Successfully!       │
-│                                          │
-│  You can now close this tab and return   │
-│  to your Gamma presentation.             │
-│                                          │
-│  Your timetables will now be securely    │
-│  synced to your account.                 │
-│                                          │
-└──────────────────────────────────────────┘
-```
-
-### 2.2 Extension Icon
-
-```
-States:
-- Default: Grey icon (inactive)
-- Active: Colored icon (when on gamma.app)
-- Badge: Shows slide count when detected
-```
-
-### 2.3 Popup Menu
-
-```
-┌─────────────────────────┐
-│  Gamma Timetable        │
-├─────────────────────────┤
-│  📊 Open Sidebar        │
-│  ⚙️ Settings            │
-│  ❓ Help                │
-│  ──────────────────     │
-│  Status: Ready          │
-│  Slides: 24 detected    │
-└─────────────────────────┘
-```
-
-### 2.4 Sidebar Panel
-
-#### Logged-Out State
-
-```
-┌──────────────────────────────────────┐
-│  🕐 Course Timetable          [✕]   │
-├──────────────────────────────────────┤
-│  [Login or Sign Up] to sync          │
-│  your timetables across devices.     │
-├──────────────────────────────────────┤
-│  Presentation: [Title]               │
-│  Total Duration: 1h 45m              │
-├──────────────────────────────────────┤
-│  Timeline (Local only)               │
-│  ...                                 │
-├──────────────────────────────────────┤
-│  [Export ▼] (Local)                  │
-└──────────────────────────────────────┘
-```
-
-#### Logged-In State
-
-```
-┌──────────────────────────────────────┐
-│  🕐 Course Timetable          [✕]   │
-├──────────────────────────────────────┤
-│  👤 Logged in as: user@email.com     │
-│  ☁️ Synced to cloud                  │
-├──────────────────────────────────────┤
-│  Presentation: [Title]               │
-│  Total Duration: 1h 45m              │
-├──────────────────────────────────────┤
-│  Timeline (Synced)                   │
-│  ...                                 │
-├──────────────────────────────────────┤
-│  [Export ▼] [Logout]                 │
-└──────────────────────────────────────┘
-```
-
-### 2.5 Web Dashboard
-
-The web dashboard provides a central place for users to manage their presentations and account.
-
-#### Main Dashboard View
-
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│  Gamma Timetable Dashboard              [user@email.com ▼] [Logout]      │
-├──────────────────────────────────────────────────────────────────────────┤
-│  My Presentations                                                        │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌───────────────────────────────────┐   ┌───────────────────────────────────┐   │
-│  │ 📄 Intro to Marketing        │   │ 📄 Advanced JavaScript       │   │
-│  │ Synced: Aug 12, 2025         │   │ Synced: Aug 10, 2025         │   │
-│  │ [View Timetable] [Delete]    │   │ [View Timetable] [Delete]    │   │
-│  └───────────────────────────────────┘   └───────────────────────────────────┘   │
-│                                                                          │
-│  ┌───────────────────────────────────┐                                       │
-│  │ 📄 Public Speaking 101       │                                       │
-│  │ Synced: Aug 9, 2025          │                                       │
-│  │ [View Timetable] [Delete]    │                                       │
-│  └───────────────────────────────────┘                                       │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
-
-## 3. User Flows
-
-### 3.1 First Time Login & Device Pairing
-
-```mermaid
-graph TD
-    subgraph Extension
-        A(Open Gamma Presentation) --> B(Click Extension Icon);
-        B --> C(Sidebar opens);
-        C --> D(Click 'Login');
-    end
-    subgraph Web Browser
-        D --> E{New tab opens to Web Dashboard};
-        E --> F(User signs in with Clerk);
-        F --> G(Dashboard shows 'Device Connected!');
-    end
-    subgraph Extension
-        G --> H(Sidebar UI updates to 'Logged In');
-    end
-```
-
-### 3.2 Managing Presentations on Web
-
-```mermaid
-graph TD
-    A(User navigates to Web Dashboard) --> B(Logs in);
-    B --> C(Sees list of synced presentations);
-    C -- Clicks on a presentation --> D(Views timetable details);
-    D -- Makes changes (future) --> E(Data is saved);
-    E --> F(Changes sync back to extension);
-```
-
-## 4. Interactive Elements
-
-### 4.1 Time Duration Controls
-
-```
-Design Pattern: Inline Editable Fields
-- Click to edit
-- Tab to next field
-- Enter to confirm
-- Esc to cancel
-- Up/Down arrows to increment/decrement
-```
-
-### 4.2 Drag & Drop Reordering
-
-```
-Interaction:
-- Hover shows grab cursor
-- Drag shows ghost element
-- Drop zone highlights
-- Smooth animation on drop
-```
-
-### 4.3 Break Management
-
-```
-Add Break Button:
-- Shows between any two items on hover
-- Click inserts break with default duration
-- Break items are visually distinct
-
-Break Item:
-- Different background color
-- Can be deleted with X button
-- Duration editable like slides
-```
-
-## 5. Visual Design System
-
-### 5.1 Color Palette
-
-```css
-/* Light Theme */
---primary: #2563eb; /* Blue - Actions */
---secondary: #64748b; /* Grey - Secondary text */
---success: #10b981; /* Green - Success states */
---warning: #f59e0b; /* Amber - Warnings */
---danger: #ef4444; /* Red - Errors */
---background: #ffffff; /* White - Main bg */
---surface: #f8fafc; /* Light grey - Cards */
---text: #1e293b; /* Dark - Primary text */
---border: #e2e8f0; /* Light - Borders */
-
-/* Dark Theme */
---primary-dark: #3b82f6;
---background-dark: #0f172a;
---surface-dark: #1e293b;
---text-dark: #f1f5f9;
---border-dark: #334155;
-```
-
-### 5.2 Typography
-
-```css
-/* Font Stack */
-font-family:
-  -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-
-/* Type Scale */
---text-xs: 0.75rem; /* 12px - Labels */
---text-sm: 0.875rem; /* 14px - Body */
---text-base: 1rem; /* 16px - Default */
---text-lg: 1.125rem; /* 18px - Headings */
---text-xl: 1.25rem; /* 20px - Title */
-```
-
-### 5.3 Spacing System
-
-```css
-/* Spacing Scale */
---space-1: 0.25rem; /* 4px */
---space-2: 0.5rem; /* 8px */
---space-3: 0.75rem; /* 12px */
---space-4: 1rem; /* 16px */
---space-5: 1.25rem; /* 20px */
---space-6: 1.5rem; /* 24px */
-```
-
-## 6. Component Specifications
-
-### 6.1 Timetable Item Component
-
-```html
-<div class="timetable-item" data-id="slide-1">
-  <div class="time-column">
-    <span class="start-time">09:00</span>
-  </div>
-  <div class="content-column">
-    <h4 class="item-title">Introduction to AI</h4>
-    <p class="item-description">Overview of artificial intelligence concepts</p>
-  </div>
-  <div class="duration-column">
-    <input type="number" class="duration-input" value="10" min="1" max="180" />
-    <span class="duration-unit">min</span>
-  </div>
-  <div class="actions-column">
-    <button class="drag-handle" aria-label="Reorder">⋮⋮</button>
-  </div>
-</div>
-```
-
-### 6.2 Export Menu Component
-
-```html
-<div class="export-menu">
-  <button class="export-button">Export <span class="arrow">▼</span></button>
-  <div class="export-dropdown">
-    <a href="#" class="export-option" data-format="csv">
-      <span class="icon">📄</span> Export as CSV
-    </a>
-    <a href="#" class="export-option" data-format="excel">
-      <span class="icon">📊</span> Export as Excel
-    </a>
-    <a href="#" class="export-option" data-format="pdf">
-      <span class="icon">📑</span> Export as PDF
-    </a>
-    <hr />
-    <a href="#" class="export-option" data-format="clipboard">
-      <span class="icon">📋</span> Copy to Clipboard
-    </a>
-  </div>
-</div>
-```
-
-## 7. Responsive Behavior
-
-### 7.1 Sidebar Width Adaptation
-
-- Minimum width: 320px
-- Maximum width: 480px
-- Resizable by user (saved preference)
-- Content reflows appropriately
-
-### 7.2 Scrolling Behavior
-
-- Fixed header with title and total duration
-- Fixed footer with action buttons
-- Middle section scrolls
-- Smooth scroll animations
-- Scroll indicators for long lists
-
-## 8. Accessibility Features
-
-### 8.1 Keyboard Navigation
-
-- Tab through all interactive elements
-- Arrow keys for time adjustment
-- Space/Enter to activate buttons
-- Escape to close menus
-- Focus indicators visible
-
-### 8.2 Screen Reader Support
-
-- Proper ARIA labels
-- Role attributes
-- Live regions for updates
-- Descriptive button text
-
-### 8.3 Visual Accessibility
-
-- 4.5:1 contrast ratio minimum
-- No color-only indicators
-- Clear focus states
-- Sufficient touch targets (44x44px)
-
-## 9. Micro-interactions
-
-### 9.1 Loading States
-
-```
-Extraction in progress:
-- Pulsing animation on icon
-- Progress indicator in sidebar
-- "Extracting slides..." message
-```
-
-### 9.2 Success Feedback
-
-```
-After successful export:
-- Green checkmark animation
-- "Exported successfully" toast
-- Auto-dismiss after 3 seconds
-```
-
-### 9.3 Error States
-
-```
-When extraction fails:
-- Red error icon
-- Clear error message
-- Retry button
-- Help link
-```
-
-## 10. Empty States
-
-### 10.1 No Presentation Detected
-
-```
-┌──────────────────────────────────────┐
-│         No Presentation Found        │
-│                                      │
-│            🎯                        │
-│                                      │
-│   Open a Gamma presentation to      │
-│   start creating your timetable     │
-│                                      │
-│        [Open Gamma.app]              │
-└──────────────────────────────────────┘
-```
-
-### 10.2 No Slides Extracted
-
-```
-┌──────────────────────────────────────┐
-│         No Slides Detected           │
-│                                      │
-│            📊                        │
-│                                      │
-│   Could not extract slides from      │
-│   this presentation.                 │
-│                                      │
-│   [Try Again]  [Get Help]            │
-└──────────────────────────────────────┘
-```
-
-## 11. Animation Guidelines
-
-### 11.1 Transition Durations
-
-- Micro animations: 150ms
-- Page transitions: 300ms
-- Loading animations: 500ms
-- Use ease-out curves
-
-### 11.2 Animation Types
-
-- Fade in/out for overlays
-- Slide for panels
-- Scale for buttons
-- Smooth color transitions
-
-## 12. Design Patterns
-
-### 12.1 Inline Editing Pattern
-
-- Single click to select
-- Double click to edit
-- Visual mode change
-- Clear save/cancel options
-
-### 12.2 Progressive Disclosure
-
-- Basic settings visible
-- Advanced options collapsed
-- Clear expand/collapse indicators
-- Remember user preferences
-
-### 12.3 Contextual Actions
-
-- Actions appear on hover
-- Right-click menus where appropriate
-- Tooltips for unclear icons
-- Confirmation for destructive actions
+- Modern, utilitarian aesthetic; strong information hierarchy
+- Matches Gamma where appropriate; avoids brand clash
+- Light and dark themes using CSS variables
+- WCAG AA color contrast or better
+
+## 2. UI Stack (Web Dashboard)
+
+- Framework: Next.js App Router (React 19, Next 15)
+- Styling: Tailwind CSS with CSS variable tokens and dark mode
+- Components: shadcn-style primitives backed by Radix UI and class-variance-authority
+- Icons: lucide-react
+- Feedback: sonner Toaster for non-blocking notifications
+
+Code refs:
+- Root layout and Toaster: `packages/web/src/app/layout.tsx`
+- Global tokens and theme: `packages/web/src/app/globals.css`
+- Tailwind setup: `packages/web/tailwind.config.js`
+- shadcn config: `packages/web/components.json`
+- cn helper: `packages/web/src/lib/utils.ts`
+
+## 3. Design Tokens & Theming
+
+- Semantic tokens (HSL) define background/foreground, primary/secondary, accent, border, input, ring, destructive, card, popover, and dedicated sidebar palette.
+- Tokens live in CSS variables and are applied via Tailwind in components.
+- Radius scale: `--radius` drives `lg`, `md`, `sm` radii.
+- Dark mode uses the `.dark` class and alternate token values.
+
+Code refs:
+- Tokens: `packages/web/src/app/globals.css`
+- Tailwind token mapping: `packages/web/tailwind.config.js`
+
+## 4. Component System
+
+- Build with our local shadcn-style components under `packages/web/src/components/ui/*`.
+- Compose behavior via Radix primitives (dialog, sheet, tooltip, etc.).
+- Styling variants defined with `cva` and consumed via the `cn` helper.
+- Keep props minimal; prefer variants (`variant`, `size`) for visual changes.
+
+Key components:
+- Buttons: `button.tsx` (default, outline, secondary, ghost, link)
+- Inputs/Labels: `input.tsx`, `label.tsx`
+- Dialogs and Alert Dialogs: `dialog.tsx`, `alert-dialog.tsx`
+- Navigation Sidebar: `sidebar.tsx` with provider, mobile sheet, collapse states
+- Cards/Badges/Separators/Skeleton/Tabs/Tooltip/Dropdown
+
+Shared library:
+- Cross-surface UI lives in `packages/shared/ui/*` for extension parity.
+- Gamma-specific button variants exist in shared UI for the extension context.
+
+## 5. Layout Patterns
+
+- Dashboard layout wraps pages with `AppLayout` and `SidebarProvider`.
+- Sidebar behaviors:
+  - Desktop: fixed with expandable/collapsible states; keyboard shortcut `Cmd/Ctrl + b` to toggle
+  - Mobile: off-canvas sheet
+  - State persisted to cookie (`sidebar_state`)
+- Content area uses `SidebarInset` to maintain correct spacing.
+
+Code refs:
+- Layout wrapper: `packages/web/src/components/layouts/AppLayout.tsx`
+- Sidebar system: `packages/web/src/components/ui/sidebar.tsx`
+- Mobile detection: `packages/web/src/hooks/use-mobile.tsx`
+
+## 6. Content Screens (Standard Shell)
+
+All “content screens” (Timetables, Analytics, Settings pages, etc.) must follow the same outer frame. This keeps paddings, header height, and spacing identical across pages.
+
+- Header bar: fixed height and structure
+  - Element: `header`
+  - Classes: `flex h-16 shrink-0 items-center gap-2 border-b px-4`
+  - Contents: `SidebarTrigger`, page icon, `h1.text-lg.font-semibold` title
+  - Rationale: matches Timetables; consistent top rhythm and divider
+
+- Outer content wrapper: page body container
+  - Element: `div`
+  - Classes: `flex flex-1 flex-col gap-4 p-4`
+  - Gap: `gap-4` vertical rhythm between sections
+  - Padding: `p-4` consistent with header’s `px-4`
+
+- Inner content container: full-width content column
+  - Element: child `div`
+  - Classes: `w-full`
+  - Behavior: consumes 100% of available space within the page content area
+  - Optional constraint: add `max-w-*` only if the PRD explicitly requires a narrow reading column (default is full width)
+
+Navigation pattern
+- Do not place in-page “Back to …” links at the top of content screens.
+- Primary navigation is via the sidebar and contextual actions within the screen.
+
+- Alerts and toasts
+  - Inline alerts live directly under the back link (or at container top)
+  - Toasts use `sonner` and are already global via `RootLayout`
+
+- Section spacing
+  - Use `space-y-8` inside the inner container to separate cards/sections
+  - Do not add custom margins between individual cards beyond this standard
+
+- Cards and content blocks
+  - Use `Card`, `CardHeader`, `CardContent`
+  - Card class: `bg-card border border-border/60 shadow-sm`
+  - Keep headings concise; use `CardDescription` for supporting text
+
+- Responsive rules
+  - Mobile breakpoint: 768px
+  - Grids collapse from `md:grid-cols-2` to one column on mobile
+  - No horizontal scrolling; form actions wrap or move below inputs
+
+- Spacing invariants
+  - Header height: `h-16`
+  - Page padding: `p-4`
+  - Inter-section gap: `gap-4` (outer wrapper), `space-y-8` (inner)
+  - Icon size in header: `h-5 w-5`
+
+- Do / Don’t
+  - Do reuse the header + outer + inner structure on every content screen
+  - Do keep the inner container `w-full` (full-width); only add `max-w-*` when mandated by spec
+  - Don’t center inner containers (`mx-auto`); avoid per-page custom paddings
+  - Don’t place page titles outside the header bar
+
+Code reference example (Timetables):
+- `packages/web/src/app/gamma/timetables/TimetablesClient.tsx: header + outer wrapper`
+
+## 7. Responsiveness
+
+- Mobile breakpoint at 768px; `useIsMobile()` governs sidebar mode and some UI affordances.
+- Avoid horizontal scrolling; stack controls and use grouped actions in overflow (e.g., dropdown) on small screens.
+
+## 8. Feedback & Status
+
+- Use `sonner` Toaster for transient success/info/error messages.
+- Use `Alert` for inline, contextual messaging.
+- Use Skeletons for loading states in content areas.
+- Use `Loader2` icon for inline loading indicators on buttons/actions when needed.
+
+## 9. Forms & Validation
+
+- Inputs paired with `Label`; error text inline below the field or in an `Alert` above the form.
+- Submit actions disable buttons and show a spinner when pending.
+- Use zod schema validation server-side; reflect first error prominently.
+
+## 10. Accessibility
+
+- All interactive elements must be keyboard accessible (Tab order, focus ring visible).
+- Radix primitives provide base a11y; preserve aria attributes and roles.
+- Ensure names/labels for screen readers (`aria-label`, `aria-describedby`).
+- Animation should respect reduced-motion preferences and be non-blocking.
+
+## 11. Content & Copy
+
+- Tone: helpful, concise, action-oriented.
+- Button labels use verbs: “Save”, “Connect”, “Retry”.
+- Error messages state the problem and the next step.
+
+## 12. Extension UI (Manifest V3)
+
+- Tech: Vanilla HTML/CSS/JS side panel and popup; no React in MV3 surfaces.
+- Follow minimal DOM structure and shared CSS classes for status bars, settings, and sync controls.
+- Reuse shared utilities (`@shared/storage`, `@shared/auth`) to align behavior with web.
+- Keep interactions snappy; avoid long-running UI work on the main thread.
+
+Code refs:
+- Side panel HTML: `packages/extension/sidebar/sidebar.html`
+- Side panel logic: `packages/extension/sidebar/sidebar.js`
+- Shared UI: `packages/shared/ui/*`
+
+## 13. Consistency Rules
+
+- Prefer web `ui/*` components for dashboard work; do not duplicate styles ad hoc.
+- For elements shared with the extension, consider `packages/shared/ui/*` first.
+- Use the semantic token palette; do not hardcode colors.
+- Use the standard spacing scale and radii defined by tokens.
+
+### Border System
+- Thickness: default 1px (`border`) for cards, panels, and separators.
+- Color: use token `border` → `hsl(var(--border))`; attenuate with `/60` for softer borders when needed.
+- Hover/active: prefer elevation (`shadow-sm` → `hover:shadow-md`) over increasing border thickness.
+- Exceptions: status-specific components (e.g., destructive, success) may use colored borders but keep width at 1px.
+
+### Spacing System
+- Page shell: header `px-4`, content `p-4`, outer `gap-4`.
+- Card internal padding: `p-4` for both `CardContent` and `CardFooter` (footer also `border-t`).
+- Grid gaps: use `gap-6` for Timetable cards; do not override per-item margins.
+- Vertical rhythm inside content sections: `space-y-2` for field clusters, `space-y-6` for grouped blocks.
+
+### Action Rows (Button Bars)
+- Button row placement: last element in cards with `border-t` and same `p-4` padding as content.
+- Attachment: card container uses `flex h-full flex-col`; footer uses `mt-auto` to pin to bottom.
+- Button sizing: use default `size` (height 40px/`h-10`) for primary/outline; use `size="icon"` for circular icon-only buttons.
+- No custom per-screen button sizes; variants from `components/ui/button.tsx` only.
+- Action count limits:
+  - List cards: maximum 1 primary action (e.g., View). No overflow menus in list cards.
+  - Detail/management cards: maximum 2 actions (primary + one secondary). If more are needed, navigate to a details page.
+  - Do not hide required actions responsively.
+  - Do not wrap the action row; keep a constant height.
+ - Alignment: buttons are right-aligned in the footer (`justify-end`). Use a single action group; avoid left/right split.
+
+## 14. Patterns to Reuse
+
+- Empty states with clear primary action and short guidance.
+- Dialogs for destructive or multi-step confirmations; sheets for temporary, contextual panels.
+- Sidebar sections with concise labels and predictable grouping.
+- Structured list/grid with skeleton placeholders and explicit loading/empty/error states.
+
+## 15. Implementation Checklist
+
+- Uses `AppLayout` and `SidebarProvider` when applicable
+- Uses local `ui/*` components and tokens
+- Responsive at ≥768px breakpoint; mobile interactions verified
+- Accessible names, labels, and focus management present
+- Feedback via Toaster/Alert; loading via Skeleton/inline spinners
+- No hardcoded colors; tokens and Tailwind utilities only
 
 ---
 
-_Document Version: 1.0_  
-_Last Updated: [Current Date]_  
-_Status: Draft_
+Revision: 2025-08-24. This spec reflects current implementation and should be kept in sync as components evolve.

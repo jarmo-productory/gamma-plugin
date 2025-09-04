@@ -1,7 +1,8 @@
 # Gamma Timetable Extension Roadmap
 
-**Last Updated:** 2025-09-01  
+**Last Updated:** 2025-09-02  
 **Current Status:** Sprint 23 COMPLETE ✅ (Internal/Admin APIs Hardening)
+**Next Sprint (planned):** Sprint 27 — Auth & Integrations Hardening (see documents/roadmap/SPRINT-27-AUTH-AND-INTEGRATIONS-HARDENING.md)
 
 ---
 

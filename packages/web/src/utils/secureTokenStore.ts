@@ -198,6 +198,38 @@ export async function revokeDeviceToken(userId: string, deviceId: string): Promi
 }
 
 /**
+ * Sprint 27: Rename device securely via RPC
+ */
+export async function renameDevice(userId: string, deviceId: string, newName: string): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+    
+    // Use secure RPC for device renaming
+    const { data, error } = await supabase.rpc('rename_device', {
+      p_user_id: userId,
+      p_device_id: deviceId,
+      p_new_name: newName
+    });
+
+    if (error) {
+      console.error('[Rename Device] RPC error:', error);
+      return false;
+    }
+
+    const success = data === true;
+    
+    if (success) {
+      console.log(`[Rename Device] Successfully renamed device: ${deviceId} to "${newName}" for user: ${userId}`);
+    }
+    
+    return success;
+  } catch (error) {
+    console.error('[Rename Device] Error:', error);
+    return false;
+  }
+}
+
+/**
  * Clean up expired tokens using secure RPC
  * Should be called periodically or via scheduled function
  */

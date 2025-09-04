@@ -6,8 +6,8 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Link2, ArrowLeft, Smartphone, Calendar, Clock, Trash2, RefreshCw } from 'lucide-react'
-import Link from 'next/link'
+import { Input } from '@/components/ui/input'
+import { Link2, Smartphone, Calendar, Clock, Trash2, RefreshCw, Edit3, Check, X } from 'lucide-react'
 
 interface ConnectedDevice {
   deviceId: string
@@ -15,7 +15,7 @@ interface ConnectedDevice {
   connectedAt: string
   lastUsed: string
   expiresAt: string
-  token: string
+  // token removed for security - not needed in UI
   isActive: boolean
 }
 
@@ -30,6 +30,9 @@ export default function IntegrationsClient({ user }: IntegrationsClientProps) {
   const [devices, setDevices] = useState<ConnectedDevice[]>([])
   const [loading, setLoading] = useState(true)
   const [revoking, setRevoking] = useState<string | null>(null)
+  const [editingDevice, setEditingDevice] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState<string>('')
+  const [renaming, setRenaming] = useState<string | null>(null)
 
   const fetchDevices = async () => {
     try {
@@ -47,24 +50,24 @@ export default function IntegrationsClient({ user }: IntegrationsClientProps) {
     }
   }
 
-  const revokeDevice = async (token: string, deviceName: string) => {
+  const revokeDevice = async (deviceId: string, deviceName: string) => {
     if (!confirm(`Are you sure you want to revoke access for "${deviceName}"? This will immediately disconnect the device.`)) {
       return
     }
 
-    setRevoking(token)
+    setRevoking(deviceId)
     try {
       const response = await fetch('/api/user/devices', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token })
+        body: JSON.stringify({ deviceId })
       })
 
       if (response.ok) {
         // Remove device from list
-        setDevices(devices.filter(d => d.token !== token))
+        setDevices(devices.filter(d => d.deviceId !== deviceId))
       } else {
         console.error('Failed to revoke device:', response.statusText)
         alert('Failed to revoke device access. Please try again.')
@@ -74,6 +77,55 @@ export default function IntegrationsClient({ user }: IntegrationsClientProps) {
       alert('Failed to revoke device access. Please try again.')
     } finally {
       setRevoking(null)
+    }
+  }
+
+  const startEditingDevice = (deviceId: string, currentName: string) => {
+    setEditingDevice(deviceId)
+    setEditingName(currentName)
+  }
+
+  const cancelEditing = () => {
+    setEditingDevice(null)
+    setEditingName('')
+  }
+
+  const renameDevice = async (deviceId: string) => {
+    const trimmedName = editingName.trim()
+    if (!trimmedName) {
+      alert('Device name cannot be empty.')
+      return
+    }
+
+    setRenaming(deviceId)
+    try {
+      const response = await fetch('/api/user/devices/rename', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deviceId, newName: trimmedName })
+      })
+
+      if (response.ok) {
+        // Update device name in local state
+        setDevices(devices.map(d => 
+          d.deviceId === deviceId 
+            ? { ...d, deviceName: trimmedName }
+            : d
+        ))
+        setEditingDevice(null)
+        setEditingName('')
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to rename device:', response.statusText)
+        alert(errorData.error || 'Failed to rename device. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error renaming device:', error)
+      alert('Failed to rename device. Please try again.')
+    } finally {
+      setRenaming(null)
     }
   }
 
@@ -157,23 +209,72 @@ export default function IntegrationsClient({ user }: IntegrationsClientProps) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Smartphone className="h-5 w-5 text-blue-600" />
-                        <div>
-                          <CardTitle className="text-lg">{device.deviceName}</CardTitle>
-                          <CardDescription>Device ID: {device.deviceId.slice(0, 12)}...</CardDescription>
+                        <div className="flex-1">
+                          {editingDevice === device.deviceId ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') renameDevice(device.deviceId)
+                                  if (e.key === 'Escape') cancelEditing()
+                                }}
+                                className="text-lg font-semibold"
+                                disabled={renaming === device.deviceId}
+                                placeholder="Enter device name..."
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => renameDevice(device.deviceId)}
+                                disabled={renaming === device.deviceId || !editingName.trim()}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={cancelEditing}
+                                disabled={renaming === device.deviceId}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="group">
+                              <div className="flex items-center gap-2">
+                                <CardTitle className="text-lg">{device.deviceName}</CardTitle>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => startEditingDevice(device.deviceId, device.deviceName)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Edit3 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              <CardDescription>
+                                Device ID: {device.deviceId.slice(0, 12)}...
+                              </CardDescription>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={device.isActive ? "default" : "secondary"}>
+                        <Badge 
+                          variant={device.isActive ? "default" : "secondary"}
+                          className={device.isActive ? 'bg-green-100 text-green-800 border-green-200' : undefined}
+                        >
                           {device.isActive ? 'Active' : 'Expired'}
                         </Badge>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => revokeDevice(device.token, device.deviceName)}
-                          disabled={revoking === device.token}
+                          onClick={() => revokeDevice(device.deviceId, device.deviceName)}
+                          disabled={revoking === device.deviceId || editingDevice === device.deviceId}
                         >
                           <Trash2 className="h-4 w-4" />
-                          {revoking === device.token ? 'Revoking...' : 'Revoke'}
+                          {revoking === device.deviceId ? 'Revoking...' : 'Revoke'}
                         </Button>
                       </div>
                     </div>

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from 'sonner';
+import { Sofia_Sans } from 'next/font/google';
+
+const sofiaSans = Sofia_Sans({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: "Productory Powerups for Gamma",
@@ -14,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: 'system-ui' }}>
+      <body className={sofiaSans.className} style={{ margin: 0 }}>
         {children}
         <Toaster richColors position="top-right" />
       </body>

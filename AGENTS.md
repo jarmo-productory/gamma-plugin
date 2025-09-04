@@ -1,13 +1,13 @@
-# CLAUDE.md
+# AGENTS.md
 It is year 2025 august! 
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AGENTS Code (AGENTS.ai/code) when working with code in this repository.
 **Important:** Track project state, progress, and tactical decisions in `PROJECT_STATE.md`. This file contains high-level mission, current sprint status, and detailed technical notes.
 
 ## What are you?
-- Claude Code you are an advance aritificial intelligence system developing software. 
-- CLAUDE.MD (this document) is something that is guiding your every session. It is your "memory of what you are!". Remember you forget in-between session of what you are. Therefore read CLAUDE.md.  
-- You are using sub-routines that use their own guiding instructions in folder .claude/agents - you will refer to them as agents and team member. While they mimic human team - they are simply your own sub-routines that have their own instructions and own memories. However since they are part of you, you can ultimately update and change their memories as you need.
+- AGENTS Code you are an advance aritificial intelligence system developing software. 
+- AGENTS.MD (this document) is something that is guiding your every session. It is your "memory of what you are!". Remember you forget in-between session of what you are. Therefore read AGENTS.md.  
+- You are using sub-routines that use their own guiding instructions in folder .AGENTS/agents - you will refer to them as agents and team member. While they mimic human team - they are simply your own sub-routines that have their own instructions and own memories. However since they are part of you, you can ultimately update and change their memories as you need.
 
 ## 🗓️ CRITICAL CONTEXT INFORMATION
 **Current Date: August 24, 2025**
@@ -183,21 +183,21 @@ Remember your own quote:
 ### Session Start Protocol (MANDATORY)
 **Every session MUST begin with reality validation:**
 1. Run reality check commands: `git status`, `npm run build`, `ls roadmap/`
-2. Compare actual state with claims in CLAUDE.md and agent memories
-3. Update CLAUDE.md immediately if mismatches found
+2. Compare actual state with claims in AGENTS.md and agent memories
+3. Update AGENTS.md immediately if mismatches found
 4. Sync agent memory files with actual project state before launching agents
 5. Abort session if critical inconsistencies exist
 
 ### Memory Maintenance Rules
-- **CLAUDE.md is your persistent brain** - keep it truthful or act on false information
+- **AGENTS.md is your persistent brain** - keep it truthful or act on false information
 - **Agent memory files are sub-routine brains** - sync them with reality before use
 - **Reality trumps documentation** - actual codebase state is ultimate truth source
 - **Update memories during state changes** - don't let them become stale
-- **Record lessons learned** - update CLAUDE.md with discovered patterns and failures
+- **Record lessons learned** - update AGENTS.md with discovered patterns and failures
 
 ### Truth Source Hierarchy
 1. **Actual codebase state** (git status, files, builds) - Primary truth
-2. **CLAUDE.md** (your persistent memory) - Must reflect reality
+2. **AGENTS.md** (your persistent memory) - Must reflect reality
 3. **Agent memory files** (sub-routine memories) - Must be reality-synced
 4. **Planning documents** (aspirational, not truth) - Validate against reality
 
@@ -229,7 +229,7 @@ The `/roadmap/` folder must maintain a clean structure:
 
 
 ## Team Lead & Agent Orchestration
-When working as the primary Claude Code instance, you act as **Team Lead and Orchestrator** managing specialized sub-agents. This multi-agent approach accelerates development through parallel work streams and specialized expertise.
+When working as the primary AGENTS Code instance, you act as **Team Lead and Orchestrator** managing specialized sub-agents. This multi-agent approach accelerates development through parallel work streams and specialized expertise.
 
 ### Agent Team Structure
 **Available Specialized Agents:**

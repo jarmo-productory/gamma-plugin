@@ -10,8 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { User, ArrowLeft, Check, X, AlertCircle, Shield, Bell, Eye, EyeOff, Loader2 } from 'lucide-react'
-import Link from 'next/link'
+import { User, ArrowLeft, Check, AlertCircle, Copy, Loader2 } from 'lucide-react'
+// No back-link navigation; use sidebar and header nav only
 import { createClient } from '@/utils/supabase/client'
 import DeleteAccountClient from './DeleteAccountClient'
 
@@ -224,15 +224,9 @@ export default function AccountClient({ user }: AccountClientProps) {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Dashboard
-              </Link>
-            </Button>
+          <div className="w-full">
+            <div className="text-center py-8">Loading profile...</div>
           </div>
-          <div className="text-center py-8">Loading profile...</div>
         </div>
       </AppLayout>
     )
@@ -247,123 +241,124 @@ export default function AccountClient({ user }: AccountClientProps) {
           <h1 className="text-lg font-semibold">Account</h1>
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pb-8">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Link>
-          </Button>
-        </div>
-        
-        {/* Success Message */}
-        {successMessage && (
-          <Alert className="border-green-200 bg-green-50">
-            <Check className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              {successMessage}
-            </AlertDescription>
-          </Alert>
-        )}
+        <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="w-full">
 
-        {/* Error Message */}
-        {error && (
-          <Alert className="border-red-200 bg-red-50">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              {error}
-            </AlertDescription>
-          </Alert>
-        )}
+          {successMessage && (
+            <Alert className="border-green-200 bg-green-50 mb-4">
+              <Check className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                {successMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+          {error && (
+            <Alert className="border-red-200 bg-red-50 mb-4">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
 
-        <div className="grid gap-4 max-w-2xl">
-          {/* Profile Information Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                Manage your personal account information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Name Field */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={nameValue}
-                  onChange={(e) => setNameValue(e.target.value)}
-                  placeholder="Enter your name"
-                  maxLength={255}
-                  disabled={saving}
-                />
-              </div>
-
-              {/* Email Field (Read Only) */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  value={profile?.email || ''}
-                  readOnly
-                  className="bg-muted"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Account Overview Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Overview</CardTitle>
-              <CardDescription>
-                Basic information about your account
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Account created
-                  </Label>
-                  <p className="text-sm">
-                    {profile?.created_at ? formatDate(profile.created_at) : 'Unknown'}
-                  </p>
+          <div className="space-y-8">
+            <Card className="bg-card border border-border/60 shadow-sm">
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>Manage your personal account information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2 max-w-xl">
+                  <Label className="text-sm">Name</Label>
+                  <div className="flex gap-3">
+                    <Input
+                      id="name"
+                      value={nameValue}
+                      onChange={(e) => setNameValue(e.target.value)}
+                      placeholder="Your name"
+                      className="flex-1"
+                      maxLength={255}
+                      disabled={saving}
+                    />
+                    <Button onClick={handleSaveProfile} disabled={saving || !nameValue.trim()}>
+                      {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Save
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Account ID
-                  </Label>
-                  <p className="text-sm font-mono truncate">
-                    {profile?.id || 'Unknown'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Save Button */}
-          <div className="flex justify-end pt-4">
-            <Button
-              onClick={handleSaveProfile}
-              disabled={saving || !nameValue.trim()}
-              className="min-w-24"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
-            </Button>
+                <div className="space-y-2 max-w-xl">
+                  <Label className="text-sm">Email</Label>
+                  <div className="flex items-center gap-3">
+                    <Input disabled value={profile?.email ?? ''} className="flex-1" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border border-border/60 shadow-sm">
+              <CardHeader>
+                <CardTitle>Account Overview</CardTitle>
+                <CardDescription>Basic information about your account</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm">Account created</Label>
+                  <div className="px-4 py-3 bg-muted rounded-lg font-medium">
+                    {profile?.created_at ? formatDate(profile.created_at) : '—'}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Account ID</Label>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 px-4 py-3 bg-muted rounded-lg font-mono text-sm truncate">
+                      {profile?.id ?? '—'}
+                    </div>
+                    {profile?.id && (
+                      <Button variant="ghost" className="ml-3" onClick={() => navigator.clipboard && navigator.clipboard.writeText(profile.id)} title="Copy account ID">
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border border-border/60 shadow-sm">
+              <CardHeader>
+                <CardTitle>Notifications</CardTitle>
+                <CardDescription>Choose which updates you want to receive</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Email notifications</div>
+                    <div className="text-sm text-muted-foreground">Account and product updates</div>
+                  </div>
+                  <Switch
+                    checked={emailNotifications}
+                    onCheckedChange={(v) => handleNotificationChange('email', v)}
+                    disabled={updatingNotifications}
+                  />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Marketing emails</div>
+                    <div className="text-sm text-muted-foreground">Occasional tips and announcements</div>
+                  </div>
+                  <Switch
+                    checked={marketingNotifications}
+                    onCheckedChange={(v) => handleNotificationChange('marketing', v)}
+                    disabled={updatingNotifications}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <DeleteAccountClient />
           </div>
         </div>
-      </div>
-      <div className="p-4 pt-0 max-w-2xl">
-        <DeleteAccountClient />
       </div>
     </AppLayout>
   )

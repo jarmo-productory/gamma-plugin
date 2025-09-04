@@ -43,6 +43,22 @@ export class AuthManager {
     session: null,
     lastChecked: new Date().toISOString(),
   };
+  
+  // Sprint 27 Fix: Add authentication caching to prevent excessive API calls
+  private authCache: {
+    result: boolean;
+    timestamp: number;
+    isValid(): boolean;
+  } = {
+    result: false,
+    timestamp: 0,
+    isValid() {
+      return Date.now() - this.timestamp < 30000; // 30 second cache
+    }
+  };
+  private tokenWatcherId: NodeJS.Timeout | number | null = null;
+  private readonly TOKEN_CHECK_INTERVAL_MS = 300000; // 5 minutes (much less aggressive)
+  private readonly AUTH_CACHE_DURATION = 30000; // 30 seconds cache
 
   constructor(storage?: StorageManager) {
     this.storage = storage || new StorageManager();
@@ -54,7 +70,10 @@ export class AuthManager {
     try {
       // Initialize with device-based authentication state
       await this.updateAuthState();
-      console.log('[AuthManager] Initialization complete');
+      
+      // Start token expiry monitoring
+      this.startTokenWatcher();
+      console.log('[AuthManager] Initialization complete with token monitoring');
     } catch (error) {
       console.error('[AuthManager] Failed to initialize:', error);
     }
@@ -99,19 +118,42 @@ export class AuthManager {
 
 
   async isAuthenticated(): Promise<boolean> {
-    // For device-based auth, validate token with server instead of just checking presence
-    const token = await deviceAuth.getStoredToken();
-    if (token && token.token) {
-      try {
-        // Try to get user profile to validate token
-        const user = await this.getCurrentUser();
-        return !!user; // Returns true only if we can successfully get user data
-      } catch (error) {
-        console.warn('[AuthManager] Token validation failed:', error);
-        return false;
-      }
+    // Sprint 27 Fix: Check cache first to prevent excessive API calls
+    if (this.authCache.isValid()) {
+      return this.authCache.result;
     }
-    return this.authState.isAuthenticated;
+
+    // For device-based auth, first do lightweight local check
+    const token = await deviceAuth.getStoredToken();
+    if (!token || !token.token) {
+      this.authCache.result = false;
+      this.authCache.timestamp = Date.now();
+      return false;
+    }
+
+    // Check if token is obviously expired locally first
+    if (token.expiresAt && new Date(token.expiresAt) <= new Date()) {
+      this.authCache.result = false;
+      this.authCache.timestamp = Date.now();
+      return false;
+    }
+
+    try {
+      // Only make API call if token appears valid locally
+      const user = await this.getCurrentUser();
+      const result = !!user;
+      
+      // Update cache
+      this.authCache.result = result;
+      this.authCache.timestamp = Date.now();
+      
+      return result;
+    } catch (error) {
+      console.warn('[AuthManager] Token validation failed:', error);
+      this.authCache.result = false;
+      this.authCache.timestamp = Date.now();
+      return false;
+    }
   }
 
   async getCurrentUser(): Promise<UserProfile | null> {
@@ -169,8 +211,98 @@ export class AuthManager {
   }
 
   async logout(): Promise<void> {
+    this.stopTokenWatcher();
     await deviceAuth.clearToken();
     this.updateAuthState();
+  }
+
+  /**
+   * Sprint 27: Start token expiry monitoring
+   * Checks token expiry every 10 seconds and handles automatic logout/refresh
+   */
+  private startTokenWatcher(): void {
+    if (this.tokenWatcherId) {
+      return; // Already running
+    }
+    
+    console.log('[AuthManager] Starting token expiry watcher');
+    this.tokenWatcherId = setInterval(async () => {
+      await this.checkTokenExpiry();
+    }, this.TOKEN_CHECK_INTERVAL_MS);
+  }
+
+  private stopTokenWatcher(): void {
+    if (this.tokenWatcherId) {
+      clearInterval(this.tokenWatcherId);
+      this.tokenWatcherId = null;
+      console.log('[AuthManager] Stopped token expiry watcher');
+    }
+  }
+
+  /**
+   * Sprint 27 Fix: Background token expiry check (no immediate UI updates)
+   */
+  private async checkTokenExpiry(): Promise<void> {
+    try {
+      const token = await deviceAuth.getStoredToken();
+      if (!token) {
+        return; // No token to check
+      }
+
+      const expiresAt = new Date(token.expiresAt);
+      const now = new Date();
+      const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+      
+      // Only act if token expires within 1 minute (less aggressive)
+      if (timeUntilExpiry <= 60000) {
+        console.log('[AuthManager] Token expiring within 1 minute, attempting refresh...');
+        
+        try {
+          // Attempt to refresh the token
+          const config = await import('../config/index.js').then(m => m.configManager.getConfig());
+          const apiBaseUrl = config.environment.apiBaseUrl || 'http://localhost:3000';
+          const refreshedToken = await deviceAuth.refresh(apiBaseUrl, token.token);
+          
+          if (refreshedToken) {
+            console.log('[AuthManager] Token refreshed successfully');
+            // Clear auth cache to force re-check
+            this.authCache.timestamp = 0;
+            // Emit auth state change event (decoupled from UI)
+            this.emitAuthEvent({
+              type: 'login',
+              user: this.authState.user,
+              timestamp: new Date().toISOString(),
+            });
+          } else {
+            throw new Error('Refresh returned null');
+          }
+        } catch (refreshError) {
+          console.warn('[AuthManager] Token refresh failed, marking as logged out:', refreshError);
+          
+          // Clear token and cache
+          await deviceAuth.clearToken();
+          this.authCache.timestamp = 0;
+          this.authState = {
+            isAuthenticated: false,
+            user: null,
+            session: null,
+            lastChecked: new Date().toISOString(),
+          };
+          
+          // Emit session expired event (UI will handle this separately)
+          this.emitAuthEvent({
+            type: 'session_expired',
+            user: null,
+            timestamp: new Date().toISOString(),
+          });
+          
+          // Stop monitoring since we're logged out
+          this.stopTokenWatcher();
+        }
+      }
+    } catch (error) {
+      console.error('[AuthManager] Error checking token expiry:', error);
+    }
   }
 
   async getUserPreferences(): Promise<UserPreferences> {

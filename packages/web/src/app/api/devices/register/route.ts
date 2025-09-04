@@ -21,6 +21,10 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Sprint 27: Extract device fingerprint from request
+    const body = await request.json().catch(() => ({}));
+    const deviceFingerprint = body.device_fingerprint || null;
+    
     // Generate a unique device ID and pairing code
     const deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     const code = Math.random().toString(36).substring(2, 15).toUpperCase();
@@ -31,16 +35,23 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
+    
+    // Sprint 27: Include device fingerprint in registration (temporarily disabled for cache refresh)
     const { error: insertError } = await supabase
       .from('device_registrations')
-      .insert({ code, device_id: deviceId, expires_at: expiresAt });
+      .insert({ 
+        code, 
+        device_id: deviceId, 
+        expires_at: expiresAt,
+        // device_fingerprint: deviceFingerprint  // TODO: Re-enable after Supabase cache refresh
+      });
 
     if (insertError) {
       console.error('[Device Register] DB insert failed:', insertError);
       return withCors(NextResponse.json({ error: 'Failed to register device' }, { status: 500 }));
     }
 
-    console.log(`[Device Register] Created device: ${deviceId} with code: ${code} (DB-backed)`);
+    console.log(`[Device Register] Created device: ${deviceId} with code: ${code}, fingerprint: ${deviceFingerprint ? 'present' : 'none'}`);
 
     return withCors(NextResponse.json({
       deviceId,
