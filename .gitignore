@@ -67,6 +67,9 @@ dist/
 dist-shared/
 dist-types/
 
+# Extension release artifacts
+packages/extension/*.zip
+
 # Test artifacts
 test-results/
 playwright-report/
