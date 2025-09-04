@@ -53,6 +53,11 @@ certs/
 # Local Netlify folder
 .netlify
 
+# Local tool and cache folders
+.gemini-clipboard/
+.claude/
+.gate-cache/
+
 # Build artifacts - Sprint 18 cleanup
 packages/extension/dist/
 packages/web/.next/
@@ -60,6 +65,7 @@ packages/web/out/
 *.tsbuildinfo
 dist/
 dist-shared/
+dist-types/
 
 # Test artifacts
 test-results/

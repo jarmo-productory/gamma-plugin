@@ -178,8 +178,7 @@ export default [
       'tailwind.config.js', 
       'vite.config.ts', 
       'next.config.ts', 
-      '*.config.js',
-      'packages/web-next/next.config.ts'
+      '*.config.js'
     ],
     rules: {
       '@typescript-eslint/no-require-imports': 'off', // Config files often use require
@@ -210,19 +209,7 @@ export default [
       'no-console': 'off', // Debug files need console logging
     },
   },
-  {
-    files: [
-      'packages/web-next/**/*.tsx',
-      'packages/web-next/**/*.ts'
-    ],
-    rules: {
-      'no-console': 'off', // Next.js components need console logging for debugging
-      '@typescript-eslint/no-unused-vars': ['error', { 
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_|^className$|^expect$'
-      }],
-    },
-  },
+  
   {
     ignores: [
       'dist/**',
@@ -245,7 +232,6 @@ export default [
       'packages/web/src/main-old.js', // Legacy file with issues
       'packages/web/src/main-clerk-sdk.js', // Legacy file with unused vars
       'packages/extension/scripts/**/*.js', // Extension scripts
-      'packages/web-next/scripts/**/*.mjs', // Next.js utility scripts
     ],
   },
   prettier,

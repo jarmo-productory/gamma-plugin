@@ -47,7 +47,6 @@ export default defineConfig({
       '@shared': resolve(__dirname, 'packages/shared'),
       '@extension': resolve(__dirname, 'packages/extension'),
       '@web': resolve(__dirname, 'packages/web'),
-      '@web-next': resolve(__dirname, 'packages/web-next'),
     },
   },
 });

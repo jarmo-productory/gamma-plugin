@@ -12,7 +12,6 @@ export default defineConfig(({ mode }) => {
         '@shared': resolve(__dirname, 'packages/shared'),
         '@extension': resolve(__dirname, 'packages/extension'),
         '@web': resolve(__dirname, 'packages/web'),
-        '@web-next': resolve(__dirname, 'packages/web-next'),
       },
     },
     define: {
@@ -82,18 +81,6 @@ export default defineConfig(({ mode }) => {
     }
   }
 
-  // Web application configuration
-  if (buildTarget === 'web') {
-    return {
-      ...baseConfig,
-      root: 'packages/web',
-      build: {
-        outDir: '../../dist-web',
-        emptyOutDir: true
-      }
-    }
-  }
-
   // Shared library configuration
   if (buildTarget === 'shared') {
     return {
@@ -112,5 +99,5 @@ export default defineConfig(({ mode }) => {
   }
 
   // Default fallback (shouldn't happen with explicit BUILD_TARGET)
-  throw new Error(`Unknown BUILD_TARGET: ${buildTarget}. Supported values: extension, web, shared`)
+  throw new Error(`Unknown BUILD_TARGET: ${buildTarget}. Supported values: extension, shared`)
 })

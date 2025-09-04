@@ -16,9 +16,8 @@
 
 [dev]
   framework = "#custom"
-  command = "npm run dev"
+  command = "cd packages/web && PORT=3000 npm run dev"
   port = 3000
   autoLaunch = false
 
 # Next.js handles its own routing - no redirects needed
-
