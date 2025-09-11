@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AppLayout from '@/components/layouts/AppLayout'
-import { SidebarTrigger } from '@/components/ui/sidebar'
+import { StickyHeader } from '@/components/ui/sticky-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,7 +39,11 @@ export default function IntegrationsClient({ user }: IntegrationsClientProps) {
       const response = await fetch('/api/user/devices')
       if (response.ok) {
         const data = await response.json()
-        setDevices(data.devices || [])
+        // Deduplicate devices by deviceId to prevent React key conflicts
+        const uniqueDevices = (data.devices || []).filter((device, index, arr) => 
+          arr.findIndex(d => d.deviceId === device.deviceId) === index
+        )
+        setDevices(uniqueDevices)
       } else {
         console.error('Failed to fetch devices:', response.statusText)
       }
@@ -145,13 +149,12 @@ export default function IntegrationsClient({ user }: IntegrationsClientProps) {
 
   return (
     <AppLayout user={user}>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
+      <StickyHeader>
         <div className="flex items-center gap-2 flex-1">
           <Link2 className="h-5 w-5" />
           <h1 className="text-lg font-semibold">Device Integrations</h1>
         </div>
-      </header>
+      </StickyHeader>
       <div className="flex flex-1 flex-col gap-6 p-6">
         <div className="flex items-center justify-end">
           <Button variant="outline" size="sm" onClick={fetchDevices} disabled={loading}>
@@ -204,7 +207,7 @@ export default function IntegrationsClient({ user }: IntegrationsClientProps) {
           ) : (
             <div className="grid gap-4">
               {devices.map((device) => (
-                <Card key={device.deviceId}>
+                <Card key={`${device.deviceId}-${device.connectedAt}`}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">

@@ -3,11 +3,11 @@ import { POST } from './route';
 import { createClient } from '@/utils/supabase/server';
 
 // Mock Supabase
-jest.mock('@/utils/supabase/server', () => ({
-  createClient: jest.fn()
+vi.mock('@/utils/supabase/server', () => ({
+  createClient: vi.fn()
 }));
 
-const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>;
+const mockCreateClient = createClient as vi.MockedFunction<typeof createClient>;
 const mockGlobal = global as any;
 
 describe('/api/devices/link', () => {
@@ -20,12 +20,12 @@ describe('/api/devices/link', () => {
     // Mock Supabase client
     mockSupabase = {
       auth: {
-        getUser: jest.fn()
+        getUser: vi.fn()
       }
     };
     mockCreateClient.mockResolvedValue(mockSupabase);
     
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -220,7 +220,7 @@ describe('/api/devices/link', () => {
 
   it('should handle JSON parsing errors', async () => {
     const request = {
-      json: jest.fn().mockRejectedValue(new Error('Invalid JSON'))
+      json: vi.fn().mockRejectedValue(new Error('Invalid JSON'))
     } as any;
 
     const response = await POST(request);

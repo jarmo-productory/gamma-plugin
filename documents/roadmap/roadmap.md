@@ -1,8 +1,8 @@
 # Gamma Timetable Extension Roadmap
 
-**Last Updated:** 2025-09-02  
-**Current Status:** Sprint 23 COMPLETE ✅ (Internal/Admin APIs Hardening)
-**Next Sprint (planned):** Sprint 27 — Auth & Integrations Hardening (see documents/roadmap/SPRINT-27-AUTH-AND-INTEGRATIONS-HARDENING.md)
+**Last Updated:** 2025-09-08  
+**Current Status:** Sprint 29 COMPLETE ✅ (OAuth Redirect & Env Hygiene)
+**Next Sprint (planned):** Sprint 30 — Single Timetable View (see documents/roadmap/SPRINT-30-SINGLE-TIMETABLE-VIEW.md)
 
 ---
 
@@ -296,4 +296,43 @@ Unblock extension saves and reads by aligning payload contracts and adding SECUR
 - GET/LIST/[id] use RPC-backed reads for device-token with anon client.
 
 **Acceptance:**
-- Save returns 200 and upserts by `(user_id, gamma_url)`; reads return only user’s rows; RLS respected.
+- Save returns 200 and upserts by `(user_id, gamma_url)`; reads return only user's rows; RLS respected.
+
+---
+
+### Sprint 30: Single Timetable View 📋 PLANNING
+**Status:** Ready for AI implementation  
+**Details:** See `documents/roadmap/SPRINT-30-SINGLE-TIMETABLE-VIEW.md`
+**Related Audit:** `documents/audits/single-timetable-view-expansion-audit.md`
+
+**Mission:**
+Transform timetables overview into a powerful, presenter-focused experience with dedicated single timetable views. Provide the same core functionality as the sidebar but in a more powerful, full-featured format.
+
+**Key Deliverables:**
+- Dedicated `/gamma/timetables/[id]` route with comprehensive single presentation view
+- Enhanced timeline visualization and interactive slide management
+- Professional export capabilities (CSV/XLSX) with improved formatting
+- Time editing functionality (start time, slide durations) with live preview
+- Mobile-responsive design maintaining existing UI/UX standards
+
+**Technical Approach:**
+- Leverage existing database schema (no migrations required)
+- Reuse 80%+ of existing components and API endpoints
+- Build on Sofia Sans typography and established design system
+- Maintain all existing security and authentication patterns
+
+**Success Criteria:**
+- Seamless navigation from timetables grid to detailed single view
+- Optimized performance for typical presentations
+- Full mobile responsiveness with touch-friendly controls
+- Professional presentation preparation and delivery experience
+
+**Implementation Phases:**
+- Phase 1: Route structure and core components
+- Phase 2: Interactive features and enhanced exports
+- Phase 3: Polish and responsive design
+- Phase 4: Validation and testing
+
+**Risk Assessment:** LOW - High code reuse, no database changes, clear implementation path
+
+---

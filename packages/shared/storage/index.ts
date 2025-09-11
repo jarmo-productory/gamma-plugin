@@ -398,6 +398,10 @@ export class StorageManager implements IStorageManager {
             duration: Number(item?.duration ?? 0),
           }));
         }
+        // Map server timestamp to client timestamp field
+        if (result?.updatedAt) {
+          result.timetableData.lastModified = result.updatedAt;
+        }
         console.log('[StorageManager] Successfully synced from cloud:', presentationUrl);
         
         return { success: true, data: result.timetableData };

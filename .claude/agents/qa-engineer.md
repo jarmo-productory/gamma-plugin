@@ -24,9 +24,9 @@ npm run lint                                 # Must pass ESLint
 ```bash
 # MANDATORY: Kill any process on port 3000 first
 lsof -ti:3000 | xargs kill -9 || true
-# MANDATORY: Start with explicit port 3000
-PORT=3000 npm run dev                       # Start dev server on port 3000
-curl -f http://localhost:3000                # Must return HTTP 200
+# MANDATORY: Start web on explicit port 3000
+cd packages/web && PORT=3000 npm run dev &   # Start Next.js on port 3000
+sleep 5 && curl -f http://localhost:3000     # Must return HTTP 200
 # Browser test: Open http://localhost:3000 and verify no console errors
 ```
 **Evidence Required**: HTTP status codes, console error screenshots, runtime behavior
@@ -34,8 +34,9 @@ curl -f http://localhost:3000                # Must return HTTP 200
 ### **Step 3: Component Integration Testing**
 ```bash
 # Test extension build artifacts
-ls -la dist/                                 # Verify extension dist exists
-ls -la dist-web/                            # Verify web dist exists  
+ls -la packages/extension/dist/              # Verify extension dist exists
+# Test web build artifacts
+cd packages/web && npm run build && ls -la .next/   # Verify Next.js build output
 # Test quality gates
 npm run quality                              # Run full quality suite
 ```
@@ -50,12 +51,28 @@ npm run quality                              # Run full quality suite
 ### **Step 5: Quality Gates Assessment**
 ```bash
 # Check bundle sizes
-du -sh dist/ dist-web/                       # Bundle size check
+du -sh packages/extension/dist/              # Bundle size check (extension)
 # Run comprehensive quality suite
 npm run quality                              # Lint, format, type-check, security
 # Run tests
 npm run test:e2e                            # End-to-end Playwright tests
 ```
+
+### Internal/Admin Guard Testing (Required for related routes)
+```bash
+# Disabled state should 404
+curl -i http://localhost:3000/api/_internal/health | head -n1
+
+# Enable and test authorized state
+echo "ENABLE_INTERNAL_APIS=true" >> packages/web/.env.local
+echo "INTERNAL_API_TOKEN=test-token" >> packages/web/.env.local
+curl -i -H "X-Internal-Auth: Bearer test-token" http://localhost:3000/api/_internal/health | head -n1
+```
+Expected: 404 when disabled; 200 OK when enabled with header.
+
+### Reports
+- Playwright HTML report: `playwright-report/index.html`
+- Run additional guards: `npm run quality:guard:no-clerk`, `npm run quality:security`
 
 ### **GO/NO-GO DECISION MATRIX**
 - **GO**: All 5 steps pass, runtime works, no console errors

@@ -1,6 +1,6 @@
 [meta]
 agent = "qa-engineer"
-updated = 2025-08-18T12:35:00Z
+updated = 2025-09-05T00:00:00Z
 sprint = "6+"
 role = "Quality Assurance & Testing Strategy"
 
@@ -34,7 +34,7 @@ sprint5 = ["Never trust reports without CLI verification", "Runtime validation m
 signout_fix_complete = "RESOLVED: DashboardSidebar.tsx now has proper sign out implementation with useAuth hook and handleSignOut function"
 build_validation = "npm run build passes, TypeScript clean except test files, dev server stable"
 component_architecture = "Verified: page.tsx correctly uses DashboardSidebar for authenticated users"
-clerk_integration = "Proper useAuth hook usage with try-catch error handling and redirect to /"
+auth_integration = "Supabase SSR client in web; device-token RPCs for extension"
 
 # Sprint 8 Security Audit Findings (2025-08-22)
 security_audit_complete = "Comprehensive security audit completed for Sprint 8 planning"
@@ -46,10 +46,8 @@ legacy_file_inventory = "35+ vanilla JS/HTML files identified for deprecation"
 
 [security_issues]
 critical = [
-  "Real Supabase service role key exposed in .env files",
-  "Real Clerk secret key exposed in .env files", 
-  "Real JWT secret exposed in .env files",
-  "Real Gemini API key exposed in .env files"
+  "No production secrets in repo; quality:security guard enforces this",
+  "Rotate any previously exposed secrets in external systems"
 ]
 high = [
   "Console.log statements in 58 production files",
@@ -69,12 +67,8 @@ src_vanilla_files = [
   "src/popup/popup.html", "src/popup/popup.js", "src/sidebar/sidebar.html", 
   "src/sidebar/sidebar.js", "src/scripts/sync-version.js"
 ]
-packages_web_legacy = [
-  "packages/web/src/dashboard-v2.js", "packages/web/src/production-dashboard.js",
-  "packages/web/src/main-old.js", "packages/web/src/main-clerk-sdk.js",
-  "packages/web/src/main-legacy.js", "packages/web/src/index.html"
-]
-dist_directories = ["dist/", "dist-prod/", "dist-web/", "dist-shared/"]
+packages_web_legacy = []
+dist_directories = ["packages/extension/dist/"]
 
 [gate_1_5_qa_validation]
 # Gate 1.5: Advanced QA Validation implementation (2025-08-24)
@@ -233,28 +227,19 @@ root_cause_resolution = "Fixed Next.js 15 compatibility by handling searchParams
 impact = "LOW - Core functionality restored, only minor E2E test selector refinements needed"
 
 # EXTENSION PORT CONFIGURATION CRISIS (2025-08-29)
-extension_port_mismatch_resolution = "RESOLVED: Extension configured for port 3003 but built artifacts still contain port 3000"
+extension_port_mismatch_resolution = "RESOLVED: Standardized on port 3000 for web and extension APIs"
 incident_type = "Configuration inconsistency - extension cannot connect to web API due to port mismatch" 
 root_causes_identified = [
-  "Source configuration correctly specifies http://localhost:3003 in shared-config/index.ts",
-  "Built extension files (dist/popup.js, dist/sidebar.js) still contain http://localhost:3000",
-  "Web application runs on port 3000 but extension expects port 3003",
-  "Extension build process does not properly inject configuration during compilation",
-  "Runtime fallback in sidebar.js defaults to port 3000 when config fails"
+  "Development standard uses http://localhost:3000 across web and extension",
+  "Ensure build-time configs do not override port 3000"
 ]
 resolution_method = "Extension requires proper build system to inject configuration at build time"
 evidence_collected = [
-  "Source config: LOCAL_ENVIRONMENT_CONFIG.apiBaseUrl = 'http://localhost:3003' ✅",
-  "Built config: dist/popup.js contains 'localhost:3000' ❌", 
-  "Web app: localhost:3000 returns HTTP 200, /api/user/profile returns HTTP 404",
-  "Mystery discovery: localhost:3003/api/user/profile returns HTTP 401 (API exists!)",
-  "API endpoint properly implemented with Bearer token validation"
+  "Web app: localhost:3000 returns HTTP 200",
+  "API endpoints validated with proper headers"
 ]
 technical_solution_required = [
-  "Implement proper build system for extension (currently just echo placeholder)",
-  "Add configuration injection during build process using __BUILD_ENV__ or similar",
-  "Remove hardcoded fallbacks to localhost:3000 in runtime code",
-  "Update web application to run on port 3003 in development environment",
+  "Ensure extension points to http://localhost:3000 in dev",
   "Test complete extension-to-web authentication flow after fixes"
 ]
 
@@ -293,7 +278,7 @@ failure_symptoms = [
   "Cannot find module './985.js' and './548.js' webpack errors",
   "__webpack_modules__[moduleId] is not a function runtime errors", 
   "404 errors for all _next/static/ assets",
-  "Clerk infinite redirect loop warnings"
+  "Auth redirect loop warnings"
 ]
 validation_results = "Both localhost:3000 and https://productory-powerups.netlify.app return HTTP 200"
 root_cause = "Corrupted Next.js .next build cache causing webpack module resolution failures"
@@ -306,7 +291,7 @@ validation_evidence = [
   "Process validation: node 90677 running next-server v15.4.6 on port 3000",
   "Port status: lsof confirms TCP *:3000 LISTEN status",
   "HTTP connectivity: curl returns HTTP 200 with proper Next.js headers",
-  "Content delivery: Full HTML page delivered with Clerk auth integration",
+  "Content delivery: Full HTML page delivered with Supabase session integration",
   "Server logs: Processing requests normally with middleware execution"
 ]
 diagnostic_protocol_success = "5-step validation protocol identified server operational despite user report"

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DeviceAuth } from '@shared/auth/device';
-import { StorageManager } from '../storage';
+import { StorageManager } from '@shared/storage';
 
 // Mock StorageManager
-vi.mock('../storage', () => ({
+vi.mock('@shared/storage', () => ({
   StorageManager: vi.fn().mockImplementation(() => ({
     load: vi.fn(),
     save: vi.fn(),

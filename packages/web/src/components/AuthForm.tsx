@@ -1,7 +1,7 @@
 'use client'
 
 /* eslint-disable no-undef */
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,23 @@ export default function AuthForm() {
   const [message, setMessage] = useState('')
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
   const supabase = createClient()
+
+  // Runtime environment drift detection (one-time warning)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+      const configuredUrl = process.env.NEXT_PUBLIC_APP_URL
+      const actualOrigin = window.location.origin
+      
+      if (configuredUrl && actualOrigin !== configuredUrl) {
+        console.warn(
+          '⚠️  Environment Drift Detected:\n' +
+          `   Configured: ${configuredUrl}\n` +
+          `   Actual: ${actualOrigin}\n` +
+          '   This may cause OAuth redirects to fail.'
+        )
+      }
+    }
+  }, [])
 
   // Client-side validation functions
   const validateEmail = (email: string): string => {
@@ -146,6 +163,16 @@ export default function AuthForm() {
     
     // Always redirect to dashboard - DevicePairingDashboard will handle stored pairing codes
     const redirectTo = `${location.origin}/auth/callback?next=${encodeURIComponent('/dashboard')}`;
+    
+    // Debug logging for OAuth redirectTo (when debug flag enabled)
+    if (process.env.NEXT_PUBLIC_DEBUG_AUTH === 'true') {
+      console.debug('🔒 OAuth Debug:', {
+        computedRedirectTo: redirectTo,
+        locationOrigin: location.origin,
+        configuredAppUrl: process.env.NEXT_PUBLIC_APP_URL,
+        timestamp: new Date().toISOString()
+      })
+    }
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

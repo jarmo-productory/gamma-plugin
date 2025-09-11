@@ -86,15 +86,15 @@ export async function POST(request: NextRequest) {
 
     let result;
     if (existingPresentation) {
-      // Update existing presentation
+      // Update existing presentation - let database handle updated_at timestamp
       const { data, error } = await supabase
         .from('presentations')
         .update({
           title: payload.title,
           start_time: payload.start_time || '09:00',
           total_duration: payload.total_duration || 0,
-          timetable_data: payload.timetable_data,
-          updated_at: new Date().toISOString()
+          timetable_data: payload.timetable_data
+          // Remove manual updated_at - let database trigger handle it
         })
         .eq('id', existingPresentation.id)
         .select()

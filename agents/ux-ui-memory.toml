@@ -1,12 +1,12 @@
 [meta]
 agent = "ux-ui-engineer"
-updated = 2025-08-18T12:35:00Z
+updated = 2025-09-05T00:00:00Z
 sprint = "6+"
 role = "User Experience Design & UI Consistency"
 
 [patterns]
 # Sprint 6+ UX patterns
-fouc_elimination = "ClerkLoading skeleton matching final layout"
+fouc_elimination = "Auth-aware skeletons (Supabase) matching final layout"
 loading_states = "Smooth transitions prevent jarring shifts"
 realtime = "Direct useUser() hook shows instant email"
 professional = "No localStorage lag, immediate auth status"
@@ -30,11 +30,8 @@ productory_surfaces = ["white=#FFFFFF", "surface-light=#FFFCFE", "surface-tinted
 system_colors = ["success=#16a34a", "warning=#eab308", "destructive=#dc2626"]
 
 # STYLEGUIDE SYSTEM (NEW)
-styleguide_location = "/packages/web-next/src/app/styleguide/page.tsx"
-styleguide_url = "http://localhost:3000/styleguide"
-design_tokens = "tailwind.config.js + globals.css"
-component_library = "/packages/shared/ui/"
-validation_command = "curl -I localhost:3000/styleguide"
+design_tokens = "Tailwind v4 + tokens in documents/core/design/UI_UX_Design_Spec.md"
+component_library = "packages/web/src/components/ui/*"
 
 [lessons]
 sprint6 = ["Loading skeletons must match final dimensions", "FOUC destroys trust"]

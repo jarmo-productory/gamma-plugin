@@ -20,8 +20,8 @@ deploy_time = "< 2min"
 bundle_size = "127kB optimized"
 
 [infrastructure]
-local = ["npm", "node 20.x", "next.js dev server"]
-production = ["netlify", "supabase", "clerk"]
+local = ["npm", "node 22.x", "next.js dev server (port 3000)"]
+production = ["netlify", "supabase"]
 ci_cd = ["github actions", "netlify cli", "git hooks"]
 monitoring = ["console logs", "build status", "curl health checks"]
 
@@ -45,7 +45,7 @@ ci_cd_pipeline = "GitHub Actions with Netlify deployment operational"
 deployment_trigger = "Auto-deploy on push to main branch (4-minute cycle)"
 production_parity = "User validated: 'I see in netlify the same thing I see in localhost'"
 next_js_config = "Removed standalone mode, added explicit @netlify/plugin-nextjs"
-environment_vars = "Clerk authentication configured for production builds"
+environment_vars = "Supabase authentication configured for production builds; internal/admin guards enabled via env"
 build_validation = "0 TypeScript errors, clean builds achieved"
 github_actions = "Automated build/test/deploy workflow operational"
 

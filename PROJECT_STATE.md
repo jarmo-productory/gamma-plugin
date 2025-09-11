@@ -1,8 +1,8 @@
 # Project State & Mission: Gamma Timetable Extension
 
-**Last Updated:** 2025-09-01 by Codex Auditor  
+**Last Updated:** 2025-09-05 by Codex CLI  
 **Current Sprint:** Sprint-21 Clerk Removal & Supabase Standardization COMPLETE ✅  
-**Recent Focus:** Supabase-only authentication; removal of all Clerk traces; CI guardrails
+**Recent Focus:** Supabase-only authentication; internal/admin guardrails; CI quality gates
 
 ---
 
@@ -15,70 +15,62 @@ Transform the Gamma Timetable Extension from a standalone browser tool into a cl
 ## 📊 Current Project Status
 
 ### **Latest Updates - Sprint-21 Clerk Removal COMPLETE ✅**
-- ✅ **Supabase-only Auth**: Codebase uses Supabase Auth exclusively (no `@clerk/*`)
-- ✅ **ESLint/CI Guards**: ESLint forbids Clerk imports; CI scans code paths for Clerk usage
-- ✅ **Schema Policies**: Migrations switch RLS to `auth_id` and drop `clerk_id`
-- ✅ **Extension Manifests**: No Clerk allowlists; builds validated clean
-- ✅ **Docs Updated**: Core guidance updated to reflect Supabase-only auth
-- 🔎 **Evidence**: See `documents/SPRINT-21-IMPLEMENTATION-EVIDENCE.md`
+- ✅ Supabase-only Auth across web; device-token RPCs on extension
+- ✅ ESLint/CI Guards to prevent Clerk reintroduction and secret exposure
+- ✅ Schema policies aligned to `auth_id`; Clerk artifacts removed
+- ✅ Docs updated to reflect Supabase-only model
+- 🔎 Evidence: `documents/SPRINT-21-IMPLEMENTATION-EVIDENCE.md`
 
 ---
 
 ## 🚀 Quick Start Commands
 
 ```bash
-# Development Environment (Dual-Environment System)
-npm run dev:web          # Web dashboard + Netlify functions (http://localhost:3000)
-npm run dev              # Extension development (npm run build:local → dist/ folder)
+# Development Environment
+PORT=3000 npm run dev:web  # Web dashboard on http://localhost:3000
+npm run dev                # Extension development (Vite)
+npm run dev:full-stack    # Run web (3000) + extension together
 
-# Next.js Development (packages/web-next/)
-cd packages/web-next && npm run dev  # Next.js app (http://localhost:3001)
+# Extension Build & Package
+npm run build:extension   # Build extension → packages/extension/dist/
+npm run package           # Zip extension from packages/extension/dist/
+npm run build:prod        # Build with BUILD_ENV=production (same output path)
 
-# Production System
-npm run build:prod       # Production extension build (→ dist-prod/ folder)
-npm run package:prod     # Create production distributable ZIP
-npm run build:local      # Local development build (→ dist/ folder)
-npm run package:local    # Create local development ZIP
+# Quality & Testing
+npm run lint              # ESLint
+npm run quality           # Full quality suite (includes security guards)
 
-# Quality & Testing  
-npm run lint             # ESLint check
-npm run quality          # Lint + format + type check
-
-# Database Management
-supabase start           # Start local Supabase stack
-supabase db reset        # Reset with latest migrations
+# Database
+# Development uses remote Supabase for production parity
 ```
 
 ### **Current URLs**
-- **Next.js Application**: ✅ RUNNING - http://localhost:3000 (connected to remote database)
-- **Production Environment**: ✅ https://productory-powerups.netlify.app (AUTO-DEPLOYS on push to main)
-- **Remote Database**: ✅ CONNECTED - https://dknqqcnnbcqujeffbmmb.supabase.co (localhost + production)
-- **Database Test Endpoint**: ✅ http://localhost:3000/api/test-db (validates connection)
-- **Extension Development**: Load unpacked from `dist/` folder in Chrome (localhost APIs)
-- **Extension Production**: Load unpacked from `dist-prod/` folder in Edge (production APIs)
+- Web (Next.js): http://localhost:3000 (connected to remote database)
+- Production: https://productory-powerups.netlify.app (auto-deploys on main)
+- Remote Database: https://dknqqcnnbcqujeffbmmb.supabase.co
+- DB Test Endpoint: http://localhost:3000/api/test-db
+- Extension Dev: Load unpacked from `packages/extension/dist/` in Chrome
 
 ### **Authentication Status**
-- **Supabase Auth**: ✅ Active for web; device tokens for extension via secure RPCs
-- **RLS Compliance**: ✅ Enforced with `auth_id` policies
-- **E2E Testing**: ✅ Device pairing and profile flows validated
+- Supabase Auth: Active for web; device tokens for extension via secure RPCs
+- RLS Compliance: Enforced with `auth_id` policies
+- E2E Testing: Device pairing and profile flows validated
 
 ---
 
 ## 📋 Handoff Notes
 
 ### **Ready for Next Session**
-- ✅ **Database Integration Complete**: Phase 2 of roadmap finished successfully
-- ✅ **Remote Connection Established**: Localhost connects to production Supabase database
-- ✅ **API Migration Resolved**: Supabase publishable keys working correctly
-- ✅ **Development Workflow Simplified**: No local database instance required
-- 🔄 **Next Focus**: Phase 3 Authentication (Clerk integration with remote database)
+- ✅ Database Integration Complete: Localhost connects to production Supabase database
+- ✅ API Key Migration: Publishable keys in place
+- ✅ Workflow: No local Supabase instance required
+- 🔄 Next Focus: Internal/Admin API guard validation and QA hardening
 
 ### **Development Continuity**
-- **Active Branch**: `main` (Phase 2 database integration completed)
-- **Recent Work**: Database connection configured, API key migration resolved
-- **Architecture**: Next.js development environment connected to remote Supabase production database
-- **Quality**: Database connectivity validated via test endpoint with timestamp confirmation
-- **Next Phase**: Phase 3 Authentication implementation with Clerk + remote database integration
+- Active Branch: `main`
+- Recent Work: Remote DB connection configured; API key migration resolved
+- Architecture: Next.js on port 3000 connected to remote Supabase
+- Quality: DB connectivity validated via `/api/test-db`
 
 ---
 

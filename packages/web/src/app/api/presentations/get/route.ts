@@ -52,14 +52,18 @@ export async function GET(request: NextRequest) {
       if (!row) {
         return NextResponse.json({ error: 'Presentation not found' }, { status: 404 });
       }
-      return NextResponse.json({ success: true, timetableData: row.timetable_data });
+      return NextResponse.json({ 
+        success: true, 
+        timetableData: row.timetable_data,
+        updatedAt: row.updated_at 
+      });
     }
 
     // Web session path: RLS via SSR client
     const supabase = await createAuthenticatedSupabaseClient(authUser);
     const { data: presentation, error } = await supabase
       .from('presentations')
-      .select('timetable_data')
+      .select('timetable_data,updated_at')
       .eq('gamma_url', canonicalUrl)
       .single();
 
@@ -80,7 +84,8 @@ export async function GET(request: NextRequest) {
     // Return in format expected by extension
     return NextResponse.json({
       success: true,
-      timetableData: presentation.timetable_data
+      timetableData: presentation.timetable_data,
+      updatedAt: presentation.updated_at
     });
   } catch (error) {
     console.error('[Presentations Get] Unexpected error:', error);

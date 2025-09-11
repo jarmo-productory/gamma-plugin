@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AppLayout from '@/components/layouts/AppLayout'
-import { SidebarTrigger } from '@/components/ui/sidebar'
+import { StickyHeader } from '@/components/ui/sticky-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -216,13 +216,12 @@ export default function AccountClient({ user }: AccountClientProps) {
   if (loading) {
     return (
       <AppLayout user={user}>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
+        <StickyHeader>
           <div className="flex items-center gap-2 flex-1">
             <User className="h-5 w-5" />
             <h1 className="text-lg font-semibold">Account</h1>
           </div>
-        </header>
+        </StickyHeader>
         <div className="flex flex-1 flex-col gap-4 p-4">
           <div className="w-full">
             <div className="text-center py-8">Loading profile...</div>

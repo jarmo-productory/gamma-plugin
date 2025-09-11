@@ -53,6 +53,19 @@ This file provides guidance to AGENTS Code (AGENTS.ai/code) when working with co
 - Never use `createServiceRoleClient()` in user routes; only allowed under `/api/admin/*` or server utilities for admin/system tasks.
 - Do not create public debug/test endpoints. Middleware blocks `/api/(debug|test-*|migrate)` when internal APIs are disabled.
 - Reference: `packages/web/src/utils/internal-guard.ts`, `packages/web/src/middleware.ts`, and `documents/core/technical/security-implementation-summary.md`.
+ - Env template: see `packages/web/.env.example` for required vars.
+
+Examples
+```bash
+# Disabled (default): returns 404
+curl -i http://localhost:3000/api/_internal/health | head -n1
+
+# Enabled with header: returns 200
+export INTERNAL_API_TOKEN=dev-token
+echo "ENABLE_INTERNAL_APIS=true" >> packages/web/.env.local
+echo "INTERNAL_API_TOKEN=$INTERNAL_API_TOKEN" >> packages/web/.env.local
+curl -i -H "X-Internal-Auth: Bearer $INTERNAL_API_TOKEN" http://localhost:3000/api/_internal/health | head -n1
+```
 
 ### **PORT 3000 MANDATE (SPRINT 17 LESSON)**
 **ABSOLUTE RULE:** The web app MUST ALWAYS run on port 3000 - NEVER any other port!
@@ -281,7 +294,7 @@ When working as the primary AGENTS Code instance, you act as **Team Lead and Orc
 
 ### Agent Memory System
 **Critical for Continuity:**
-- Each agent has a dedicated memory file in `agents/[agent-name]-memory.md`
+- Each agent has a dedicated memory file in `agents/[agent-name]-memory.toml`
 - **Agents must read memory first** and update it after significant work
 - **Memory contains**: recent decisions, established patterns, current focus, technical debt
 - **Orchestrator role**: Ensure memory files stay current and cross-reference properly

@@ -83,6 +83,21 @@ When database migrations add columns but Supabase API cache hasn't refreshed:
 - Legacy public surfaces (`/api/debug/*`, `/api/test-*`, `/api/migrate`) are blocked by middleware when internal APIs are disabled. Do not create public debug/test routes.
 - See `documents/core/technical/security-implementation-summary.md` (Sprint 23) for details and examples.
 
+### **🚨 EXTENSION BUILD LOCATION MANDATE**
+**CRITICAL RULE:** Extension MUST ALWAYS build to `/packages/extension/dist/` folder, NEVER to root `/dist/`!
+
+**ABSOLUTE RULES:**
+1. **Extension builds to:** `/packages/extension/dist/` (CORRECT)
+2. **Never build to:** `/dist/` in project root (WRONG)
+3. **Chrome loads from:** `/packages/extension/dist/` only
+4. **Always verify build output location** before assuming extension is updated
+
+**Why This Matters:**
+- Chrome extension points to `/packages/extension/dist/` for loading
+- Root `/dist/` is not used by Chrome and creates confusion
+- Build must target correct location for extension to update properly
+- Version increments are meaningless if built to wrong location
+
 ### **🚨 DEVELOPMENT SERVERS MANDATE (SPRINT 17 + 26 LESSONS)**
 **CRITICAL RULE:** Know which dev server you're starting and from which directory!
 

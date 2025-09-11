@@ -8,7 +8,7 @@ describe('/api/devices/exchange', () => {
   beforeEach(() => {
     // Clear global storage before each test
     mockGlobal.deviceRegistrations = new Map();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -235,7 +235,7 @@ describe('/api/devices/exchange', () => {
 
   it('should handle JSON parsing errors', async () => {
     const request = {
-      json: jest.fn().mockRejectedValue(new Error('Invalid JSON'))
+      json: vi.fn().mockRejectedValue(new Error('Invalid JSON'))
     } as any;
 
     const response = await POST(request);

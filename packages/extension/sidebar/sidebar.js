@@ -28,6 +28,10 @@ let port = null;
 let currentTabId = null;
 let currentPresentationUrl = null; // Track the current presentation
 
+// Dirty tracking for smart sync
+let userMadeChanges = false;
+let cloudTimestamp = null;
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 let authInitialized = false;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -112,6 +116,9 @@ const updateUIWithNewSlides = async (slides, tabId) => {
         if (syncResult.success && syncResult.data) {
           console.log('[SIDEBAR] Found cloud version, merging with local...');
           const cloudTimetable = syncResult.data;
+          
+          // Store cloud timestamp for future comparisons
+          cloudTimestamp = cloudTimetable.lastModified;
           
           // Use cloud version if it's newer than local or if no local version exists
           const shouldUseCloud = !storedTimetable || 
@@ -744,7 +751,8 @@ function renderTimetable(timetable) {
 
   const timeInputComponent = createTimeInput(timetable, newStartTime => {
     currentTimetable.startTime = newStartTime;
-    const newTimetable = recalculateTimetable(currentTimetable);
+    userMadeChanges = true; // Mark as user change
+    const newTimetable = recalculateTimetable(currentTimetable, true); // Pass isUserChange=true
     
     // Only re-render if time input doesn't have focus to prevent interrupting user input
     if (!timeInputComponent._hasFocus || !timeInputComponent._hasFocus()) {
@@ -760,8 +768,28 @@ function renderTimetable(timetable) {
   const exportOptionsContainer = document.createElement('div');
   exportOptionsContainer.className = 'export-options';
   exportOptionsContainer.innerHTML = `
-    <button id="export-xlsx-btn" class="export-btn"><img src="/assets/xlsx.svg" alt="Excel">Excel</button>
-    <button id="auth-login-toolbar-btn" class="export-btn"><span>🔐</span><span id="auth-toolbar-text">Login</span></button>
+    <button id="export-xlsx-btn" class="export-btn" title="Export to Excel">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7,10 12,15 17,10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </button>
+    <button id="sync-toolbar-btn" class="export-btn" title="Sync with cloud">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/>
+        <polyline points="1 20 1 14 7 14"/>
+        <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
+    <button id="auth-login-toolbar-btn" class="export-btn" title="Login">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+        <polyline points="10,17 15,12 10,7"/>
+        <line x1="15" y1="12" x2="3" y2="12"/>
+      </svg>
+      <span id="auth-toolbar-text" style="display: none;"></span>
+    </button>
   `;
   toolbar.appendChild(exportOptionsContainer);
 
@@ -773,6 +801,59 @@ function renderTimetable(timetable) {
     const filename = `gamma-timetable-${new Date().toISOString().slice(0, 10)}.xlsx`;
     const url = URL.createObjectURL(blob);
     downloadFile(filename, url, true);
+  };
+
+  exportOptionsContainer.querySelector('#sync-toolbar-btn').onclick = async () => {
+    if (!currentPresentationUrl) {
+      showSyncMessage('No presentation to sync', 'error');
+      return;
+    }
+    
+    const syncBtn = exportOptionsContainer.querySelector('#sync-toolbar-btn');
+    const syncIcon = syncBtn.querySelector('svg');
+    
+    try {
+      // Show loading state - add spinning animation
+      syncIcon.style.animation = 'spin 1s linear infinite';
+      syncBtn.disabled = true;
+      showSyncMessage('Loading from cloud...', 'info');
+      
+      const config = configManager.getConfig();
+      const apiBaseUrl = config.environment.apiBaseUrl;
+      
+      if (config.features.cloudSync && apiBaseUrl) {
+        const result = await defaultStorageManager.syncFromCloud(currentPresentationUrl, {
+          apiBaseUrl: apiBaseUrl,
+          deviceAuth
+        });
+        
+        if (result.success && result.data) {
+          const cloudTimetable = result.data;
+          // Store cloud timestamp for future comparisons
+          cloudTimestamp = cloudTimetable.lastModified;
+          
+          // Manual sync always loads cloud version - user is explicitly requesting it
+          currentTimetable = cloudTimetable;
+          const storageKey = `timetable-${currentPresentationUrl}`;
+          await saveData(storageKey, cloudTimetable);
+          renderTimetable(cloudTimetable);
+          showSyncMessage('Loaded latest from cloud', 'success');
+        } else if (result.error === 'Presentation not found in cloud') {
+          showSyncMessage('No cloud version found for this presentation', 'info');
+        } else {
+          showSyncMessage(`Sync failed: ${result.error}`, 'error');
+        }
+      } else {
+        showSyncMessage('Cloud sync not available', 'info');
+      }
+    } catch (error) {
+      console.error('[SIDEBAR] Manual sync failed:', error);
+      showSyncMessage('Sync failed', 'error');
+    } finally {
+      // Restore button state
+      syncIcon.style.animation = '';
+      syncBtn.disabled = false;
+    }
   };
 
   const loginToolbarBtn = exportOptionsContainer.querySelector('#auth-login-toolbar-btn');
@@ -837,6 +918,16 @@ const debouncedSave = debounce(async () => {
   if (currentTimetable && currentPresentationUrl) {
     const key = `timetable-${currentPresentationUrl}`;
     
+    // Only sync to cloud if user made actual changes
+    if (!userMadeChanges) {
+      console.log('[SIDEBAR] No user changes detected, skipping auto-sync to cloud.');
+      
+      // Still save locally for UI updates
+      await saveData(key, currentTimetable);
+      console.log('[SIDEBAR] Timetable saved locally only.');
+      return;
+    }
+    
     try {
       // Get configuration for sync
       const config = configManager.getConfig();
@@ -850,7 +941,10 @@ const debouncedSave = debounce(async () => {
           title: currentTimetable.title || lastSlides[0]?.title || 'Untitled Presentation',
           enableAutoSync: true,
         });
-        console.log('[SIDEBAR] Timetable saved with cloud sync.');
+        console.log('[SIDEBAR] Timetable saved with cloud sync due to user changes.');
+        
+        // Reset the flag after successful sync
+        userMadeChanges = false;
       } else {
         // Fallback to local-only save
         await saveData(key, currentTimetable);
@@ -884,7 +978,8 @@ function handleDurationChange(event) {
   const item = currentTimetable.items.find(i => i.id === itemId);
   if (item) {
     item.duration = newDuration;
-    const newTimetable = recalculateTimetable(currentTimetable);
+    userMadeChanges = true; // Mark as user change
+    const newTimetable = recalculateTimetable(currentTimetable, true); // Pass isUserChange=true
     renderTimetable(newTimetable);
     debouncedSave();
   }
@@ -895,7 +990,7 @@ function handleDurationChange(event) {
   }
 }
 
-function recalculateTimetable(timetable) {
+function recalculateTimetable(timetable, isUserChange = false) {
   const currentTime = new Date(`1970-01-01T${timetable.startTime}:00`);
   let totalDuration = 0;
 
@@ -919,6 +1014,8 @@ function recalculateTimetable(timetable) {
     ...timetable,
     items: newItems,
     totalDuration: totalDuration,
+    // Only update timestamp if user made actual changes
+    lastModified: isUserChange ? new Date().toISOString() : (cloudTimestamp || timetable.lastModified),
   };
 }
 

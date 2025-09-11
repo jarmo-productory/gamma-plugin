@@ -1,27 +1,28 @@
 import React from 'react';
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import DevicePairing from './DevicePairing';
 
 // Mock Next.js navigation hooks
-jest.mock('next/navigation', () => ({
-  useSearchParams: jest.fn(),
-  useRouter: jest.fn()
+vi.mock('next/navigation', () => ({
+  useSearchParams: vi.fn(),
+  useRouter: vi.fn()
 }));
 
 // Mock Supabase client
-jest.mock('@/utils/supabase/client', () => ({
-  createClient: jest.fn()
+vi.mock('@/utils/supabase/client', () => ({
+  createClient: vi.fn()
 }));
 
 // Mock fetch
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
-const mockUseSearchParams = useSearchParams as jest.MockedFunction<typeof useSearchParams>;
-const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
-const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>;
-const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+const mockUseSearchParams = useSearchParams as vi.MockedFunction<typeof useSearchParams>;
+const mockUseRouter = useRouter as vi.MockedFunction<typeof useRouter>;
+const mockCreateClient = createClient as vi.MockedFunction<typeof createClient>;
+const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
 
 describe('DevicePairing Component', () => {
   let mockRouter: any;
@@ -30,24 +31,24 @@ describe('DevicePairing Component', () => {
 
   beforeEach(() => {
     mockRouter = {
-      replace: jest.fn(),
-      push: jest.fn()
+      replace: vi.fn(),
+      push: vi.fn()
     };
     mockUseRouter.mockReturnValue(mockRouter);
 
     mockSupabase = {
       auth: {
-        getUser: jest.fn()
+        getUser: vi.fn()
       }
     };
     mockCreateClient.mockReturnValue(mockSupabase);
 
     mockSearchParams = {
-      get: jest.fn()
+      get: vi.fn()
     };
     mockUseSearchParams.mockReturnValue(mockSearchParams);
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render nothing when no pairing code or wrong source', () => {
@@ -172,7 +173,7 @@ describe('DevicePairing Component', () => {
       })
     } as Response);
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<DevicePairing />);
 
     await waitFor(() => {
@@ -180,13 +181,13 @@ describe('DevicePairing Component', () => {
     });
 
     // Fast forward time to trigger dashboard redirect
-    jest.advanceTimersByTime(3000);
+    vi.advanceTimersByTime(3000);
 
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith('/dashboard');
     });
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('should show error message for unauthenticated user', async () => {

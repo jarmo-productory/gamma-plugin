@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layouts/AppLayout'
-import { SidebarTrigger } from '@/components/ui/sidebar'
+import { StickyHeader } from '@/components/ui/sticky-header'
 import { Button } from '@/components/ui/button'
 import { Calendar } from 'lucide-react'
 import TimetableGrid from './components/TimetableGrid'
@@ -32,6 +33,7 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
   const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [presentationToDelete, setPresentationToDelete] = useState<string | null>(null)
+  const router = useRouter()
 
   // Fetch presentations on component mount
   useEffect(() => {
@@ -59,11 +61,8 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
   }
 
   const handleView = (id: string) => {
-    // For now, just show the presentation data in console
-    // In future, this could navigate to a detailed view
-    const presentation = presentations.find(p => p.id === id)
-    console.log('View presentation:', presentation)
-    toast.info('View functionality coming soon!')
+    // Navigate to the detailed view
+    router.push(`/gamma/timetables/${id}`)
   }
 
   const handleExport = async (id: string) => {
@@ -118,13 +117,12 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
 
   return (
     <AppLayout user={user}>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
+      <StickyHeader>
         <div className="flex items-center gap-2 flex-1">
           <Calendar className="h-5 w-5" />
           <h1 className="text-lg font-semibold">Timetables</h1>
         </div>
-      </header>
+      </StickyHeader>
       
       <div className="flex flex-1 flex-col gap-4 p-4">
         <TimetableGrid

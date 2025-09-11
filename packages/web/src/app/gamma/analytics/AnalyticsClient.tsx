@@ -1,7 +1,7 @@
 'use client'
 
 import AppLayout from '@/components/layouts/AppLayout'
-import { SidebarTrigger } from '@/components/ui/sidebar'
+import { StickyHeader } from '@/components/ui/sticky-header'
 import { Button } from '@/components/ui/button'
 import { BarChart3, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -16,13 +16,12 @@ interface AnalyticsClientProps {
 export default function AnalyticsClient({ user }: AnalyticsClientProps) {
   return (
     <AppLayout user={user}>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
+      <StickyHeader>
         <div className="flex items-center gap-2 flex-1">
           <BarChart3 className="h-5 w-5" />
           <h1 className="text-lg font-semibold">Analytics</h1>
         </div>
-      </header>
+      </StickyHeader>
       <div className="flex flex-1 flex-col gap-4 p-4">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>

@@ -1,6 +1,6 @@
 # Sprint 29 — OAuth Redirect & Env Hygiene
 
-Status: planned
+Status: ✅ completed
 Sprint Window: 2025-09-06 → 2025-09-08
 Owners: devops-engineer, full-stack-engineer, qa-engineer
 Related audit: documents/audits/netlify-google-oauth-redirect-audit.md
@@ -31,34 +31,50 @@ Users signing in with Google from the live Netlify site are sometimes redirected
 
 ## Work Items
 
-### 1) Supabase Auth Configuration
-- Set Authentication → URL Configuration → Site URL to the production Netlify domain.
-- Add the exact production callback to Redirect URLs: `https://<prod-domain>/auth/callback`.
-- Decide preview policy and apply accordingly:
-  - Either add preview callback domains, or restrict OAuth to production only.
-- Verify Google provider is enabled and unrestricted for the Netlify domain.
+### 1) Supabase Auth Configuration (MANUAL - Web UI Required)
+**Manual Configuration Required:** Supabase CLI lacks auth configuration capabilities.
 
-### 2) Netlify Environment Alignment (Prod/Preview)
-- Ensure environment variables point to the correct Supabase project:
-  - `NEXT_PUBLIC_SUPABASE_URL=https://dknqqcnnbcqujeffbmmb.supabase.co`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_…` (publishable key format)
-  - `NEXT_PUBLIC_APP_URL=https://<prod-domain>`
-- Remove any lingering localhost values from the production context.
+- **Manual:** Set Authentication → URL Configuration → Site URL to `https://productory-powerups.netlify.app`
+- **Manual:** Add exact production callback to Redirect URLs: `https://productory-powerups.netlify.app/auth/callback`
+- **Manual:** Decide preview policy and apply accordingly:
+  - Either add preview callback domains, or restrict OAuth to production only
+- **Manual:** Verify Google provider is enabled and unrestricted for the Netlify domain
+- **CLI Verification:** `supabase projects api-keys` to verify project connection
 
-### 3) Diagnostics (Internal)
-- Ensure an internal endpoint exists: `/api/_internal/auth-config` that reports:
-  - `NEXT_PUBLIC_APP_URL`, `locationOrigin` (server-safe), and `expectedCallbackUrl`.
-- Protect it with the existing internal guard (`X-Internal-Auth` + enable flag) per policy.
+### 2) Netlify Environment Alignment (CLI-Automatable)
+**CLI-Automatable:** Full environment variable management via Netlify CLI.
 
-### 4) Build/CI Guardrails
-- Add a production‑context check that fails the build if:
+- **CLI:** Set environment variables via Netlify CLI:
+  ```bash
+  netlify env:set NEXT_PUBLIC_SUPABASE_URL https://dknqqcnnbcqujeffbmmb.supabase.co
+  netlify env:set NEXT_PUBLIC_SUPABASE_ANON_KEY sb_publishable_COSbqOFu6uAcYjI1Osmg4A_vzzNAmPM
+  netlify env:set NEXT_PUBLIC_APP_URL https://productory-powerups.netlify.app
+  ```
+- **CLI:** Remove localhost values: `netlify env:unset` for any localhost vars
+- **CLI Verification:** `netlify env:list` to confirm all values are correct
+
+### 3) Diagnostics (CLI-Implementable)
+**CLI-Implementable:** Code changes can be automated via file edits.
+
+- **CLI:** Create/verify `/api/_internal/auth-config` endpoint exists with proper reporting
+- **CLI:** Ensure internal guard protection (`X-Internal-Auth` + enable flag) per existing policy
+- **CLI:** Implement endpoint to report: `NEXT_PUBLIC_APP_URL`, `locationOrigin`, `expectedCallbackUrl`
+
+### 4) Build/CI Guardrails (CLI-Implementable) 
+**CLI-Implementable:** Build-time validation can be added to codebase.
+
+- **CLI:** Add production-context check in build process that fails if:
   - `NEXT_PUBLIC_APP_URL` contains `localhost` OR
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` does not start with `sb_publishable_`.
-- Scope the check to CI/Netlify contexts so local dev remains unaffected.
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` does not start with `sb_publishable_`
+- **CLI:** Scope check to CI/Netlify contexts (preserve local dev flexibility)
+- **CLI:** Implement in Next.js build process or separate validation script
 
-### 5) Runtime Hardening (Optional)
-- Log a one‑time warning in production if `location.origin !== NEXT_PUBLIC_APP_URL` to surface env drift.
-- Emit a debug log of the computed `redirectTo` before calling `signInWithOAuth` when internal debug flag is enabled.
+### 5) Runtime Hardening (CLI-Implementable)
+**CLI-Implementable:** Client-side validation and logging code.
+
+- **CLI:** Add one-time production warning if `location.origin !== NEXT_PUBLIC_APP_URL`
+- **CLI:** Implement debug logging for `redirectTo` computation when debug flag enabled
+- **CLI:** Add to existing auth flow components
 
 ## Acceptance Tests
 
@@ -75,10 +91,26 @@ Users signing in with Google from the live Netlify site are sometimes redirected
 
 ## Rollout Plan
 
-1. Update Supabase Auth (Site URL + Redirect URLs) for production domain.
-2. Update Netlify production/preview environment variables to match the intended Supabase project and domain.
-3. Deploy to preview; validate using internal diagnostics; then promote to production.
-4. Add CI guardrails; verify that a misconfigured env fails the build in CI.
+### Phase 1: Manual Configuration (User Required)
+1. **Manual:** Update Supabase Dashboard → Authentication → URL Configuration
+   - Site URL: `https://productory-powerups.netlify.app`
+   - Redirect URLs: `https://productory-powerups.netlify.app/auth/callback`
+
+### Phase 2: Automated Environment Setup (CLI)
+2. **CLI:** Update Netlify environment variables:
+   ```bash
+   netlify env:set NEXT_PUBLIC_APP_URL https://productory-powerups.netlify.app
+   netlify env:set NEXT_PUBLIC_SUPABASE_URL https://dknqqcnnbcqujeffbmmb.supabase.co
+   netlify env:set NEXT_PUBLIC_SUPABASE_ANON_KEY sb_publishable_COSbqOFu6uAcYjI1Osmg4A_vzzNAmPM
+   ```
+
+### Phase 3: Code Implementation (CLI)
+3. **CLI:** Implement diagnostics endpoint, CI guardrails, runtime hardening
+4. **CLI:** Deploy changes and validate using internal diagnostics
+
+### Phase 4: Validation
+5. **Manual:** Test production OAuth flow end-to-end
+6. **CLI:** Verify CI guardrails catch misconfigured environments
 
 ## Risks & Mitigations
 
@@ -96,3 +128,51 @@ Users signing in with Google from the live Netlify site are sometimes redirected
 - Policies/Guards: `packages/web/src/utils/internal-guard.ts`, `packages/web/src/middleware.ts`
 - Platform: `netlify.toml` (dev port 3000 mandate remains in effect)
 
+---
+
+## ✅ Sprint 29 Completion Summary
+
+**Completed:** 2025-09-05
+**Duration:** 1 day (2025-09-05 → 2025-09-05)
+
+### Final Status: SUCCESS ✅
+
+**Primary Goal Achieved:** Production Google OAuth now correctly redirects to `https://productory-powerups.netlify.app/auth/callback` instead of `http://localhost:3000`.
+
+### Implementation Results:
+
+**✅ Phase 1: Manual Configuration**
+- Updated Supabase Site URL to `https://productory-powerups.netlify.app`
+- Added both redirect URLs (production and localhost) 
+- **Critical Fix:** Removed trailing spaces from Site URL that caused 500 errors
+
+**✅ Phase 2: Environment Variables** 
+- Netlify environment variables already correctly configured
+- All production URLs and publishable Supabase keys verified
+
+**✅ Phase 3: Code Implementation**
+- Diagnostics endpoint: `/api/_internal/auth-config` already implemented
+- CI guardrails: Added to `next.config.js` for production environment validation
+- Runtime hardening: Added environment drift detection and debug logging to AuthForm
+
+**✅ Phase 4: Validation**
+- Production OAuth flow: Working end-to-end ✅
+- Local development OAuth: Working end-to-end ✅ 
+- Internal guard protection: Verified ✅
+- Build process: CI guardrails functional ✅
+
+### Key Lessons Learned:
+
+1. **Whitespace matters in configuration:** Trailing spaces in Supabase Site URL caused OAuth 500 errors
+2. **OAuth redirect fix successful:** Changed Site URL from localhost to production resolved the core issue
+3. **Dual environment support:** Both production and development OAuth flows working correctly
+4. **CI guardrails effective:** Production build validation prevents localhost URL deployment
+
+### Technical Debt Resolved:
+
+- ✅ Production users no longer redirected to localhost during OAuth
+- ✅ Environment configuration properly aligned across all contexts  
+- ✅ CI/CD pipeline includes configuration validation
+- ✅ Runtime diagnostics available for future troubleshooting
+
+**Sprint 29 objectives fully achieved with robust end-to-end OAuth functionality.**

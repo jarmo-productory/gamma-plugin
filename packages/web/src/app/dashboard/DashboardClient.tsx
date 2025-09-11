@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button'
 import DevicePairingDashboard from '@/components/DevicePairingDashboard'
 import AppLayout from '@/components/layouts/AppLayout'
-import { SidebarTrigger } from '@/components/ui/sidebar'
+import { StickyHeader } from '@/components/ui/sticky-header'
 
 interface DashboardClientProps {
   user: {
@@ -14,12 +14,11 @@ interface DashboardClientProps {
 export default function DashboardClient({ user }: DashboardClientProps) {
   return (
     <AppLayout user={user}>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
+      <StickyHeader>
         <div className="flex-1">
           <h1 className="text-lg font-semibold">Dashboard</h1>
         </div>
-      </header>
+      </StickyHeader>
       <div className="flex flex-1 flex-col gap-4 p-4">
         <div>
           <h2 className="text-2xl font-bold">Welcome back!</h2>

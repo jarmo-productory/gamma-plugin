@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { POST } from './route';
 
@@ -8,7 +9,7 @@ describe('/api/devices/register', () => {
   beforeEach(() => {
     // Clear global storage before each test
     mockGlobal.deviceRegistrations = new Map();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -30,7 +31,7 @@ describe('/api/devices/register', () => {
     expect(data).toHaveProperty('deviceId');
     expect(data).toHaveProperty('code');
     expect(data).toHaveProperty('expiresAt');
-    expect(data.deviceId).toMatch(/^device_\d+_[a-z0-9]+$/);
+    expect(data.deviceId).toMatch(/^device_\\d+_[a-z0-9]+$/);
     expect(data.code).toMatch(/^[A-Z0-9]+$/);
     expect(new Date(data.expiresAt)).toBeInstanceOf(Date);
   });
@@ -98,7 +99,7 @@ describe('/api/devices/register', () => {
   it('should handle errors gracefully', async () => {
     // Mock JSON parsing to throw an error
     const request = {
-      json: jest.fn().mockRejectedValue(new Error('Invalid JSON'))
+      json: vi.fn().mockRejectedValue(new Error('Invalid JSON'))
     } as any;
 
     const response = await POST(request);
@@ -164,7 +165,7 @@ expect.extend({
 });
 
 declare global {
-  namespace jest {
+  namespace Vi {
     interface Matchers<R> {
       toBeAfter(expected: Date): R;
       toBefore(expected: Date): R;

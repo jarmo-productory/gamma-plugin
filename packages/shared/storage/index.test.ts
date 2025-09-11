@@ -353,10 +353,25 @@ describe('Storage Abstraction Layer', () => {
       });
     });
 
-    it('should not add to sync queue when cloud sync disabled (default)', async () => {
+    it('should add to sync queue by default (cloud sync enabled)', async () => {
       await storageManager.save('test', { data: 'test' });
 
       const status = storageManager.getSyncQueueStatus();
+      expect(status.count).toBe(1);
+      expect(status.items).toHaveLength(1);
+      expect(status.items[0]).toMatchObject({
+        key: 'test',
+        data: { data: 'test' },
+        operation: 'save',
+        attempts: 0,
+      });
+    });
+
+    it('should not add to sync queue when cloud sync disabled', async () => {
+      const disabledSyncManager = new StorageManager({ enableCloudSync: false });
+      await disabledSyncManager.save('test', { data: 'test' });
+
+      const status = disabledSyncManager.getSyncQueueStatus();
       expect(status.count).toBe(0);
       expect(status.items).toEqual([]);
     });

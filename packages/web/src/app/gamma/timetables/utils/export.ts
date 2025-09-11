@@ -41,7 +41,6 @@ export const exportToXLSX = (presentation: Presentation) => {
   // For now, just export as CSV since we'd need to add xlsx library
   // This is a placeholder for future XLSX implementation
   exportToCSV(presentation)
-  console.log('XLSX export would be implemented with xlsx library')
 }
 
 const sanitizeFilename = (filename: string): string => {

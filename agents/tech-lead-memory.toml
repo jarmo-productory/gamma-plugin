@@ -1,15 +1,15 @@
 [meta]
 agent = "tech-lead-architect"
-updated = 2025-08-20
+updated = 2025-09-05
 sprint = "7+ Complete"
 role = "Technical Architecture & Strategy"
 
 [patterns]
 # Sprint 6+ architectural patterns
-architecture = "Direct Clerk hooks eliminate state complexity"
-ux_pattern = "ClerkLoading/ClerkLoaded prevents FOUC"
-api_design = "Server-side Clerk client for user extraction"
-database = "Bootstrap pattern syncs Clerk → Supabase reliably"
+architecture = "Supabase SSR client + RLS-aware patterns"
+ux_pattern = "Auth-aware skeletons prevent FOUC (Supabase session)"
+api_design = "Server-side Supabase client for session extraction"
+database = "RLS with auth_id; no service-role in user flows"
 validation = "E2E testing reveals gaps agent reports miss"
 
 [metrics]
@@ -21,12 +21,12 @@ build_time = "< 30s"
 
 [stack]
 frontend = ["next.js 15.4.6", "react 19", "typescript 5.x"]
-backend = ["supabase", "clerk", "netlify-functions"]
+backend = ["supabase", "netlify-functions"]
 infrastructure = ["netlify", "github-actions", "automatic-deployment"]
 deployment = ["push-to-main", "4-minute-cycle", "production-parity-validated"]
 
 [decisions]
-sprint6 = ["Next.js App Router over Pages", "Clerk over custom auth", "TOML for agent memories"]
+sprint6 = ["Next.js App Router over Pages", "Supabase Auth over custom auth", "TOML for agent memories"]
 sprint5 = ["Vanilla scaffold first approach validated", "Incremental migration successful"]
 
 [principles]

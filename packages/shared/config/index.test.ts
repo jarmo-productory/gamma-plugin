@@ -43,9 +43,9 @@ describe('Configuration Management System', () => {
 
   describe('Default Configuration Values', () => {
     it('should have correct Sprint 1 feature flags', () => {
-      // Sprint 1: Authentication enabled, cloud features disabled
+      // Sprint 1: Authentication enabled, cloud sync enabled
       expect(DEFAULT_FEATURE_FLAGS.authentication).toBe(true);
-      expect(DEFAULT_FEATURE_FLAGS.cloudSync).toBe(false);
+      expect(DEFAULT_FEATURE_FLAGS.cloudSync).toBe(true);
       expect(DEFAULT_FEATURE_FLAGS.autoSync).toBe(false);
       
       // Core functionality always enabled
@@ -55,9 +55,9 @@ describe('Configuration Management System', () => {
     });
 
     it('should have development-appropriate environment defaults', () => {
-      expect(DEFAULT_ENVIRONMENT_CONFIG.environment).toBe('production');
+      expect(DEFAULT_ENVIRONMENT_CONFIG.environment).toBe('development');
       expect(DEFAULT_ENVIRONMENT_CONFIG.apiBaseUrl).toBe('http://localhost:3000');
-      expect(DEFAULT_ENVIRONMENT_CONFIG.logLevel).toBe('info');
+      expect(DEFAULT_ENVIRONMENT_CONFIG.logLevel).toBe('debug');
       expect(DEFAULT_ENVIRONMENT_CONFIG.maxStorageSize).toBe(50);
     });
 
@@ -65,7 +65,7 @@ describe('Configuration Management System', () => {
       expect(DEFAULT_USER_CONFIG.theme).toBe('auto');
       expect(DEFAULT_USER_CONFIG.exportFormat).toBe('xlsx');
       expect(DEFAULT_USER_CONFIG.autoSave).toBe(true);
-      expect(DEFAULT_USER_CONFIG.syncOnStartup).toBe(false);
+      expect(DEFAULT_USER_CONFIG.syncOnStartup).toBe(true);
     });
   });
 

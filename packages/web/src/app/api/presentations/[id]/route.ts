@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate user (device token or Supabase session)
@@ -27,7 +27,7 @@ export async function GET(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     if (authUser.source === 'device-token') {
       const supabase = await createClient();
       const { data, error } = await supabase.rpc('rpc_get_presentation_by_id', {
@@ -105,7 +105,7 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate user (device token or Supabase session)
@@ -126,7 +126,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     if (authUser.source === 'device-token') {
       const supabase = await createClient();

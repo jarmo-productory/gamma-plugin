@@ -54,6 +54,11 @@ export default function TimetableCard({
     onView(presentation.id)
   }
 
+  const handleViewClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onView(presentation.id)
+  }
+
   // Export action is not shown in list card footer per UX guideline (max 1-2 actions; list uses primary only)
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -108,7 +113,7 @@ export default function TimetableCard({
       <CardFooter className="px-2 py-2 bg-muted/40 border-t mt-auto">
         <div className="flex w-full items-center justify-end gap-2">
           {/* Primary action only in list view, aligned right */}
-          <Button onClick={handleCardClick}>
+          <Button onClick={handleViewClick}>
             <Eye className="h-4 w-4 mr-2" />
             View
           </Button>

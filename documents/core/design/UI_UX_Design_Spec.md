@@ -57,6 +57,7 @@ Key components:
 - Inputs/Labels: `input.tsx`, `label.tsx`
 - Dialogs and Alert Dialogs: `dialog.tsx`, `alert-dialog.tsx`
 - Navigation Sidebar: `sidebar.tsx` with provider, mobile sheet, collapse states
+- Sticky Header: `sticky-header.tsx` - unified header pattern with sticky positioning
 - Cards/Badges/Separators/Skeleton/Tabs/Tooltip/Dropdown
 
 Shared library:
@@ -79,13 +80,14 @@ Code refs:
 
 ## 6. Content Screens (Standard Shell)
 
-All “content screens” (Timetables, Analytics, Settings pages, etc.) must follow the same outer frame. This keeps paddings, header height, and spacing identical across pages.
+All "content screens" (Timetables, Analytics, Settings pages, etc.) must follow the same outer frame. This keeps paddings, header height, and spacing identical across pages.
 
-- Header bar: fixed height and structure
-  - Element: `header`
-  - Classes: `flex h-16 shrink-0 items-center gap-2 border-b px-4`
-  - Contents: `SidebarTrigger`, page icon, `h1.text-lg.font-semibold` title
-  - Rationale: matches Timetables; consistent top rhythm and divider
+- Header bar: unified sticky header component (Updated 2025-09-10)
+  - Component: `StickyHeader` from `@/components/ui/sticky-header`
+  - Behavior: sticky positioning with proper z-index, automatic SidebarTrigger integration
+  - Structure: `sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-background`
+  - Contents: Built-in `SidebarTrigger`, page icon, `h1.text-lg.font-semibold` title
+  - Rationale: ensures consistent sticky behavior across all screens; single source of truth
 
 - Outer content wrapper: page body container
   - Element: `div`
@@ -133,8 +135,24 @@ Navigation pattern
   - Don’t center inner containers (`mx-auto`); avoid per-page custom paddings
   - Don’t place page titles outside the header bar
 
-Code reference example (Timetables):
-- `packages/web/src/app/gamma/timetables/TimetablesClient.tsx: header + outer wrapper`
+### StickyHeader Usage Pattern
+
+```tsx
+import { StickyHeader } from '@/components/ui/sticky-header'
+
+<StickyHeader>
+  <div className="flex items-center gap-2 flex-1">
+    <Icon className="h-5 w-5" />
+    <h1 className="text-lg font-semibold">Page Title</h1>
+  </div>
+  {/* Additional header content like action buttons */}
+</StickyHeader>
+```
+
+Code reference examples:
+- `packages/web/src/components/ui/sticky-header.tsx` - unified header component
+- `packages/web/src/app/gamma/timetables/TimetablesClient.tsx` - implementation example
+- `packages/web/src/app/gamma/timetables/[id]/TimetableDetailClient.tsx` - complex header with actions
 
 ## 7. Responsiveness
 
@@ -193,7 +211,7 @@ Code refs:
 - Exceptions: status-specific components (e.g., destructive, success) may use colored borders but keep width at 1px.
 
 ### Spacing System
-- Page shell: header `px-4`, content `p-4`, outer `gap-4`.
+- Page shell: StickyHeader provides `px-4`, content `p-4`, outer `gap-4`.
 - Card internal padding: `p-4` for both `CardContent` and `CardFooter` (footer also `border-t`).
 - Grid gaps: use `gap-6` for Timetable cards; do not override per-item margins.
 - Vertical rhythm inside content sections: `space-y-2` for field clusters, `space-y-6` for grouped blocks.
@@ -228,4 +246,7 @@ Code refs:
 
 ---
 
-Revision: 2025-08-24. This spec reflects current implementation and should be kept in sync as components evolve.
+Revision: 2025-09-10. This spec reflects current implementation and should be kept in sync as components evolve.
+
+**Recent Updates:**
+- 2025-09-10: Added `StickyHeader` component pattern for unified sticky header behavior across all content screens
