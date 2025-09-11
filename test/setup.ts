@@ -1,7 +1,11 @@
 // Global test setup
+import React from 'react';
 import { vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
+
+// Make React available globally for JSX
+global.React = React;
 
 // Cleanup after each test case
 beforeEach(() => {
@@ -80,6 +84,21 @@ beforeAll(() => {
 
 // Mock fetch globally
 global.fetch = vi.fn();
+
+// Mock Next.js headers
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(() => Promise.resolve({
+    getAll: vi.fn(() => []),
+    get: vi.fn(() => ({ name: '', value: '' })),
+    set: vi.fn(),
+    delete: vi.fn(),
+  })),
+  headers: vi.fn(() => ({
+    get: vi.fn(() => null),
+    set: vi.fn(),
+    delete: vi.fn(),
+  })),
+}));
 
 // Global teardown
 afterAll(() => {

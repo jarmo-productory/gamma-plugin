@@ -59,7 +59,7 @@ export default defineConfig({
       '@shared': resolve(__dirname, 'packages/shared'),
       '@extension': resolve(__dirname, 'packages/extension'),
       '@web': resolve(__dirname, 'packages/web'),
-      '@/': resolve(__dirname, 'packages/web/src/'), // Add @/ alias for web package
+      '@': resolve(__dirname, 'packages/web/src'), // Add @/ alias for web package
     },
   },
 });

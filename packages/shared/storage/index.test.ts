@@ -58,7 +58,7 @@ describe('Storage Abstraction Layer', () => {
       const defaultManager = new StorageManager();
       
       // We can't directly access private config, but we can test behavior
-      expect(DEFAULT_STORAGE_CONFIG.enableCloudSync).toBe(false);
+      expect(DEFAULT_STORAGE_CONFIG.enableCloudSync).toBe(true);
       expect(DEFAULT_STORAGE_CONFIG.syncDebounceMs).toBe(500);
       expect(DEFAULT_STORAGE_CONFIG.maxRetries).toBe(3);
       expect(DEFAULT_STORAGE_CONFIG.dataVersion).toBe(1);

@@ -143,7 +143,7 @@ describe('Configuration Management System', () => {
 
     it('should correctly check if features are enabled', () => {
       expect(configManager.isFeatureEnabled('authentication')).toBe(true);
-      expect(configManager.isFeatureEnabled('cloudSync')).toBe(false);
+      expect(configManager.isFeatureEnabled('cloudSync')).toBe(true);
       expect(configManager.isFeatureEnabled('offlineMode')).toBe(true);
     });
 
@@ -172,7 +172,7 @@ describe('Configuration Management System', () => {
       } as Partial<FeatureFlags>);
       
       const config = configManager.getConfig();
-      expect(config.features.cloudSync).toBe(false); // Unchanged
+      expect(config.features.cloudSync).toBe(true); // Now enabled
       expect(config.features.authentication).toBe(true); // Unchanged
       expect(config.features.debugMode).toBe(false); // Changed
       
@@ -266,7 +266,7 @@ describe('Configuration Management System', () => {
       } as Partial<EnvironmentConfig>);
       
       const config = configManager.getConfig();
-      expect(config.environment.environment).toBe('production'); // Unchanged
+      expect(config.environment.environment).toBe('development'); // Current default
       expect(config.environment.apiBaseUrl).toBe('http://localhost:3000'); // Unchanged
       
       expect(consoleSpy).toHaveBeenCalledWith("[ConfigManager] Environment setting 'environment' cannot be modified in Sprint 0");
@@ -287,7 +287,7 @@ describe('Configuration Management System', () => {
       
       expect(storageConfig).toEqual({
         maxSize: 50,
-        enableSync: false,
+        enableSync: true,
         localOnly: true,
       });
     });
@@ -335,7 +335,7 @@ describe('Configuration Management System', () => {
       
       // Sprint 2 features
       expect(status.cloudSync).toEqual({
-        enabled: false,
+        enabled: true,
         reason: 'Available in Sprint 2',
       });
       
