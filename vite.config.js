@@ -4,6 +4,7 @@ import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig(({ mode }) => {
   const buildTarget = process.env.BUILD_TARGET || 'web'
+  const buildEnv = process.env.BUILD_ENV || 'development'
   
   // Base configuration shared by all targets
   const baseConfig = {
@@ -45,10 +46,13 @@ export default defineConfig(({ mode }) => {
       plugins: [
         viteStaticCopy({
           targets: [
-            // Copy manifest and static assets
+            // Copy manifest and static assets - select based on build environment
             {
-              src: 'packages/extension/manifest.json',
-              dest: '.'
+              src: buildEnv === 'production' 
+                ? 'packages/extension/manifest.production.json' 
+                : 'packages/extension/manifest.json',
+              dest: '.',
+              rename: 'manifest.json'
             },
             {
               src: 'packages/extension/assets/*',
