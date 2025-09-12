@@ -110,6 +110,9 @@ jobs:
     - name: Install Web dependencies
       run: cd packages/web && rm -rf node_modules package-lock.json && npm install
       
+    - name: Write commit SHA for health endpoint
+      run: echo "${{ github.sha }}" > packages/web/COMMIT_SHA
+      
     - name: Build Web app for production
       run: cd packages/web && npm run build
       env:
