@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.BUILD_TARGET': JSON.stringify(buildTarget),
       'process.env.BUILD_ENV': JSON.stringify(process.env.BUILD_ENV || 'development'),
+      '__BUILD_ENV__': JSON.stringify(process.env.BUILD_ENV || 'development'),
     }
   }
 
