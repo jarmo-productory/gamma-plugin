@@ -49,9 +49,15 @@ export async function POST(request: NextRequest) {
       p_expires_at: tokenExpiresAt.toISOString(),
     });
 
-    if (rpcErr || rpcOk !== true) {
-      console.error('[Device Exchange] RPC failed:', rpcErr?.message || 'returned false');
+    if (rpcErr) {
+      console.error('[Device Exchange] RPC error:', rpcErr.message);
       return withCors(NextResponse.json({ error: 'Failed to exchange token' }, { status: 500 }));
+    }
+
+    if (rpcOk !== true) {
+      // RPC returned false - device not linked/ready yet, this is expected during polling
+      console.log('[Device Exchange] Device not linked yet, polling will continue');
+      return withCors(NextResponse.json({ error: 'Device not linked yet' }, { status: 404 }));
     }
 
     console.log(`[Device Exchange] SECURE: Generated secure token for device: ${deviceId}`);
