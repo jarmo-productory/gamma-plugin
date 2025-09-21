@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { User, ArrowLeft, Check, AlertCircle, Copy, Loader2 } from 'lucide-react'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 // No back-link navigation; use sidebar and header nav only
 import { createClient } from '@/utils/supabase/client'
 import DeleteAccountClient from './DeleteAccountClient'
