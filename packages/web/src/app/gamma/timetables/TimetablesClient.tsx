@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layouts/AppLayout'
 import { StickyHeader } from '@/components/ui/sticky-header'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from 'lucide-react'
 import TimetableGrid from './components/TimetableGrid'
 import { Presentation } from './types'
+import { usePerformanceTracker, featureFlags } from '@/utils/performance'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,13 +35,17 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [presentationToDelete, setPresentationToDelete] = useState<string | null>(null)
   const router = useRouter()
+  const { trackRender } = usePerformanceTracker('TimetablesClient');
 
-  // Fetch presentations on component mount
-  useEffect(() => {
-    fetchPresentations()
-  }, [])
+  // Track renders for performance monitoring
+  React.useEffect(() => {
+    if (featureFlags.isEnabled('performanceTracking')) {
+      trackRender('component rendered');
+    }
+  });
 
-  const fetchPresentations = async () => {
+  // Memoize fetch function to prevent unnecessary re-creation
+  const fetchPresentations = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/presentations/list')
@@ -58,14 +63,20 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, []);
 
-  const handleView = (id: string) => {
+  // Fetch presentations on component mount
+  useEffect(() => {
+    fetchPresentations()
+  }, [fetchPresentations])
+
+  // Memoize event handlers to prevent child re-renders
+  const handleView = useCallback((id: string) => {
     // Navigate to the detailed view
     router.push(`/gamma/timetables/${id}`)
-  }
+  }, [router]);
 
-  const handleExport = async (id: string) => {
+  const handleExport = useCallback(async (id: string) => {
     try {
       const presentation = presentations.find(p => p.id === id)
       if (!presentation) return
@@ -77,21 +88,21 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
       console.error('Export error:', error)
       toast.error('Export failed')
     }
-  }
+  }, [presentations]);
 
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = useCallback((id: string) => {
     setPresentationToDelete(id)
     setDeleteDialogOpen(true)
-  }
+  }, []);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!presentationToDelete) return
 
     try {
       const response = await fetch(`/api/presentations/${presentationToDelete}`, {
         method: 'DELETE'
       })
-      
+
       const data = await response.json()
 
       if (data.success) {
@@ -108,12 +119,17 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
       setDeleteDialogOpen(false)
       setPresentationToDelete(null)
     }
-  }
+  }, [presentationToDelete]);
 
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setDeleteDialogOpen(false)
     setPresentationToDelete(null)
-  }
+  }, []);
+
+  // Memoize the presentation to delete for dialog display
+  const presentationToDeleteData = useMemo(() => {
+    return presentationToDelete ? presentations.find(p => p.id === presentationToDelete) : null;
+  }, [presentationToDelete, presentations]);
 
   return (
     <AppLayout user={user}>

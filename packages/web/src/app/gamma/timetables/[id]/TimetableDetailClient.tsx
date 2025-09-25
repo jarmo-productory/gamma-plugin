@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/layouts/AppLayout'
 import { StickyHeader } from '@/components/ui/sticky-header'
 import { Button } from '@/components/ui/button'
+import { usePerformanceTracker, featureFlags } from '@/utils/performance'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,25 +41,20 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
   const [saving, setSaving] = useState(false)
   const [showSavedMessage, setShowSavedMessage] = useState(false)
   const router = useRouter()
-  
+  const { trackRender } = usePerformanceTracker('TimetableDetailClient');
+
   // Cleanup timeout refs
   const savedMessageTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Fetch presentation data on component mount
-  useEffect(() => {
-    fetchPresentation()
-  }, [presentationId])
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (savedMessageTimeoutRef.current) {
-        clearTimeout(savedMessageTimeoutRef.current)
-      }
+  // Track renders for performance monitoring
+  React.useEffect(() => {
+    if (featureFlags.isEnabled('performanceTracking')) {
+      trackRender('component rendered');
     }
-  }, [])
+  });
 
-  const fetchPresentation = async () => {
+  // Memoize fetch function to prevent unnecessary re-creation
+  const fetchPresentation = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/presentations/${presentationId}`)
@@ -79,9 +75,24 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
     } finally {
       setLoading(false)
     }
-  }
+  }, [presentationId, router]);
 
-  const handleSave = async (updatedPresentation: PresentationType) => {
+  // Fetch presentation data on component mount
+  useEffect(() => {
+    fetchPresentation()
+  }, [fetchPresentation])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (savedMessageTimeoutRef.current) {
+        clearTimeout(savedMessageTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Memoize save handler to prevent recreation on every render
+  const handleSave = useCallback(async (updatedPresentation: PresentationType) => {
     try {
       setSaving(true)
       
@@ -142,13 +153,16 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
     } finally {
       setSaving(false)
     }
-  }
+  }, [presentation]);
 
-  const handleBackToTimetables = () => {
+  // Memoize navigation handler
+  const handleBackToTimetables = useCallback(() => {
     router.push('/gamma/timetables')
-  }
+  }, [router]);
 
-  const handleExportCSV = async () => {
+  // Memoize export handlers to prevent recreation
+  const handleExportCSV = useCallback(async () => {
+    if (!presentation) return;
     try {
       await exportToEnhancedCSV(presentation)
       toast.success(`CSV exported: ${presentation.title}`)
@@ -156,9 +170,10 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
       console.error('CSV export error:', error)
       toast.error('Failed to export CSV')
     }
-  }
+  }, [presentation]);
 
-  const handleExportXLSX = async () => {
+  const handleExportXLSX = useCallback(async () => {
+    if (!presentation) return;
     try {
       await exportToXLSX(presentation)
       toast.success(`Excel file exported: ${presentation.title}`)
@@ -166,7 +181,40 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
       console.error('XLSX export error:', error)
       toast.error('Failed to export Excel file')
     }
-  }
+  }, [presentation]);
+
+  // Memoize presentation URL opener
+  const handleViewOriginal = useCallback(() => {
+    if (presentation?.presentationUrl) {
+      window.open(presentation.presentationUrl, '_blank')
+    }
+  }, [presentation?.presentationUrl]);
+
+  // Memoize computed values for better performance
+  const hasValidPresentation = useMemo(() => Boolean(presentation), [presentation]);
+
+  const presentationTitle = useMemo(() => presentation?.title || '', [presentation?.title]);
+
+  const hasOriginalUrl = useMemo(
+    () => Boolean(presentation?.presentationUrl),
+    [presentation?.presentationUrl]
+  );
+
+  // Memoize status indicator content
+  const statusIndicatorContent = useMemo(() => {
+    if (saving) {
+      return (
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Saving...
+        </div>
+      );
+    }
+    if (showSavedMessage) {
+      return <span className="text-green-600">All changes saved</span>;
+    }
+    return null;
+  }, [saving, showSavedMessage]);
 
   if (loading) {
     return (
@@ -240,7 +288,7 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
               Timetables
             </Button>
             <span className="text-muted-foreground text-lg">/</span>
-            <h1 className="text-lg font-semibold">{presentation.title}</h1>
+            <h1 className="text-lg font-semibold">{presentationTitle}</h1>
           </div>
         </div>
         
@@ -248,28 +296,21 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
         <div className="flex items-center gap-3">
           {/* Status Indicator */}
           <div className="text-sm">
-            {saving ? (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Saving...
-              </div>
-            ) : showSavedMessage ? (
-              <span className="text-green-600">All changes saved</span>
-            ) : null}
+            {statusIndicatorContent}
           </div>
-          
+
           {/* View Original Button */}
-          {presentation.presentationUrl && (
-            <Button 
-              variant="outline" 
+          {hasOriginalUrl && (
+            <Button
+              variant="outline"
               size="sm"
-              onClick={() => window.open(presentation.presentationUrl, '_blank')}
+              onClick={handleViewOriginal}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               View Original
             </Button>
           )}
-          
+
           {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -280,7 +321,7 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => handleExportCSV()}>
+              <DropdownMenuItem onClick={handleExportCSV}>
                 <FileText className="h-4 w-4 mr-3" />
                 <div className="flex flex-col">
                   <span className="font-medium">CSV Format</span>
@@ -289,8 +330,8 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
                   </span>
                 </div>
               </DropdownMenuItem>
-              
-              <DropdownMenuItem onClick={() => handleExportXLSX()}>
+
+              <DropdownMenuItem onClick={handleExportXLSX}>
                 <FileSpreadsheet className="h-4 w-4 mr-3" />
                 <div className="flex flex-col">
                   <span className="font-medium">Excel Format</span>

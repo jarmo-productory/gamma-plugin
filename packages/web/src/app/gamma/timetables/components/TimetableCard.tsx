@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,28 +16,38 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
 import { TimetableCardProps } from '../types'
+import { usePerformanceTracker, featureFlags } from '@/utils/performance'
 
-export default function TimetableCard({ 
-  presentation, 
-  onView, 
-  onExport, 
-  onDelete 
+function TimetableCardComponent({
+  presentation,
+  onView,
+  onExport,
+  onDelete
 }: TimetableCardProps) {
-  const formatDuration = (minutes: number) => {
+  const { trackRender } = usePerformanceTracker('TimetableCard');
+
+  // Track renders for performance monitoring
+  React.useEffect(() => {
+    if (featureFlags.isEnabled('performanceTracking')) {
+      trackRender('component rendered');
+    }
+  });
+  // Memoize expensive formatting functions to prevent recalculation on every render
+  const formatDuration = React.useCallback((minutes: number) => {
     if (minutes < 60) return `${minutes}min`
     const hours = Math.floor(minutes / 60)
     const remainingMins = minutes % 60
     return remainingMins > 0 ? `${hours}h ${remainingMins}min` : `${hours}h`
-  }
+  }, []);
 
-  const formatDurationCompact = (minutes: number) => {
+  const formatDurationCompact = React.useCallback((minutes: number) => {
     if (minutes < 60) return `${minutes}m`
     const h = Math.floor(minutes / 60)
     const m = minutes % 60
     return m > 0 ? `${h}h${m}m` : `${h}h`
-  }
+  }, []);
 
-  const formatUpdatedCompact = (date: Date) => {
+  const formatUpdatedCompact = React.useCallback((date: Date) => {
     const diffMs = Date.now() - date.getTime()
     const minutes = Math.floor(diffMs / 60000)
     if (minutes < 60) return `${minutes}m ago`
@@ -48,23 +59,40 @@ export default function TimetableCard({
     if (weeks < 5) return `${weeks}w ago`
     const months = Math.floor(days / 30)
     return `${months}mo ago`
-  }
+  }, []);
 
-  const handleCardClick = () => {
+  // Memoize event handlers to prevent child re-renders
+  const handleCardClick = React.useCallback(() => {
     onView(presentation.id)
-  }
+  }, [onView, presentation.id]);
 
-  const handleViewClick = (e: React.MouseEvent) => {
+  const handleViewClick = React.useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     onView(presentation.id)
-  }
+  }, [onView, presentation.id]);
 
   // Export action is not shown in list card footer per UX guideline (max 1-2 actions; list uses primary only)
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = React.useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     onDelete(presentation.id)
-  }
+  }, [onDelete, presentation.id]);
+
+  // Memoize computed values that depend on presentation data
+  const formattedDuration = React.useMemo(
+    () => formatDurationCompact(presentation.totalDuration),
+    [presentation.totalDuration, formatDurationCompact]
+  );
+
+  const formattedUpdated = React.useMemo(
+    () => formatUpdatedCompact(new Date(presentation.updatedAt)),
+    [presentation.updatedAt, formatUpdatedCompact]
+  );
+
+  const formattedDistanceToNow = React.useMemo(
+    () => formatDistanceToNow(new Date(presentation.updatedAt), { addSuffix: true }),
+    [presentation.updatedAt]
+  );
 
   return (
     <Card
@@ -84,14 +112,14 @@ export default function TimetableCard({
 
         {/* Compact meta row: Updated • Duration • Starts at */}
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title={`Updated ${formatDistanceToNow(new Date(presentation.updatedAt), { addSuffix: true })}`}>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title={`Updated ${formattedDistanceToNow}`}>
             <UploadCloud className="h-3.5 w-3.5" />
-            {formatUpdatedCompact(new Date(presentation.updatedAt))}
+            {formattedUpdated}
           </span>
           <span className="text-muted-foreground/70">•</span>
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Total duration">
             <Clock className="h-3.5 w-3.5" />
-            {formatDurationCompact(presentation.totalDuration)}
+            {formattedDuration}
           </span>
           <span className="text-muted-foreground/70">•</span>
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Starts at">
@@ -122,3 +150,35 @@ export default function TimetableCard({
     </Card>
   )
 }
+
+// Custom comparison function for React.memo to prevent unnecessary re-renders
+const areEqual = (prevProps: TimetableCardProps, nextProps: TimetableCardProps) => {
+  // If feature flag is disabled, always re-render
+  if (!featureFlags.isEnabled('reactOptimizations')) {
+    return false;
+  }
+
+  // Deep comparison of presentation object key properties
+  const presentation = prevProps.presentation;
+  const nextPresentation = nextProps.presentation;
+
+  if (presentation.id !== nextPresentation.id) return false;
+  if (presentation.title !== nextPresentation.title) return false;
+  if (presentation.updatedAt !== nextPresentation.updatedAt) return false;
+  if (presentation.totalDuration !== nextPresentation.totalDuration) return false;
+  if (presentation.slideCount !== nextPresentation.slideCount) return false;
+  if (presentation.startTime !== nextPresentation.startTime) return false;
+
+  // Function reference comparison (these should be memoized in parent)
+  if (prevProps.onView !== nextProps.onView) return false;
+  if (prevProps.onExport !== nextProps.onExport) return false;
+  if (prevProps.onDelete !== nextProps.onDelete) return false;
+
+  return true;
+};
+
+// Export optimized component with React.memo
+const TimetableCard = React.memo(TimetableCardComponent, areEqual);
+TimetableCard.displayName = 'TimetableCard';
+
+export default TimetableCard;
