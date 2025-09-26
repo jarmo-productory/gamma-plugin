@@ -3,21 +3,60 @@
   command = "cd ../../ && npm ci && cd packages/web && npm run build"
   publish = ".next"
   # Auto-deploy from main branch - GitHub Actions removed
-  
-# Build environment variables and secrets scanning configuration  
+
+# Build environment variables and secrets scanning configuration
 [build.environment]
   NODE_VERSION = "22"
+  # Build optimizations
+  NODE_OPTIONS = "--max-old-space-size=4096"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Cache optimizations
+  NPM_CONFIG_CACHE = ".npm-cache"
   # NO COMPLEX ENV VARS - MINIMAL BUILD ONLY
   SECRETS_SCAN_OMIT_PATHS = ".netlify/edge-functions/**,.github/workflows/**,node_modules/**"
 
-# Next.js plugin configuration
+# Next.js plugin configuration with performance optimizations
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    # Enable ISR for better performance
+    includeFiles = ["COMMIT_SHA"]
+    # Optimize functions
+    target = "serverless"
 
 [dev]
   framework = "#custom"
   command = "cd packages/web && PORT=3000 npm run dev"
   port = 3000
   autoLaunch = false
+
+# Performance optimizations
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Cache static assets
+    Cache-Control = "public, max-age=31536000, immutable"
+    # Security headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # Performance hints
+    X-DNS-Prefetch-Control = "on"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Preload critical resources
+[[headers]]
+  for = "/"
+  [headers.values]
+    Link = "</fonts/inter.woff2>; rel=preload; as=font; type=font/woff2; crossorigin"
 
 # Next.js handles its own routing - no redirects needed

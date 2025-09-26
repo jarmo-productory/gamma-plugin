@@ -2,8 +2,8 @@
  * Configuration Management System
  *
  * Provides feature flags and configuration management for Productory Powerups for Gamma
- * Sprint 0: All cloud/auth features disabled by default
- * Future Sprints: Enable features gradually with flags
+ * All cloud/auth features disabled by default
+ * Enable features gradually with flags
  */
 
 import { StorageManager } from '@shared/storage';
@@ -175,26 +175,24 @@ export class ConfigManager {
    */
   async initialize(): Promise<void> {
     try {
-      const stored = await this.storage.load('app_config_v3');
+      const stored = await this.storage.load('app_config_v4');
 
       if (stored && this.isValidConfig(stored)) {
         // Load existing config and apply migrations/default merging
         this.config = this.applyMigrationsAndMergeDefaults(stored);
         await this.saveConfig();
-        console.log(
-          '[ConfigManager] Loaded existing configuration (with migrations/defaults applied)'
-        );
+        // Loaded existing configuration with migrations/defaults applied
       } else {
         // Create default configuration
         this.config = this.createDefaultConfig();
         await this.saveConfig();
-        console.log('[ConfigManager] Created default configuration');
+        // Created default configuration
       }
 
       // Notify listeners of initial config
       this.notifyListeners();
     } catch (error) {
-      console.error('[ConfigManager] Failed to initialize:', error);
+      // Failed to initialize configuration
       // Fall back to default config
       this.config = this.createDefaultConfig();
     }
@@ -239,9 +237,9 @@ export class ConfigManager {
       if (modifiableFeatures.includes(key as keyof FeatureFlags) && typeof value === 'boolean') {
         allowedUpdates[key as keyof FeatureFlags] = value;
       } else if (modifiableFeatures.includes(key as keyof FeatureFlags)) {
-        console.warn(`[ConfigManager] Feature '${key}' must be boolean value`);
+        // Feature must be boolean value
       } else {
-        console.warn(`[ConfigManager] Feature '${key}' cannot be modified in Sprint 0`);
+        // Feature cannot be modified in Sprint 0
       }
     }
 
@@ -286,7 +284,7 @@ export class ConfigManager {
       if (safeFields.includes(key as keyof EnvironmentConfig)) {
         (safeUpdates as any)[key] = value;
       } else {
-        console.warn(`[ConfigManager] Environment setting '${key}' cannot be modified in Sprint 0`);
+        // Environment setting cannot be modified in Sprint 0
       }
     }
 
@@ -350,7 +348,7 @@ export class ConfigManager {
     this.config = this.createDefaultConfig();
     await this.saveConfig();
     this.notifyListeners();
-    console.log('[ConfigManager] Configuration reset to defaults');
+    // Configuration reset to defaults
   }
 
   /**
@@ -395,9 +393,17 @@ export class ConfigManager {
    * Private helper methods
    */
   private createDefaultConfig(): AppConfig {
-    console.log('[ConfigManager] Creating a new default configuration object.'); // Added for debugging
+    // Creating a new default configuration object
+    const features = { ...DEFAULT_FEATURE_FLAGS };
+
+    // Set debugMode based on environment for production cleanup
+    if (DEFAULT_ENVIRONMENT_CONFIG.environment === 'production') {
+      features.debugMode = false;
+      features.loggingEnabled = false;
+    }
+
     return {
-      features: { ...DEFAULT_FEATURE_FLAGS },
+      features,
       environment: { ...DEFAULT_ENVIRONMENT_CONFIG },
       user: { ...DEFAULT_USER_CONFIG },
       version: '0.0.7',
@@ -410,16 +416,24 @@ export class ConfigManager {
    * This is used to progressively turn on Sprint-level features (e.g., authentication in Sprint 1)
    */
   private applyMigrationsAndMergeDefaults(existing: AppConfig): AppConfig {
+    const mergedFeatures = {
+      // Prefer stored values, but ensure new flags exist
+      ...DEFAULT_FEATURE_FLAGS,
+      ...existing.features,
+    };
+
+    // Force debugMode/loggingEnabled to false in production environment (overrides stored values)
+    if (DEFAULT_ENVIRONMENT_CONFIG.environment === 'production') {
+      mergedFeatures.debugMode = false;
+      mergedFeatures.loggingEnabled = false;
+    }
+
     const merged: AppConfig = {
       ...existing,
-      features: {
-        // Prefer stored values, but ensure new flags exist
-        ...DEFAULT_FEATURE_FLAGS,
-        ...existing.features,
-      },
+      features: mergedFeatures,
       environment: {
-        ...DEFAULT_ENVIRONMENT_CONFIG,
         ...existing.environment,
+        ...DEFAULT_ENVIRONMENT_CONFIG,
       },
       user: {
         ...DEFAULT_USER_CONFIG,
@@ -442,9 +456,9 @@ export class ConfigManager {
     if (!this.config) return;
 
     try {
-      await this.storage.save('app_config_v3', this.config); // Changed to v3
+      await this.storage.save('app_config_v4', this.config); // Changed to v4 for Sprint 33
     } catch (error) {
-      console.error('[ConfigManager] Failed to save configuration:', error);
+      // Failed to save configuration
       throw error;
     }
   }
@@ -468,7 +482,7 @@ export class ConfigManager {
       try {
         listener(this.config!);
       } catch (error) {
-        console.error('[ConfigManager] Error in config listener:', error);
+        // Error in config listener
       }
     });
   }

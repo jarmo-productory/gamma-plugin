@@ -1,17 +1,17 @@
-// Sprint 0: Import authentication and configuration infrastructure
+// Import authentication and configuration infrastructure
 // These provide the foundation for future cloud sync capabilities
 import { authManager } from '@shared/auth';
 import { configManager } from '@shared/config';
 
-// Sprint 0: Infrastructure state
+// Infrastructure state
 let authInitialized = false;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 let configInitialized = false;
 
 document.addEventListener('DOMContentLoaded', async function () {
-  console.log('[POPUP] DOMContentLoaded fired');
+  // DOMContentLoaded fired
 
-  // Sprint 0: Initialize authentication and configuration infrastructure
+  // Initialize authentication and configuration infrastructure
   await initializePopupInfrastructure();
 
   // Set up sidebar opening functionality
@@ -23,11 +23,11 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 /**
  * Initialize authentication and configuration for popup
- * Sprint 0: Sets up infrastructure but keeps all cloud features disabled
+ * Sets up infrastructure but keeps all cloud features disabled
  */
 async function initializePopupInfrastructure() {
   try {
-    console.log('[POPUP] Initializing Sprint 0 infrastructure...');
+    // Initializing infrastructure
 
     // Initialize configuration manager
     await configManager.initialize();
@@ -40,9 +40,9 @@ async function initializePopupInfrastructure() {
     // Update popup UI with current state
     await updatePopupAuthStatus();
 
-    console.log('[POPUP] Sprint 0 infrastructure ready - working in offline mode');
+    // Infrastructure ready - working in offline mode
   } catch (error) {
-    console.error('[POPUP] Failed to initialize infrastructure:', error);
+    // Failed to initialize infrastructure
     // Popup should continue working even if infrastructure fails
   }
 }
@@ -81,15 +81,15 @@ function setupPopupEventListeners() {
 
   if (loginBtn) {
     loginBtn.addEventListener('click', async () => {
-      console.log('[POPUP] Login clicked - Sprint 0 stub');
-      await authManager.login(); // No-op in Sprint 0
+      // Login clicked
+      await authManager.login(); // No-op in offline mode
     });
   }
 
   if (dashboardBtn) {
     dashboardBtn.addEventListener('click', () => {
-      console.log('[POPUP] Dashboard clicked - Sprint 0 stub');
-      // In Sprint 1: Open web dashboard in new tab
+      // Dashboard clicked
+      // Open web dashboard in new tab
     });
   }
 
@@ -97,8 +97,8 @@ function setupPopupEventListeners() {
   const syncNowBtn = document.getElementById('popup-sync-now-btn');
   if (syncNowBtn) {
     syncNowBtn.addEventListener('click', async () => {
-      console.log('[POPUP] Sync now clicked - Sprint 0 stub');
-      // In Sprint 2: Trigger manual sync
+      // Sync now clicked
+      // Trigger manual sync
     });
   }
 
@@ -106,17 +106,17 @@ function setupPopupEventListeners() {
   const settingsBtn = document.getElementById('popup-settings-btn');
   if (settingsBtn) {
     settingsBtn.addEventListener('click', () => {
-      console.log('[POPUP] Settings clicked - Sprint 0 stub');
-      // In Sprint 1: Open settings in sidebar or new tab
+      // Settings clicked
+      // Open settings in sidebar or new tab
     });
   }
 
-  console.log('[POPUP] Infrastructure event listeners ready');
+  // Infrastructure event listeners ready
 }
 
 /**
  * Update authentication status display in popup
- * Sprint 0: Always shows offline status
+ * Always shows offline status
  */
 async function updatePopupAuthStatus() {
   try {
@@ -124,7 +124,7 @@ async function updatePopupAuthStatus() {
 
     const authStatus = authManager.getUIAuthStatus();
 
-    // Update auth status elements (hidden in Sprint 0)
+    // Update auth status elements (hidden by default)
     const authIcon = document.getElementById('popup-auth-icon');
     const authText = document.getElementById('popup-auth-text');
 
@@ -133,12 +133,12 @@ async function updatePopupAuthStatus() {
       authText.textContent = authStatus.message;
     }
 
-    // Update sync status (hidden in Sprint 0)
+    // Update sync status (hidden by default)
     const syncIndicator = document.getElementById('popup-sync-indicator');
     if (syncIndicator) {
       syncIndicator.className = `sync-indicator ${authStatus.status}`;
     }
   } catch (error) {
-    console.warn('[POPUP] Could not update auth status:', error);
+    // Could not update auth status
   }
 }

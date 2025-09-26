@@ -1,6 +1,6 @@
 // sidebar.js - Receives slide data and displays it in the sidebar
 
-console.log('[SIDEBAR] Script loaded');
+// Extension loaded
 
 // The version is injected by the build process, with a fallback for development
 const EXT_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'DEV';
@@ -43,14 +43,14 @@ let configInitialized = false;
  */
 function reconcileAndUpdate(newSlides) {
   if (!currentTimetable) {
-    console.log('[SIDEBAR] No current timetable, generating a new one.');
+    // Generating new timetable
     const newTimetable = generateTimetable(newSlides);
     renderTimetable(newTimetable);
     debouncedSave();
     return;
   }
 
-  console.log('[SIDEBAR] Reconciling new slide data with existing timetable.');
+  // Reconciling slide data with existing timetable
   const newItems = [];
   const existingItemsMap = new Map(currentTimetable.items.map(item => [item.id, item]));
 
@@ -77,11 +77,7 @@ function reconcileAndUpdate(newSlides) {
 }
 
 const updateUIWithNewSlides = async (slides, tabId) => {
-  console.log(
-    `[SIDEBAR] updateUIWithNewSlides called for tab ${tabId} with`,
-    slides?.length || 0,
-    'slides'
-  );
+  // Updating UI with slide data
   currentTabId = tabId;
   lastSlides = slides || [];
 
@@ -96,9 +92,7 @@ const updateUIWithNewSlides = async (slides, tabId) => {
   if (!presentationUrl) return;
 
   if (presentationUrl !== currentPresentationUrl) {
-    console.log(
-      `[SIDEBAR] Switched to new presentation: ${presentationUrl}. Loading from storage...`
-    );
+    // Loading stored timetable for new presentation
     currentPresentationUrl = presentationUrl;
 
     const timetableKey = `timetable-${presentationUrl}`;
@@ -114,7 +108,7 @@ const updateUIWithNewSlides = async (slides, tabId) => {
         });
         
         if (syncResult.success && syncResult.data) {
-          console.log('[SIDEBAR] Found cloud version, merging with local...');
+          // Found cloud version, merging with local
           const cloudTimetable = syncResult.data;
           
           // Store cloud timestamp for future comparisons
@@ -129,9 +123,9 @@ const updateUIWithNewSlides = async (slides, tabId) => {
             storedTimetable = cloudTimetable;
             // Also save to local storage for offline access
             await saveData(timetableKey, cloudTimetable);
-            console.log('[SIDEBAR] Using cloud version (newer than local).');
+            // Using cloud version (newer than local)
           } else {
-            console.log('[SIDEBAR] Using local version (newer than cloud).');
+            // Using local version (newer than cloud)
           }
         } else if (!syncResult.success && syncResult.error !== 'Presentation not found in cloud') {
           console.warn('[SIDEBAR] Cloud sync failed:', syncResult.error);
@@ -142,10 +136,10 @@ const updateUIWithNewSlides = async (slides, tabId) => {
     }
 
     if (storedTimetable) {
-      console.log('[SIDEBAR] Found stored timetable.');
+      // Found stored timetable
       currentTimetable = storedTimetable;
     } else {
-      console.log('[SIDEBAR] No stored timetable, generating a new one...');
+      // No stored timetable, generating new one
       currentTimetable = generateTimetable(slides);
     }
   }
@@ -155,9 +149,9 @@ const updateUIWithNewSlides = async (slides, tabId) => {
 };
 
 function connectToBackground() {
-  console.log('[SIDEBAR] Connecting to background script...');
+  // Connecting to background script
   port = chrome.runtime.connect({ name: 'sidebar' });
-  console.log('[SIDEBAR] Connected to background');
+  // Connected to background
 
   if (!port) {
     console.error('[SIDEBAR] Failed to create port connection');
@@ -168,7 +162,7 @@ function connectToBackground() {
   updateDebugInfo(lastSlides, 'Connected to background');
 
   port.onMessage.addListener(msg => {
-    console.log('[SIDEBAR] Received message from background:', msg);
+    // Received message from background
     if (msg.type === 'slide-data') {
       updateUIWithNewSlides(msg.slides, msg.tabId);
     } else if (msg.type === 'gamma-tab-activated') {
@@ -182,7 +176,7 @@ function connectToBackground() {
     } else if (msg.type === 'connection-error') {
       showConnectionError(msg.message, msg.canRetry, msg.tabId);
     } else if (msg.type === 'connection-warning') {
-      showConnectionWarning(msg.message);
+      // Production: Connection warning alerts disabled for end users
     } else if (msg.type === 'show-message') {
       document.getElementById('sidebar-main').innerHTML = `<p>${msg.message}</p>`;
       const titleElement = document.getElementById('timetable-title');
@@ -198,7 +192,7 @@ function connectToBackground() {
   port.onDisconnect.addListener(() => {
     port = null;
     connected = false;
-    console.log('[SIDEBAR] Disconnected from background script.');
+    // Disconnected from background script
     updateDebugInfo(lastSlides, 'Disconnected');
   });
 }
@@ -496,21 +490,31 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
 
   const authFeatureEnabled = configManager.isFeatureEnabled('authentication');
   const debugMode = configManager.isFeatureEnabled('debugMode');
+
+  // Hide/show debug section based on debugMode feature flag
+  const debugSection = document.getElementById('debug-section');
+  if (debugSection) {
+    debugSection.style.display = debugMode ? 'block' : 'none';
+  }
+
+  // If debug mode is disabled, no need to update debug info
+  if (!debugMode) return;
+
   let isAuthed = false;
   let email = '';
   if (authFeatureEnabled) {
-    // Sprint 27 Fix: Use cached auth state to prevent excessive API calls
+    // Use cached auth state to prevent excessive API calls
     if (globalAuthState !== null) {
       isAuthed = globalAuthState.isAuthenticated;
       email = globalAuthState.email;
-      console.log('[SIDEBAR] Using cached auth state:', { isAuthed, email });
+      // Using cached auth state
     } else {
       try {
         isAuthed = await authManager.isAuthenticated();
         const user = await authManager.getCurrentUser();
         email = user?.email || '';
         globalAuthState = { isAuthenticated: isAuthed, email };
-        console.log('[SIDEBAR] Auth check complete (cached for future):', { isAuthed, email });
+        // Auth check complete (cached for future)
       } catch (error) {
         console.error('[SIDEBAR] Auth check failed:', error);
         email = 'user@example.com'; // fallback
@@ -530,7 +534,7 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
   const loginBtn = document.getElementById('debug-login-btn');
   if (loginBtn) {
     loginBtn.addEventListener('click', async () => {
-      console.log('[SIDEBAR] Debug login button clicked');
+      // Debug login button clicked
       await authManager.login();
     });
   }
@@ -538,7 +542,7 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
   const logoutBtn = document.getElementById('debug-logout-btn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
-      console.log('[SIDEBAR] Debug logout button clicked');
+      // Debug logout button clicked
       await authManager.logout();
       // Refresh debug info to show updated state
       await updateDebugInfo(slides, 'Manual logout');
@@ -548,10 +552,10 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
   const refreshProfileBtn = document.getElementById('debug-refresh-profile');
   if (refreshProfileBtn) {
     refreshProfileBtn.addEventListener('click', async () => {
-      console.log('[SIDEBAR] Debug refresh profile button clicked');
+      // Debug refresh profile button clicked
       try {
         const user = await authManager.getCurrentUser();
-        console.log('[SIDEBAR] Refreshed user profile:', user);
+        // Refreshed user profile
         await updateDebugInfo(slides, 'Profile refreshed');
         // Also update the toolbar display
         await updateSyncControlsVisibility();
@@ -565,14 +569,14 @@ async function updateDebugInfo(slides = [], lastAction = 'none') {
   const clearAuthBtn = document.getElementById('debug-clear-auth');
   if (clearAuthBtn) {
     clearAuthBtn.addEventListener('click', async () => {
-      console.log('[SIDEBAR] Debug clear auth data button clicked');
+      // Debug clear auth data button clicked
       try {
         await deviceAuth.clearToken();
         // Also clear other auth-related storage
         await new Promise((resolve) => {
           chrome.storage.local.remove(['device_info_v1', 'device_token_v1', 'gamma_auth_state'], resolve);
         });
-        console.log('[SIDEBAR] Auth data cleared');
+        // Auth data cleared
         await updateDebugInfo(slides, 'Auth data cleared');
         await updateSyncControlsVisibility();
       } catch (error) {
@@ -588,13 +592,13 @@ let authButtonsWired = false;
 let globalAuthState = null;
 let authUIUpdateTimeout = null;
 
-// Sprint 27 Fix: One-time auth system setup (event listeners, etc.)
+// One-time auth system setup (event listeners, etc.)
 function setupAuthSystemOnce() {
-  console.log('[DEBUG] Setting up auth system for the first time...');
+  // Setting up auth system for the first time
   
   // Listen to auth events for decoupled UI updates
   authManager.addEventListener((event) => {
-    console.log('[DEBUG] Auth event received:', event.type);
+    // Auth event received
     if (event.type === 'login' || event.type === 'logout' || event.type === 'session_expired') {
       const isAuthenticated = event.type === 'login';
       globalAuthState = { 
@@ -607,10 +611,10 @@ function setupAuthSystemOnce() {
     }
   });
   
-  console.log('[DEBUG] Auth system setup complete');
+  // Auth system setup complete
 }
 
-// Sprint 27 Fix: Wire click events to current DOM elements (called on each render)
+// Wire click events to current DOM elements (called on each render)
 function wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText) {
   // Always wire fresh event handlers to the current DOM elements
   const currentState = globalAuthState;
@@ -618,7 +622,7 @@ function wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText) {
   if (currentState && currentState.isAuthenticated) {
     // Logout handler
     loginToolbarBtn.onclick = async () => {
-      console.log('[SIDEBAR] Toolbar logout button clicked');
+      // Toolbar logout button clicked
       try {
         await authManager.logout();
         globalAuthState = { isAuthenticated: false, email: '' };
@@ -626,10 +630,10 @@ function wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText) {
         // Update button immediately
         updateAuthButtonState(loginToolbarBtn, loginToolbarText, globalAuthState);
         
-        // Sprint 27 Fix: Also update cloud sync section immediately
+        // Also update cloud sync section immediately
         updateSyncControlsVisibilityWithCache();
         
-        console.log('[SIDEBAR] Logout completed, globalAuthState updated:', globalAuthState);
+        // Logout completed, globalAuthState updated
       } catch (err) {
         console.error('[SIDEBAR] Logout failed:', err);
       }
@@ -637,45 +641,68 @@ function wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText) {
   } else {
     // Login handler
     loginToolbarBtn.onclick = async () => {
-      console.log('[SIDEBAR] Toolbar login button clicked');
+      // Toolbar login button clicked
+      const originalText = loginToolbarText.textContent;
+      const originalDisabled = loginToolbarBtn.disabled;
+
       try {
+        // Show loading state
+        loginToolbarText.textContent = 'Loading...';
+        loginToolbarBtn.disabled = true;
+        loginToolbarBtn.title = 'Please wait...';
+
         const cfg = configManager.getConfig();
-        const apiUrl = cfg.environment.apiBaseUrl || 'http://localhost:3000';
-        const webUrl = cfg.environment.webBaseUrl || 'http://localhost:3000';
+        const apiUrl = cfg.environment.apiBaseUrl || 'https://productory-powerups.netlify.app';
+        const webUrl = cfg.environment.webBaseUrl || 'https://productory-powerups.netlify.app';
         const info = await deviceAuth.getOrRegisterDevice(apiUrl);
         const url = deviceAuth.buildSignInUrl(webUrl, info.code);
-        
+
+        // Update to show browser opening
+        loginToolbarText.textContent = 'Opening...';
+
         if (chrome?.tabs?.create) {
           chrome.tabs.create({ url });
         } else if (window?.open) {
           window.open(url, '_blank');
         }
-        
+
+        // Update to show waiting for authentication
+        loginToolbarText.textContent = 'Waiting...';
+
         const token = await deviceAuth.pollExchangeUntilLinked(apiUrl, info.deviceId, info.code);
         if (token) {
-          console.log('[SIDEBAR] Device linked; token stored.');
+          // Device linked; token stored
           const user = await authManager.getCurrentUser();
           const userEmail = user?.email || '';
           globalAuthState = { isAuthenticated: true, email: userEmail };
-          
-          // Update button immediately
+
+          // Update button immediately (this will restore normal state)
           updateAuthButtonState(loginToolbarBtn, loginToolbarText, globalAuthState);
-          
-          // Sprint 27 Fix: Also update cloud sync section immediately
+          loginToolbarBtn.disabled = false;
+
+          // Also update cloud sync section immediately
           updateSyncControlsVisibilityWithCache();
-          
-          console.log('[SIDEBAR] Login completed, globalAuthState updated:', globalAuthState);
+
+          // Login completed, globalAuthState updated
         } else {
           console.warn('[SIDEBAR] Device linking timed out.');
+          // Restore original state on timeout
+          loginToolbarText.textContent = originalText;
+          loginToolbarBtn.disabled = originalDisabled;
+          loginToolbarBtn.title = 'Click to login and enable cloud sync';
         }
       } catch (err) {
         console.error('[SIDEBAR] Web-first login failed:', err);
+        // Restore original state on error
+        loginToolbarText.textContent = originalText;
+        loginToolbarBtn.disabled = originalDisabled;
+        loginToolbarBtn.title = 'Click to login and enable cloud sync';
       }
     };
   }
 }
 
-// Sprint 27 Fix: Debounced update for ALL auth-related UI components
+// Debounced update for ALL auth-related UI components
 function debouncedUpdateAllAuthButtons(authState) {
   clearTimeout(authUIUpdateTimeout);
   authUIUpdateTimeout = setTimeout(() => {
@@ -688,14 +715,14 @@ function debouncedUpdateAllAuthButtons(authState) {
       wireButtonEventsToCurrentDOM(currentBtn, currentText);
     }
     
-    // Sprint 27 Fix: ALSO update cloud sync section with cached state
+    // Also update cloud sync section with cached state
     updateSyncControlsVisibilityWithCache();
   }, 150); // 150ms debounce
 }
 
-// Sprint 27 Fix: Perform auth check and update UI (only when needed)
+// Perform auth check and update UI (only when needed)
 async function performAuthCheckAndUpdateUI(loginToolbarBtn, loginToolbarText) {
-  console.log('[DEBUG] Performing auth check and UI update...');
+  // Performing auth check and UI update
   try {
     const authed = await authManager.isAuthenticated();
     const user = await authManager.getCurrentUser();
@@ -704,7 +731,7 @@ async function performAuthCheckAndUpdateUI(loginToolbarBtn, loginToolbarText) {
     updateAuthButtonState(loginToolbarBtn, loginToolbarText, globalAuthState);
     wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText);
     
-    console.log('[DEBUG] Auth check and UI update complete:', globalAuthState);
+    // Auth check and UI update complete
   } catch (err) {
     console.error('[DEBUG] Auth check failed:', err);
     globalAuthState = { isAuthenticated: false, email: '' };
@@ -713,7 +740,7 @@ async function performAuthCheckAndUpdateUI(loginToolbarBtn, loginToolbarText) {
   }
 }
 
-// Sprint 27 Fix: Fast button state update without rewiring events
+// Fast button state update without rewiring events
 function updateAuthButtonState(loginToolbarBtn, loginToolbarText, authState) {
   if (authState.isAuthenticated) {
     loginToolbarText.textContent = 'Logout';
@@ -722,10 +749,13 @@ function updateAuthButtonState(loginToolbarBtn, loginToolbarText, authState) {
     loginToolbarText.textContent = 'Login';
     loginToolbarBtn.title = 'Click to login and enable cloud sync';
   }
+
+  // Update sync controls visibility based on auth state
+  updateSyncControlsWithState(authState.isAuthenticated, authState.email);
 }
 
 function renderTimetable(timetable) {
-  console.log('[DEBUG] renderTimetable() called - about to recreate login button');
+  // renderTimetable() called - about to recreate login button
   currentTimetable = timetable;
   const mainContainer = document.getElementById('sidebar-main');
   if (!mainContainer) return;
@@ -788,7 +818,7 @@ function renderTimetable(timetable) {
         <polyline points="10,17 15,12 10,7"/>
         <line x1="15" y1="12" x2="3" y2="12"/>
       </svg>
-      <span id="auth-toolbar-text" style="display: none;"></span>
+      <span id="auth-toolbar-text" style="margin-left: 4px; font-size: 12px;"></span>
     </button>
   `;
   toolbar.appendChild(exportOptionsContainer);
@@ -859,20 +889,17 @@ function renderTimetable(timetable) {
   const loginToolbarBtn = exportOptionsContainer.querySelector('#auth-login-toolbar-btn');
   const loginToolbarText = exportOptionsContainer.querySelector('#auth-toolbar-text');
   
-  console.log('[DEBUG] Login button elements found:', {
-    loginToolbarBtn: !!loginToolbarBtn,
-    loginToolbarText: !!loginToolbarText
-  });
+  // Login button elements found and verified
   
-  // Sprint 27 Fix: Wire event handlers to new DOM elements but avoid redundant auth checks
+  // Wire event handlers to new DOM elements but avoid redundant auth checks
   if (loginToolbarBtn && loginToolbarText) {
     if (!authButtonsWired) {
-      console.log('[DEBUG] First time setting up auth system...');
+      // First time setting up auth system
       setupAuthSystemOnce();
       authButtonsWired = true;
     }
     
-    console.log('[DEBUG] Wiring button events to current DOM elements...');
+    // Wiring button events to current DOM elements
     wireButtonEventsToCurrentDOM(loginToolbarBtn, loginToolbarText);
     
     // Apply current auth state to button
@@ -920,11 +947,11 @@ const debouncedSave = debounce(async () => {
     
     // Only sync to cloud if user made actual changes
     if (!userMadeChanges) {
-      console.log('[SIDEBAR] No user changes detected, skipping auto-sync to cloud.');
+      // No user changes detected, skipping auto-sync to cloud
       
       // Still save locally for UI updates
       await saveData(key, currentTimetable);
-      console.log('[SIDEBAR] Timetable saved locally only.');
+      // Timetable saved locally only
       return;
     }
     
@@ -941,21 +968,21 @@ const debouncedSave = debounce(async () => {
           title: currentTimetable.title || lastSlides[0]?.title || 'Untitled Presentation',
           enableAutoSync: true,
         });
-        console.log('[SIDEBAR] Timetable saved with cloud sync due to user changes.');
+        // Timetable saved with cloud sync due to user changes
         
         // Reset the flag after successful sync
         userMadeChanges = false;
       } else {
         // Fallback to local-only save
         await saveData(key, currentTimetable);
-        console.log('[SIDEBAR] Timetable saved (local only).');
+        // Timetable saved (local only)
       }
     } catch (error) {
       console.error('[SIDEBAR] Save failed:', error);
       // Try fallback to basic saveData
       try {
         await saveData(key, currentTimetable);
-        console.log('[SIDEBAR] Timetable saved (fallback to local).');
+        // Timetable saved (fallback to local)
       } catch (fallbackError) {
         console.error('[SIDEBAR] Fallback save also failed:', fallbackError);
       }
@@ -1020,24 +1047,24 @@ function recalculateTimetable(timetable, isUserChange = false) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('[SIDEBAR] DOMContentLoaded fired');
+  // DOMContentLoaded fired
   await initializeInfrastructure();
   connectToBackground();
 });
 
 async function initializeInfrastructure() {
   try {
-    console.log('[SIDEBAR] Initializing infrastructure...');
+    // Initializing infrastructure
 
     await configManager.initialize();
     configInitialized = true;
-    console.log('[SIDEBAR] ConfigManager initialized');
+    // ConfigManager initialized
 
     await authManager.initialize();
     authInitialized = true;
-    console.log('[SIDEBAR] AuthManager initialized');
+    // AuthManager initialized
     // Auth system: Supabase Auth with device token flow
-    console.log('[SIDEBAR] Authentication: Supabase Auth (device token flow)');
+    // Authentication: Supabase Auth (device token flow)
 
     await renderSidebar();
 
@@ -1045,10 +1072,10 @@ async function initializeInfrastructure() {
 
     updateDebugInfo([], 'Infrastructure ready');
 
-    console.log('[SIDEBAR] Infrastructure ready');
+    // Infrastructure ready
   } catch (error) {
     console.error('[SIDEBAR] Failed to initialize infrastructure:', error);
-    console.log('[SIDEBAR] Continuing in fallback mode...');
+    // Continuing in fallback mode
   }
 }
 
@@ -1074,7 +1101,7 @@ async function renderAuthSection() {
 
 function setupEventListeners() {
   authManager.addEventListener(async event => {
-    console.log('[SIDEBAR] Auth state changed:', event.type);
+    // Auth state changed
     await renderAuthSection();
     await updateSyncControlsVisibility();
     updateDebugInfo(lastSlides, `Auth event: ${event.type}`);
@@ -1086,7 +1113,7 @@ function setupAuthButtons() {
   const loginBtn = document.getElementById('auth-login-btn');
   if (loginBtn) {
     loginBtn.addEventListener('click', async () => {
-      console.log('[SIDEBAR] Login button clicked');
+      // Login button clicked
       await authManager.login();
     });
   }
@@ -1094,14 +1121,14 @@ function setupAuthButtons() {
   const logoutBtn = document.getElementById('auth-logout-btn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
-      console.log('[SIDEBAR] Logout button clicked');
+      // Logout button clicked
       await authManager.logout();
     });
   }
 }
 
 /**
- * Sprint 27 Fix: Updates sync controls using cached auth state (fast, no API calls)
+ * Updates sync controls using cached auth state (fast, no API calls)
  */
 function updateSyncControlsVisibilityWithCache() {
   const cloudSyncSection = document.getElementById('cloud-sync-section');
@@ -1115,11 +1142,11 @@ function updateSyncControlsVisibilityWithCache() {
     return;
   }
 
-  // Sprint 27 Fix: Use cached auth state instead of API call
+  // Use cached auth state instead of API call
   const isAuthenticated = globalAuthState ? globalAuthState.isAuthenticated : false;
   const userEmail = globalAuthState ? globalAuthState.email : '';
 
-  console.log('[DEBUG] Updating sync controls with cached auth state:', { isAuthenticated, userEmail });
+  // Updating sync controls with cached auth state
   
   updateSyncControlsWithState(isAuthenticated, userEmail);
 }
@@ -1158,32 +1185,37 @@ async function updateSyncControlsVisibility() {
 }
 
 /**
- * Sprint 27 Fix: Common logic for updating sync controls UI based on auth state
+ * Common logic for updating sync controls UI based on auth state
  */
 function updateSyncControlsWithState(isAuthenticated, userEmail) {
   const cloudSyncSection = document.getElementById('cloud-sync-section');
+  const advancedSyncControls = document.getElementById('advanced-sync-controls');
   if (!cloudSyncSection) return;
 
   if (isAuthenticated) {
     cloudSyncSection.style.display = 'block';
-    
-    // Enable sync buttons
+    if (advancedSyncControls) advancedSyncControls.style.display = 'block';
+
+    // Show and enable sync buttons
+    const syncToolbarBtn = document.getElementById('sync-toolbar-btn');
     const saveBtn = document.getElementById('save-to-cloud-btn');
     const loadBtn = document.getElementById('load-from-cloud-btn');
     const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
-    
+
+    if (syncToolbarBtn) syncToolbarBtn.style.display = 'block';
+
     if (saveBtn) saveBtn.disabled = false;
     if (loadBtn) loadBtn.disabled = false;
     if (cloudSyncToggle) {
       cloudSyncToggle.disabled = false;
-      
+
       // Smart default: Enable cloud sync automatically for authenticated users
       // Only auto-enable if not already initialized
       if (!cloudSyncToggle.dataset.initialized) {
         cloudSyncToggle.classList.add('active');
         const textSpan = cloudSyncToggle.querySelector('.sync-btn-text');
-        
-        // Sprint 27 Fix: Use cached email instead of API call
+
+        // Use cached email instead of API call
         if (textSpan) {
           if (userEmail && userEmail !== 'user@example.com') {
             const displayEmail = userEmail.length > 25 ? userEmail.substring(0, 22) + '...' : userEmail;
@@ -1192,7 +1224,7 @@ function updateSyncControlsWithState(isAuthenticated, userEmail) {
             textSpan.textContent = 'Cloud Sync: On';
           }
         }
-        
+
         showSyncMessage('Cloud sync enabled - timetables will sync across devices', 'success');
         updateSyncIndicator('synced');
         cloudSyncToggle.dataset.initialized = 'true';
@@ -1205,16 +1237,22 @@ function updateSyncControlsWithState(isAuthenticated, userEmail) {
         }
       }
     }
-    
+
     // Set up event listeners if not already done
     setupSyncEventListeners();
-    
+
     // Update sync status display
     updateSyncIndicator('synced');
   } else {
     // Show sync section with login prompt for non-authenticated users
     cloudSyncSection.style.display = 'block';
-    
+    // Hide advanced sync controls when not authenticated
+    if (advancedSyncControls) advancedSyncControls.style.display = 'none';
+
+    // Hide sync toolbar button when not authenticated
+    const syncToolbarBtn = document.getElementById('sync-toolbar-btn');
+    if (syncToolbarBtn) syncToolbarBtn.style.display = 'none';
+
     const cloudSyncToggle = document.getElementById('cloud-sync-toggle');
     if (cloudSyncToggle) {
       cloudSyncToggle.disabled = true;
@@ -1225,7 +1263,7 @@ function updateSyncControlsWithState(isAuthenticated, userEmail) {
       // Reset initialized flag so it can be set up again when user logs in
       cloudSyncToggle.dataset.initialized = 'false';
     }
-    
+
     showSyncMessage('Login to enable cloud sync and keep timetables synced across devices', 'info');
     updateSyncIndicator('offline');
   }
@@ -1295,7 +1333,7 @@ async function handleSaveToCloud() {
       showSyncMessage('Successfully saved to cloud!', 'success');
       updateSyncIndicator('synced');
       updateLastSyncTime();
-      console.log('[SIDEBAR] Manual save to cloud successful');
+      // Manual save to cloud successful
     } else {
       throw new Error(syncResult.error || 'Failed to save to cloud');
     }
@@ -1377,7 +1415,7 @@ async function handleLoadFromCloud() {
       showSyncMessage('Successfully loaded from cloud!', 'success');
       updateSyncIndicator('synced');
       updateLastSyncTime();
-      console.log('[SIDEBAR] Manual load from cloud successful');
+      // Manual load from cloud successful
     } else if (syncResult.error === 'Presentation not found in cloud') {
       showSyncMessage('No cloud version found for this presentation', 'info');
       updateSyncIndicator('synced');
@@ -1444,7 +1482,7 @@ async function handleCloudSyncToggle() {
     updateLastSyncTime();
   }
   
-  console.log('[SIDEBAR] Cloud sync toggled:', !isActive);
+  // Cloud sync toggled
 }
 
 /**
@@ -1554,7 +1592,7 @@ async function showConflictResolutionDialog(localTimetable, cloudTimetable) {
       `Cloud version: ${cloudTime}\n\n` +
       `Which version would you like to keep?`;
     
-    // Simple confirm dialog for Sprint 2 - can be enhanced later
+    // Simple confirm dialog - can be enhanced later
     // eslint-disable-next-line no-alert, no-undef
     const useCloud = confirm(
       `${message}\n\n` +
@@ -1567,7 +1605,7 @@ async function showConflictResolutionDialog(localTimetable, cloudTimetable) {
 }
 
 // ============================================================================
-// ROBUSTNESS UI FUNCTIONS - Sprint 12
+// ROBUSTNESS UI FUNCTIONS
 // ============================================================================
 
 /**
