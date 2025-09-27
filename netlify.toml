@@ -15,14 +15,9 @@
   # NO COMPLEX ENV VARS - MINIMAL BUILD ONLY
   SECRETS_SCAN_OMIT_PATHS = ".netlify/edge-functions/**,.github/workflows/**,node_modules/**"
 
-# Next.js plugin configuration with performance optimizations
+# Next.js plugin configuration - modern version without deprecated inputs
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-  [plugins.inputs]
-    # Enable ISR for better performance
-    includeFiles = ["COMMIT_SHA"]
-    # Optimize functions
-    target = "serverless"
 
 [dev]
   framework = "#custom"
