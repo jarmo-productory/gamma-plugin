@@ -142,7 +142,7 @@ export class UnifiedAuthManager {
       });
     }
     
-    console.log('[Auth] Complete reset for testing completed');
+    // Complete reset for testing completed
   }
   
   /**

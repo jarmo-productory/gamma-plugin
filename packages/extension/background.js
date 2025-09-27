@@ -1,7 +1,7 @@
 // background.js - Service Worker
 // Acts as a central message broker for the extension with robustness improvements.
 
-console.log('[BACKGROUND] Script loaded');
+// Background script loaded
 
 // Use objects to store ports for each tab.
 const contentScriptPorts = {};
@@ -29,13 +29,13 @@ const INJECTION_CONFIG = {
  * Robust content script injection with exponential backoff retry
  */
 async function injectContentScriptWithRetry(tabId, attempt = 1) {
-  console.log(`[BACKGROUND] Attempting content script injection for tab ${tabId}, attempt ${attempt}`);
+  // Attempting content script injection
   
   try {
     // Check if tab still exists and is valid for injection
     const tab = await chrome.tabs.get(tabId);
     if (!tab || !tab.url || !tab.url.startsWith('https://gamma.app/')) {
-      console.log(`[BACKGROUND] Tab ${tabId} is not valid for injection`);
+      // Tab not valid for injection
       return { success: false, reason: 'invalid_tab' };
     }
 
@@ -44,7 +44,7 @@ async function injectContentScriptWithRetry(tabId, attempt = 1) {
       files: ['content.js']
     });
     
-    console.log(`[BACKGROUND] Content script injected successfully for tab ${tabId}`);
+    // Content script injected successfully
     return { success: true };
     
   } catch (error) {
@@ -61,7 +61,7 @@ async function injectContentScriptWithRetry(tabId, attempt = 1) {
       INJECTION_CONFIG.maxDelayMs
     );
     
-    console.log(`[BACKGROUND] Retrying injection for tab ${tabId} in ${delayMs}ms`);
+    // Retrying injection after delay
     await new Promise(resolve => setTimeout(resolve, delayMs));
     
     return injectContentScriptWithRetry(tabId, attempt + 1);
@@ -85,7 +85,7 @@ function startHealthMonitoring() {
     for (const [tabId, healthData] of connectionHealth.contentScripts.entries()) {
       if (now - healthData.lastPing > HEALTH_TIMEOUT) {
         healthData.failureCount = (healthData.failureCount || 0) + 1;
-        console.log(`[BACKGROUND] Content script for tab ${tabId} missed ping (failure ${healthData.failureCount}/${MAX_FAILURES_BEFORE_ALERT})`);
+        // Content script missed ping
         
         // Only attempt recovery after multiple consecutive failures
         if (healthData.failureCount >= MAX_FAILURES_BEFORE_ALERT) {
@@ -95,7 +95,7 @@ function startHealthMonitoring() {
       } else {
         // Reset failure count on successful ping
         if (healthData.failureCount > 0) {
-          console.log(`[BACKGROUND] Content script for tab ${tabId} recovered, resetting failure count`);
+          // Content script recovered, resetting failure count
           healthData.failureCount = 0;
         }
       }
@@ -105,17 +105,17 @@ function startHealthMonitoring() {
     if (sidebarPort && connectionHealth.sidebarLastPing && 
         now - connectionHealth.sidebarLastPing > HEALTH_TIMEOUT) {
       connectionHealth.sidebarFailureCount++;
-      console.log(`[BACKGROUND] Sidebar missed ping (failure ${connectionHealth.sidebarFailureCount}/${MAX_FAILURES_BEFORE_ALERT})`);
+      // Sidebar missed ping
       
       // Only show warning after multiple consecutive failures
       if (connectionHealth.sidebarFailureCount >= MAX_FAILURES_BEFORE_ALERT) {
         console.warn(`[BACKGROUND] Sidebar connection unhealthy after ${connectionHealth.sidebarFailureCount} failures`);
-        notifySidebarOfConnectionIssue();
+        // Production: Health check notifications disabled for end users
       }
     } else if (sidebarPort && connectionHealth.sidebarLastPing) {
       // Reset failure count on successful ping
       if (connectionHealth.sidebarFailureCount > 0) {
-        console.log(`[BACKGROUND] Sidebar recovered, resetting failure count`);
+        // Sidebar recovered, resetting failure count
         connectionHealth.sidebarFailureCount = 0;
       }
     }
@@ -127,7 +127,7 @@ function startHealthMonitoring() {
  * Attempt to recover a failed content script connection
  */
 async function recoverContentScriptConnection(tabId) {
-  console.log(`[BACKGROUND] Attempting to recover connection for tab ${tabId}`);
+  // Attempting to recover connection
   
   // Remove the old connection tracking
   connectionHealth.contentScripts.delete(tabId);
@@ -185,13 +185,13 @@ function notifySidebarOfConnectionIssue() {
 }
 
 chrome.runtime.onConnect.addListener(port => {
-  console.log('[BACKGROUND] New connection:', port.name, 'from:', port.sender);
+  // New connection established
 
   if (port.name === 'content-script') {
     const tabId = port.sender?.tab?.id;
     if (tabId) {
       contentScriptPorts[tabId] = port;
-      console.log(`[BACKGROUND] Content script connected for tab ${tabId}.`);
+      // Content script connected
       
       // Update health tracking
       updateConnectionHealth('content-script', tabId);
@@ -199,7 +199,7 @@ chrome.runtime.onConnect.addListener(port => {
       port.onDisconnect.addListener(() => {
         delete contentScriptPorts[tabId];
         connectionHealth.contentScripts.delete(tabId);
-        console.log(`[BACKGROUND] Content script for tab ${tabId} disconnected.`);
+        // Content script disconnected
       });
 
       // Forward messages from content script to the single sidebar
@@ -210,20 +210,17 @@ chrome.runtime.onConnect.addListener(port => {
         if (sidebarPort) {
           // Only forward messages from the active tab to prevent flickering
           if (tabId === activeTabId) {
-            console.log(
-              `[BACKGROUND] Forwarding message from active content script (tab ${tabId}) to sidebar:`,
-              msg
-            );
+            // Forwarding message from active content script to sidebar
             sidebarPort.postMessage({ ...msg, tabId });
           } else {
-            console.log(`[BACKGROUND] Ignoring message from inactive tab ${tabId}.`);
+            // Ignoring message from inactive tab
           }
         }
       });
     }
   } else if (port.name === 'sidebar') {
     sidebarPort = port;
-    console.log('[BACKGROUND] Sidebar connected.');
+    // Sidebar connected
     
     // Update health tracking and start monitoring
     updateConnectionHealth('sidebar');
@@ -232,7 +229,7 @@ chrome.runtime.onConnect.addListener(port => {
     sidebarPort.onDisconnect.addListener(() => {
       sidebarPort = null;
       connectionHealth.sidebarLastPing = null;
-      console.log('[BACKGROUND] Sidebar disconnected.');
+      // Sidebar disconnected
       
       // Stop health monitoring when sidebar disconnects
       if (connectionHealth.healthCheckInterval) {
@@ -243,22 +240,20 @@ chrome.runtime.onConnect.addListener(port => {
 
     // When the sidebar requests slides, forward it to the active content script
     sidebarPort.onMessage.addListener(msg => {
-      console.log('[BACKGROUND] Message from sidebar:', msg);
+      // Message from sidebar
       updateConnectionHealth('sidebar');
       
       if (msg.type === 'get-slides' && activeTabId) {
         const contentPort = contentScriptPorts[activeTabId];
         if (contentPort) {
-          console.log(
-            `[BACKGROUND] Forwarding get-slides to content script for active tab ${activeTabId}.`
-          );
+          // Forwarding get-slides to content script for active tab
           contentPort.postMessage(msg);
         } else {
-          console.log(`[BACKGROUND] No content script for active tab ${activeTabId}, attempting injection.`);
+          // No content script for active tab, attempting injection
           handleMissingContentScript(activeTabId);
         }
       } else if (msg.type === 'retry-connection' && msg.tabId) {
-        console.log(`[BACKGROUND] Manual retry requested for tab ${msg.tabId}`);
+        // Manual retry requested
         handleMissingContentScript(msg.tabId);
       }
     });
@@ -285,7 +280,7 @@ async function handleMissingContentScript(tabId) {
   const result = await injectContentScriptWithRetry(tabId);
   
   if (result.success) {
-    console.log(`[BACKGROUND] Content script injection successful for tab ${tabId}`);
+    // Content script injection successful
     // Give the content script a moment to initialize, then request slides
     setTimeout(() => {
       const contentPort = contentScriptPorts[tabId];
@@ -312,7 +307,7 @@ async function handleMissingContentScript(tabId) {
 
 function triggerTabUpdate(tabId) {
   if (!sidebarPort) {
-    console.log('[BACKGROUND] No sidebar to update.');
+    // No sidebar to update
     return;
   }
 
@@ -329,18 +324,18 @@ function triggerTabUpdate(tabId) {
     }
 
     if (tab && tab.url && tab.url.startsWith('https://gamma.app/')) {
-      console.log(`[BACKGROUND] Active tab is a Gamma tab: ${tabId}`);
+      // Active tab is a Gamma tab
       
       // Check if content script is already connected
       const contentPort = contentScriptPorts[tabId];
       if (contentPort) {
         sidebarPort.postMessage({ type: 'gamma-tab-activated', tabId: tabId });
       } else {
-        console.log(`[BACKGROUND] No content script found for Gamma tab ${tabId}, attempting injection`);
+        // No content script found for Gamma tab, attempting injection
         await handleMissingContentScript(tabId);
       }
     } else {
-      console.log(`[BACKGROUND] Active tab is not a Gamma tab: ${tabId}`);
+      // Active tab is not a Gamma tab
       sidebarPort.postMessage({
         type: 'wrong-domain',
         tabUrl: tab?.url || '',
@@ -352,7 +347,7 @@ function triggerTabUpdate(tabId) {
 
 // Listen for when the user switches to a different tab
 chrome.tabs.onActivated.addListener(activeInfo => {
-  console.log(`[BACKGROUND] Tab activated: ${activeInfo.tabId}`);
+  // Tab activated
   activeTabId = activeInfo.tabId;
   triggerTabUpdate(activeTabId);
 });
@@ -362,7 +357,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
     if (tabs.length > 0) {
       activeTabId = tabs[0].id;
-      console.log(`[BACKGROUND] Extension installed/updated. Initial active tab: ${activeTabId}`);
+      // Extension installed/updated. Initial active tab identified
     }
   });
 });
@@ -370,7 +365,7 @@ chrome.runtime.onInstalled.addListener(() => {
 // Set up a periodic heartbeat to request updates from the active tab
 setInterval(() => {
   if (activeTabId && sidebarPort) {
-    console.log(`[BACKGROUND] Heartbeat: Requesting slide update from active tab ${activeTabId}`);
+    // Heartbeat: Requesting slide update from active tab
     const contentPort = contentScriptPorts[activeTabId];
     if (contentPort) {
       contentPort.postMessage({ type: 'get-slides' });

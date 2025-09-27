@@ -1,6 +1,5 @@
 // Performance monitoring utilities for React optimization
 import React from 'react';
-
 interface PerformanceOptions {
   enabled?: boolean;
   logToConsole?: boolean;

@@ -106,7 +106,7 @@ export class DeviceAuth {
         .join('');
     } else {
       // Fallback for environments without crypto.subtle
-      console.warn('[DeviceAuth] crypto.subtle not available, using fallback hash');
+      // crypto.subtle not available, using fallback hash
       let hash = 0;
       for (let i = 0; i < input.length; i++) {
         const char = input.charCodeAt(i);
@@ -131,7 +131,7 @@ export class DeviceAuth {
       const refreshed = await this.refresh(apiBaseUrl, existing.token);
       if (refreshed) return refreshed;
     } catch (err) {
-      console.warn('[DeviceAuth] token refresh failed:', err);
+      // token refresh failed
     }
     return null;
   }
@@ -239,7 +239,7 @@ export class DeviceAuth {
         if (token) return token;
       } catch (err) {
         // Log and continue polling
-        console.warn('[DeviceAuth] exchange error (will retry):', err);
+        // exchange error (will retry)
       }
       await new Promise(r => setTimeout(r, interval));
     }

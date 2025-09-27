@@ -10,17 +10,29 @@ jobs:
   test:
     name: Test & Quality Check
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
-        
+
+    - name: Cache node modules and build
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.npm
+          ${{ github.workspace }}/.next/cache
+          ${{ github.workspace }}/packages/web/.next/cache
+        key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+        restore-keys: |
+          ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+          ${{ runner.os }}-nextjs-
+
     - name: Install dependencies
       run: npm ci
       
@@ -101,7 +113,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         
     - name: Install dependencies
@@ -161,6 +173,13 @@ jobs:
       run: |
         chmod +x scripts/health-check.sh
         ./scripts/health-check.sh
+
+    - name: Performance monitoring
+      run: |
+        chmod +x scripts/performance-monitor.sh
+        ./scripts/performance-monitor.sh
+      env:
+        SITE_URL: https://productory-powerups.netlify.app
       
     - name: Notify on failure
       if: failure()

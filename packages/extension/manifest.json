@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Productory Powerups for Gamma",
-  "version": "0.0.51",
+  "version": "0.0.54",
   "description": "Supercharge your Gamma presentations with timetable generation and productivity enhancements. Part of the growing Productory Powerups suite.",
   "permissions": [
     "activeTab",

@@ -98,7 +98,7 @@ export class StorageManager implements IStorageManager {
         this.addToSyncQueue(key, data, 'save');
       }
     } catch (error) {
-      console.error('[StorageManager] Save failed:', error);
+      // Save operation failed
       throw error;
     }
   }
@@ -118,7 +118,7 @@ export class StorageManager implements IStorageManager {
 
       // Handle legacy data (before versioning)
       if (!this.isVersionedData(result)) {
-        console.log('[StorageManager] Loading legacy data for key:', key);
+        // Loading legacy data
         return result; // Return raw legacy data
       }
 
@@ -127,15 +127,13 @@ export class StorageManager implements IStorageManager {
 
       // Future: Add migration logic here when needed
       if (storageItem.version !== this.config.dataVersion) {
-        console.log(
-          `[StorageManager] Data version mismatch for key ${key}: ${storageItem.version} vs ${this.config.dataVersion}`
-        );
+        // Data version mismatch detected
         // For now, just return the data - migration logic will be added in future sprints
       }
 
       return storageItem.data; // Return unwrapped data
     } catch (error) {
-      console.error('[StorageManager] Load failed:', error);
+      // Load operation failed
       throw error;
     }
   }
@@ -153,7 +151,7 @@ export class StorageManager implements IStorageManager {
         this.addToSyncQueue(key, null, 'remove');
       }
     } catch (error) {
-      console.error('[StorageManager] Remove failed:', error);
+      // Remove operation failed
       throw error;
     }
   }
@@ -166,7 +164,7 @@ export class StorageManager implements IStorageManager {
       await this.chromeStorageClear();
       this.syncQueue = []; // Clear sync queue too
     } catch (error) {
-      console.error('[StorageManager] Clear failed:', error);
+      // Clear operation failed
       throw error;
     }
   }
@@ -191,7 +189,7 @@ export class StorageManager implements IStorageManager {
         }
         
         if (attempt === this.config.maxRetries) {
-          console.error(`[StorageManager] ${context} failed after ${attempt} attempts:`, error);
+          // Operation failed after multiple attempts
           throw error;
         }
         
@@ -199,10 +197,7 @@ export class StorageManager implements IStorageManager {
         const delay = this.config.retryDelayMs * Math.pow(2, attempt - 1) + 
                      Math.random() * 1000;
         
-        console.warn(
-          `[StorageManager] ${context} attempt ${attempt} failed, retrying in ${Math.round(delay)}ms:`, 
-          error
-        );
+        // Operation failed, retrying
         
         await new Promise(resolve => setTimeout(resolve, delay));
       }
@@ -323,12 +318,12 @@ export class StorageManager implements IStorageManager {
         }
 
         const result = await response.json();
-        console.log('[StorageManager] Successfully synced to cloud:', presentationUrl);
+        // Successfully synced to cloud
         
         return { success: true, data: result };
       }, 'Cloud sync to save', this.isRetriableNetworkError.bind(this));
     } catch (error) {
-      console.error('[StorageManager] Cloud sync failed:', error);
+      // Cloud sync failed
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -402,12 +397,12 @@ export class StorageManager implements IStorageManager {
         if (result?.updatedAt) {
           result.timetableData.lastModified = result.updatedAt;
         }
-        console.log('[StorageManager] Successfully synced from cloud:', presentationUrl);
+        // Successfully synced from cloud
         
         return { success: true, data: result.timetableData };
       }, 'Cloud sync from load', this.isRetriableNetworkError.bind(this));
     } catch (error) {
-      console.error('[StorageManager] Cloud sync from failed:', error);
+      // Cloud sync from failed
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -472,12 +467,12 @@ export class StorageManager implements IStorageManager {
         }
 
         const result = await response.json();
-        console.log('[StorageManager] Successfully retrieved presentations list from cloud');
+        // Successfully retrieved presentations list from cloud
         
         return { success: true, data: result };
       }, 'Cloud presentations list', this.isRetriableNetworkError.bind(this));
     } catch (error) {
-      console.error('[StorageManager] Presentations list sync failed:', error);
+      // Presentations list sync failed
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -517,13 +512,13 @@ export class StorageManager implements IStorageManager {
       const result = await this.syncToCloud(presentationUrl, timetableData, options);
       
       if (result.success) {
-        console.log('[StorageManager] Auto-sync successful');
+        // Auto-sync successful
       } else {
-        console.warn('[StorageManager] Auto-sync failed:', result.error);
+        // Auto-sync failed
         // Could implement retry logic here in future
       }
     } catch (error) {
-      console.warn('[StorageManager] Auto-sync error (non-critical):', error);
+      // Auto-sync error (non-critical)
       // Auto-sync failures are non-critical - don't throw
     }
   }
@@ -640,12 +635,12 @@ export class StorageManager implements IStorageManager {
       return;
     }
 
-    console.log(`[StorageManager] Processing sync queue: ${this.syncQueue.length} items`);
+    // Processing sync queue
 
     // Placeholder: In future sprints, this will sync to cloud API
     // For now, just log the queue items
     for (const item of this.syncQueue) {
-      console.log(`[StorageManager] Sync queue item:`, item);
+      // Processing sync queue item
     }
 
     // Clear processed items (in real implementation, only clear successful syncs)
