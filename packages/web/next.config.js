@@ -74,30 +74,54 @@ const nextConfig = {
         ...config.optimization,
         splitChunks: {
           chunks: 'all',
+          minSize: 20000,
+          maxSize: 200000, // Target <200KB chunks per Sprint 35
           cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
+            // High priority chunks for critical libraries
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react',
               chunks: 'all',
-              maxSize: 200000, // 200KB max per chunk
+              priority: 30,
+              enforce: true,
             },
+            // XLSX library - dynamic import only (not in main bundle)
+            xlsx: {
+              test: /[\\/]node_modules[\\/]xlsx[\\/]/,
+              name: 'xlsx',
+              chunks: 'async', // Only loaded when dynamically imported
+              priority: 30,
+              enforce: true,
+            },
+            // UI library chunks
             radix: {
               test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
               name: 'radix-ui',
               chunks: 'all',
-              priority: 20,
+              priority: 25,
+              minChunks: 1,
             },
+            lucide: {
+              test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
+              name: 'lucide-icons',
+              chunks: 'all',
+              priority: 25,
+            },
+            // Backend/database chunks
             supabase: {
               test: /[\\/]node_modules[\\/]@supabase[\\/]/,
               name: 'supabase',
               chunks: 'all',
               priority: 20,
             },
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-              name: 'react',
+            // General vendor chunk with size limits
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
               chunks: 'all',
-              priority: 20,
+              priority: 10,
+              maxSize: 200000, // 200KB max per chunk
+              minChunks: 1,
             },
           },
         },

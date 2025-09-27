@@ -28,11 +28,11 @@ interface TimetableActionsProps {
   onSave: () => void
 }
 
-export default function TimetableActions({ 
-  presentation, 
-  saving, 
+export default function TimetableActions({
+  presentation,
+  saving,
   hasUnsavedChanges,
-  onSave 
+  onSave
 }: TimetableActionsProps) {
 
   const handleExportCSV = async () => {
@@ -46,12 +46,17 @@ export default function TimetableActions({
   }
 
   const handleExportXLSX = async () => {
+    // Show loading toast while dynamic import happens
+    const loadingToast = toast.loading('Preparing Excel export...')
+
     try {
       await exportToXLSX(presentation)
+      toast.dismiss(loadingToast)
       toast.success(`Excel file exported: ${presentation.title}`)
     } catch (error) {
+      toast.dismiss(loadingToast)
       console.error('XLSX export error:', error)
-      toast.error('Failed to export Excel file')
+      toast.error('Failed to export Excel file. Try CSV export instead.')
     }
   }
 
