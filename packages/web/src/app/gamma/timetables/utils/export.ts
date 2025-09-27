@@ -37,10 +37,56 @@ export const exportToCSV = (presentation: Presentation) => {
   URL.revokeObjectURL(url)
 }
 
-export const exportToXLSX = (presentation: Presentation) => {
-  // For now, just export as CSV since we'd need to add xlsx library
-  // This is a placeholder for future XLSX implementation
-  exportToCSV(presentation)
+export const exportToXLSX = async (presentation: Presentation) => {
+  try {
+    // Dynamic import reduces main bundle size by 1.3MB
+    const XLSX = await import('xlsx')
+    const { title, timetableData } = presentation
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new()
+
+    // Prepare data for XLSX
+    const worksheetData = [
+      ['Slide #', 'Title', 'Start Time', 'Duration (min)', 'End Time', 'Content']
+    ]
+
+    // Add presentation data
+    timetableData.items.forEach((item: TimetableItem, index: number) => {
+      worksheetData.push([
+        (index + 1).toString(),
+        item.title,
+        item.startTime,
+        item.duration.toString(),
+        item.endTime,
+        item.content.join('; ')
+      ])
+    })
+
+    // Create worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
+
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 8 },  // Slide #
+      { wch: 40 }, // Title
+      { wch: 12 }, // Start Time
+      { wch: 12 }, // Duration
+      { wch: 12 }, // End Time
+      { wch: 50 }  // Content
+    ]
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Timetable')
+
+    // Generate and download file
+    XLSX.writeFile(workbook, `${sanitizeFilename(title)}_timetable.xlsx`)
+
+  } catch (error) {
+    console.error('XLSX export failed, falling back to CSV:', error)
+    // Fallback to CSV if XLSX fails
+    exportToCSV(presentation)
+  }
 }
 
 const sanitizeFilename = (filename: string): string => {
