@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, getDatabaseUserId, createAuthenticatedSupabaseClient } from '@/utils/auth-helpers';
 import { createClient } from '@/utils/supabase/server';
+import {
+  generatePresentationDetailETag,
+  handleConditionalRequest,
+  addCacheHeaders,
+  CACHE_CONFIG,
+} from '@/utils/cache-helpers';
 
 export const runtime = 'nodejs'
 
@@ -53,7 +59,23 @@ export async function GET(
         createdAt: row.created_at,
         updatedAt: row.updated_at
       };
-      return NextResponse.json({ success: true, presentation: formattedPresentation });
+      const responseData = { success: true, presentation: formattedPresentation };
+
+      // Generate ETag for caching
+      const etag = generatePresentationDetailETag(formattedPresentation);
+
+      // Check for conditional request
+      const conditionalResponse = handleConditionalRequest(request, etag);
+      if (conditionalResponse) {
+        return conditionalResponse;
+      }
+
+      // Create response with cache headers
+      const response = NextResponse.json(responseData);
+      return addCacheHeaders(response, etag, {
+        ...CACHE_CONFIG.presentations.detail,
+        private: true, // User-specific data should be private
+      });
     }
 
     const supabase = await createAuthenticatedSupabaseClient(authUser);
@@ -90,9 +112,25 @@ export async function GET(
       updatedAt: presentation.updated_at
     };
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       presentation: formattedPresentation
+    };
+
+    // Generate ETag for caching
+    const etag = generatePresentationDetailETag(formattedPresentation);
+
+    // Check for conditional request
+    const conditionalResponse = handleConditionalRequest(request, etag);
+    if (conditionalResponse) {
+      return conditionalResponse;
+    }
+
+    // Create response with cache headers
+    const response = NextResponse.json(responseData);
+    return addCacheHeaders(response, etag, {
+      ...CACHE_CONFIG.presentations.detail,
+      private: true, // User-specific data should be private
     });
   } catch (error) {
     console.error('[Presentations Get] Unexpected error:', error);

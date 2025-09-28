@@ -29,8 +29,8 @@ export default function TimetableDetailView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     // Narrow change signals to meaningful fields to avoid ref-equality pitfalls
-    // @ts-expect-error - revision is an internal runtime field
-    (presentation as any)._revision,
+   - revision is an internal runtime field
+    // (presentation as any)._revision,
     presentation.updatedAt,
     saving,
   ])
@@ -115,7 +115,7 @@ export default function TimetableDetailView({
       {/* Main Editable Table - Takes remaining height */}
       <div className="flex-1 min-h-0">
         <SimpleEditableTable 
-          key={`table-${localPresentation.updatedAt}-${localPresentation._revision || 0}`}
+          key={`table-${localPresentation.updatedAt}-${(localPresentation as any)._revision || 0}`}
           presentation={localPresentation}
           onStartTimeChange={handleStartTimeChange}
           onDurationChange={handleDurationChange}

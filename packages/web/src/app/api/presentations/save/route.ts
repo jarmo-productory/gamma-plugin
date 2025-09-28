@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const userRecord = { id: appUser.id };
 
     // Check if presentation already exists (upsert behavior)
-    let existingQuery = supabase
+    const existingQuery = supabase
       .from('presentations')
       .select('id')
       .eq('gamma_url', canonicalUrl)

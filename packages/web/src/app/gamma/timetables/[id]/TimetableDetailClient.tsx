@@ -1,11 +1,13 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
 import AppLayout from '@/components/layouts/AppLayout'
 import { StickyHeader } from '@/components/ui/sticky-header'
 import { Button } from '@/components/ui/button'
 import { usePerformanceTracker, featureFlags } from '@/utils/performance'
+import { swrConfig, cacheKeys, cacheMetrics } from '@/lib/swr-config'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,8 +38,6 @@ interface TimetableDetailClientProps {
 }
 
 export default function TimetableDetailClient({ user, presentationId }: TimetableDetailClientProps) {
-  const [presentation, setPresentation] = useState<PresentationType | null>(null)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showSavedMessage, setShowSavedMessage] = useState(false)
   const router = useRouter()
@@ -46,6 +46,36 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
   // Cleanup timeout refs
   const savedMessageTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // SWR data fetching for presentation detail
+  const cacheKey = cacheKeys.presentations.detail(presentationId)
+  const { data, error, isLoading, mutate: mutatePresentation } = useSWR(
+    cacheKey,
+    swrConfig.fetcher!,
+    {
+      ...swrConfig,
+      onSuccess: (data) => {
+        // Track cache hit for performance monitoring
+        cacheMetrics.recordHit()
+        if (featureFlags.isEnabled('performanceTracking')) {
+          trackRender('presentation data loaded from cache/server');
+        }
+      },
+      onError: (error) => {
+        // Track cache miss for performance monitoring
+        cacheMetrics.recordMiss()
+        console.error('SWR error fetching presentation:', error)
+        toast.error('Failed to load presentation')
+        // Navigate back to timetables if presentation not found
+        router.push('/gamma/timetables')
+      }
+    }
+  )
+
+  // Extract presentation from SWR response
+  const presentation = useMemo(() => {
+    return data?.success ? data.presentation : null
+  }, [data])
+
   // Track renders for performance monitoring
   React.useEffect(() => {
     if (featureFlags.isEnabled('performanceTracking')) {
@@ -53,37 +83,8 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
     }
   });
 
-  // Memoize fetch function to prevent unnecessary re-creation
-  const fetchPresentation = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/presentations/${presentationId}`)
-      const data = await response.json()
-
-      if (data.success && data.presentation) {
-        setPresentation(data.presentation)
-      } else {
-        console.error('Failed to fetch presentation:', data.error)
-        toast.error('Failed to load presentation')
-        // Navigate back to timetables if presentation not found
-        router.push('/gamma/timetables')
-      }
-    } catch (error) {
-      console.error('Error fetching presentation:', error)
-      toast.error('Failed to load presentation')
-      router.push('/gamma/timetables')
-    } finally {
-      setLoading(false)
-    }
-  }, [presentationId, router]);
-
-  // Fetch presentation data on component mount
-  useEffect(() => {
-    fetchPresentation()
-  }, [fetchPresentation])
-
   // Cleanup timeout on unmount
-  useEffect(() => {
+  React.useEffect(() => {
     return () => {
       if (savedMessageTimeoutRef.current) {
         clearTimeout(savedMessageTimeoutRef.current)
@@ -91,23 +92,43 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
     }
   }, [])
 
-  // Memoize save handler to prevent recreation on every render
+  // Memoize save handler with optimistic updates
   const handleSave = useCallback(async (updatedPresentation: PresentationType) => {
     try {
       setSaving(true)
-      
+
+      // Store current data for potential rollback
+      const currentData = data
+
+      // Optimistic update: immediately update cache with new data
+      const optimisticResponse = {
+        success: true,
+        presentation: {
+          ...(presentation ?? {}),
+          ...updatedPresentation,
+          // Ensure computed fields are updated
+          slideCount: updatedPresentation.timetableData.items.length,
+          totalDuration: updatedPresentation.totalDuration,
+          startTime: updatedPresentation.startTime,
+          updatedAt: new Date().toISOString(),
+          _revision: Date.now(),
+        } as PresentationType & { _revision: number }
+      }
+
+      // Update cache optimistically
+      mutatePresentation(optimisticResponse, false)
+
       // Transform to API expected format - ONLY send fields that the schema expects
       const savePayload = {
         title: updatedPresentation.title,
-        presentationUrl: updatedPresentation.presentationUrl, // Using deprecated camelCase format  
+        presentationUrl: updatedPresentation.presentationUrl, // Using deprecated camelCase format
         timetableData: {
           items: updatedPresentation.timetableData.items,
           startTime: updatedPresentation.timetableData.startTime,
           totalDuration: updatedPresentation.timetableData.totalDuration
         }
       }
-      
-      
+
       const response = await fetch('/api/presentations/save', {
         method: 'POST',
         headers: {
@@ -116,27 +137,48 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
         body: JSON.stringify(savePayload),
       })
 
-      const data = await response.json()
+      const responseData = await response.json()
 
-      if (data.success) {
-        // Prefer optimistic local state to avoid reverting UI with any stale server echo.
-        // Merge authoritative fields from server (timestamps) when available.
-        const merged = {
-          ...(presentation ?? {}),
-          ...updatedPresentation,
-          // Ensure slideCount and totals reflect edited data
-          slideCount: updatedPresentation.timetableData.items.length,
-          totalDuration: updatedPresentation.totalDuration,
-          startTime: updatedPresentation.startTime,
-          // Prefer server updatedAt if provided
-          updatedAt: data.presentation?.updatedAt ?? (presentation?.updatedAt ?? new Date().toISOString()),
-          // Bump a revision to force child sync where needed
-          _revision: Date.now(),
-        } as PresentationType & { _revision: number }
+      if (responseData.success) {
+        // Merge with server response and keep optimistic updates
+        const serverMerged = {
+          success: true,
+          presentation: {
+            ...optimisticResponse.presentation,
+            // Use server timestamp if provided
+            updatedAt: responseData.presentation?.updatedAt ?? optimisticResponse.presentation.updatedAt,
+          }
+        }
 
-        setPresentation(merged)
+        // Update cache with server-confirmed data
+        mutatePresentation(serverMerged, false)
+
+        // Also update the presentations list cache to keep it in sync
+        mutate(
+          cacheKeys.presentations.list(),
+          (listData: { success: boolean; presentations: PresentationType[] } | undefined) => {
+            if (listData?.success && listData.presentations) {
+              const updatedPresentations = listData.presentations.map((p: PresentationType) =>
+                p.id === presentationId
+                  ? {
+                      ...p,
+                      title: updatedPresentation.title,
+                      startTime: updatedPresentation.startTime,
+                      totalDuration: updatedPresentation.totalDuration,
+                      slideCount: updatedPresentation.timetableData.items.length,
+                      updatedAt: serverMerged.presentation.updatedAt,
+                    }
+                  : p
+              )
+              return { ...listData, presentations: updatedPresentations }
+            }
+            return listData
+          },
+          false
+        )
+
         toast.success('Timetable updated successfully')
-        
+
         // Show saved message and hide after 3 seconds
         setShowSavedMessage(true)
         if (savedMessageTimeoutRef.current) {
@@ -144,16 +186,20 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
         }
         savedMessageTimeoutRef.current = setTimeout(() => setShowSavedMessage(false), 3000)
       } else {
-        console.error('Save failed:', data.error)
+        // Revert optimistic update on failure
+        mutatePresentation(currentData)
+        console.error('Save failed:', responseData.error)
         toast.error('Failed to save changes')
       }
     } catch (error) {
+      // Revert optimistic update on error
+      mutatePresentation(data)
       console.error('Save error:', error)
       toast.error('Failed to save changes')
     } finally {
       setSaving(false)
     }
-  }, [presentation]);
+  }, [presentation, data, mutatePresentation, presentationId]);
 
   // Memoize navigation handler
   const handleBackToTimetables = useCallback(() => {
@@ -216,7 +262,7 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
     return null;
   }, [saving, showSavedMessage]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AppLayout user={user}>
         <StickyHeader>

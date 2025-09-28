@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
 import AppLayout from '@/components/layouts/AppLayout'
 import { StickyHeader } from '@/components/ui/sticky-header'
 import { Button } from '@/components/ui/button'
@@ -9,6 +10,7 @@ import { Calendar } from 'lucide-react'
 import TimetableGrid from './components/TimetableGrid'
 import { Presentation } from './types'
 import { usePerformanceTracker, featureFlags } from '@/utils/performance'
+import { swrConfig } from '@/lib/swr-config'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,12 +32,38 @@ interface TimetablesClientProps {
 }
 
 export default function TimetablesClient({ user }: TimetablesClientProps) {
-  const [presentations, setPresentations] = useState<Presentation[]>([])
-  const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [presentationToDelete, setPresentationToDelete] = useState<string | null>(null)
   const router = useRouter()
   const { trackRender } = usePerformanceTracker('TimetablesClient');
+
+  // SWR data fetching with cache configuration
+  const cacheKey = cacheKeys.presentations.list()
+  const { data, error, isLoading, mutate: mutatePresentations } = useSWR(
+    cacheKey,
+    swrConfig.fetcher!,
+    {
+      ...swrConfig,
+      onSuccess: (data) => {
+        // Track cache hit for performance monitoring
+        cacheMetrics.recordHit()
+        if (featureFlags.isEnabled('performanceTracking')) {
+          trackRender('data loaded from cache/server');
+        }
+      },
+      onError: (error) => {
+        // Track cache miss for performance monitoring
+        cacheMetrics.recordMiss()
+        console.error('SWR error fetching presentations:', error)
+        toast.error('Failed to load timetables')
+      }
+    }
+  )
+
+  // Extract presentations from SWR response
+  const presentations = useMemo(() => {
+    return data?.success ? data.presentations : []
+  }, [data])
 
   // Track renders for performance monitoring
   React.useEffect(() => {
@@ -43,32 +71,6 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
       trackRender('component rendered');
     }
   });
-
-  // Memoize fetch function to prevent unnecessary re-creation
-  const fetchPresentations = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/presentations/list')
-      const data = await response.json()
-
-      if (data.success) {
-        setPresentations(data.presentations)
-      } else {
-        console.error('Failed to fetch presentations:', data.error)
-        toast.error('Failed to load timetables')
-      }
-    } catch (error) {
-      console.error('Error fetching presentations:', error)
-      toast.error('Failed to load timetables')
-    } finally {
-      setLoading(false)
-    }
-  }, []);
-
-  // Fetch presentations on component mount
-  useEffect(() => {
-    fetchPresentations()
-  }, [fetchPresentations])
 
   // Memoize event handlers to prevent child re-renders
   const handleView = useCallback((id: string) => {
@@ -78,7 +80,7 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
 
   const handleExport = useCallback(async (id: string) => {
     try {
-      const presentation = presentations.find(p => p.id === id)
+      const presentation = presentations.find((p: Presentation) => p.id === id)
       if (!presentation) return
 
       // Export as CSV
@@ -99,27 +101,48 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
     if (!presentationToDelete) return
 
     try {
+      // Optimistic update: immediately remove from cache
+      const currentData = data
+      const optimisticPresentations = presentations.filter((p: Presentation) => p.id !== presentationToDelete)
+
+      // Update cache optimistically
+      mutatePresentations(
+        currentData ? {
+          ...currentData,
+          presentations: optimisticPresentations,
+          count: optimisticPresentations.length
+        } : undefined,
+        false // Don't revalidate immediately
+      )
+
       const response = await fetch(`/api/presentations/${presentationToDelete}`, {
         method: 'DELETE'
       })
 
-      const data = await response.json()
+      const responseData = await response.json()
 
-      if (data.success) {
-        setPresentations(prev => prev.filter(p => p.id !== presentationToDelete))
+      if (responseData.success) {
+        // Mutation was successful, keep the optimistic update
         toast.success('Timetable deleted successfully')
+
+        // Revalidate to ensure server state is in sync
+        mutatePresentations()
       } else {
-        console.error('Delete failed:', data.error)
+        // Revert optimistic update on failure
+        mutatePresentations(currentData)
+        console.error('Delete failed:', responseData.error)
         toast.error('Failed to delete timetable')
       }
     } catch (error) {
+      // Revert optimistic update on error
+      mutatePresentations(data)
       console.error('Delete error:', error)
       toast.error('Failed to delete timetable')
     } finally {
       setDeleteDialogOpen(false)
       setPresentationToDelete(null)
     }
-  }, [presentationToDelete]);
+  }, [presentationToDelete, data, presentations, mutatePresentations]);
 
   const handleDeleteCancel = useCallback(() => {
     setDeleteDialogOpen(false)
@@ -128,7 +151,7 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
 
   // Memoize the presentation to delete for dialog display
   const presentationToDeleteData = useMemo(() => {
-    return presentationToDelete ? presentations.find(p => p.id === presentationToDelete) : null;
+    return presentationToDelete ? presentations.find((p: Presentation) => p.id === presentationToDelete) : null;
   }, [presentationToDelete, presentations]);
 
   return (
@@ -143,7 +166,7 @@ export default function TimetablesClient({ user }: TimetablesClientProps) {
       <div className="flex flex-1 flex-col gap-4 p-4">
         <TimetableGrid
           presentations={presentations}
-          loading={loading}
+          loading={isLoading}
           onView={handleView}
           onExport={handleExport}
           onDelete={handleDeleteClick}

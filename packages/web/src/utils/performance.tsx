@@ -174,7 +174,171 @@ class FeatureFlagManager {
 
 export const featureFlags = FeatureFlagManager.getInstance();
 
-// Export the performance monitor instance
-export const performanceMonitor = PerformanceMonitor.getInstance();
+// Cache Performance Integration
+// Integrate with cache monitoring system for comprehensive tracking
 
-export type { RenderMetrics, PerformanceOptions, FeatureFlags };
+import type { CacheMetrics } from './cache-performance';
+
+// Enhanced performance monitoring with cache integration
+export interface EnhancedPerformanceMetrics extends RenderMetrics {
+  cacheMetrics?: {
+    hitRatio: number;
+    responseTime: number;
+    cacheSize: number;
+  };
+}
+
+// Enhanced performance monitor that integrates with cache monitoring
+class EnhancedPerformanceMonitor extends PerformanceMonitor {
+  private cacheMetrics = new Map<string, CacheMetrics>();
+
+  // Track cache-related render performance
+  trackCacheRender(
+    componentName: string,
+    cacheKey: string,
+    isHit: boolean,
+    cacheResponseTime: number,
+    reason?: string
+  ): void {
+    const renderReason = isHit
+      ? `cache hit: ${cacheKey} (${cacheResponseTime.toFixed(1)}ms)`
+      : `cache miss: ${cacheKey} (${cacheResponseTime.toFixed(1)}ms)`;
+
+    this.trackRender(componentName, reason || renderReason, !isHit);
+
+    // Store cache performance correlation
+    const existing = this.renderMetrics.get(componentName);
+    if (existing) {
+      (existing as any).cacheMetrics = {
+        hitRatio: isHit ? 1 : 0,
+        responseTime: cacheResponseTime,
+        cacheSize: 0 // Would need to be passed from cache
+      };
+    }
+  }
+
+  // Get enhanced metrics including cache performance
+  getEnhancedMetrics(componentName?: string): EnhancedPerformanceMetrics | Map<string, EnhancedPerformanceMetrics> {
+    if (componentName) {
+      const base = this.getMetrics(componentName) as RenderMetrics;
+      return {
+        ...base,
+        cacheMetrics: (base as any).cacheMetrics
+      };
+    }
+
+    const allMetrics = this.getMetrics() as Map<string, RenderMetrics>;
+    const enhanced = new Map<string, EnhancedPerformanceMetrics>();
+
+    allMetrics.forEach((metrics, key) => {
+      enhanced.set(key, {
+        ...metrics,
+        cacheMetrics: (metrics as any).cacheMetrics
+      });
+    });
+
+    return enhanced;
+  }
+
+  // Generate integrated performance report
+  generateIntegratedReport(): {
+    renderPerformance: Map<string, RenderMetrics>;
+    cacheCorrelations: Array<{
+      component: string;
+      cacheImpact: 'positive' | 'negative' | 'neutral';
+      hitRatio: number;
+      avgCacheTime: number;
+    }>;
+    recommendations: string[];
+  } {
+    const renderMetrics = this.getMetrics() as Map<string, RenderMetrics>;
+    const cacheCorrelations: Array<{
+      component: string;
+      cacheImpact: 'positive' | 'negative' | 'neutral';
+      hitRatio: number;
+      avgCacheTime: number;
+    }> = [];
+
+    const recommendations: string[] = [];
+
+    renderMetrics.forEach((metrics, component) => {
+      const cacheMetrics = (metrics as any).cacheMetrics;
+      if (cacheMetrics) {
+        const impact = cacheMetrics.hitRatio > 0.7 ? 'positive' :
+                      cacheMetrics.hitRatio < 0.3 ? 'negative' : 'neutral';
+
+        cacheCorrelations.push({
+          component,
+          cacheImpact: impact,
+          hitRatio: cacheMetrics.hitRatio,
+          avgCacheTime: cacheMetrics.responseTime
+        });
+
+        if (impact === 'negative') {
+          recommendations.push(
+            `Component ${component} has poor cache performance (${(cacheMetrics.hitRatio * 100).toFixed(1)}% hit ratio). Consider optimizing cache strategy.`
+          );
+        }
+
+        if (cacheMetrics.responseTime > 100) {
+          recommendations.push(
+            `Component ${component} cache is slow (${cacheMetrics.responseTime.toFixed(1)}ms). Consider cache optimization or different storage backend.`
+          );
+        }
+      }
+    });
+
+    return {
+      renderPerformance: renderMetrics,
+      cacheCorrelations,
+      recommendations
+    };
+  }
+}
+
+// Create enhanced instance
+const enhancedPerformanceMonitor = new EnhancedPerformanceMonitor();
+
+// Enhanced React hook for performance tracking with cache integration
+export function useEnhancedPerformanceTracker(componentName: string) {
+  const trackRender = (reason?: string, propsChanged?: boolean) => {
+    enhancedPerformanceMonitor.trackRender(componentName, reason, propsChanged);
+  };
+
+  const trackCacheRender = (
+    cacheKey: string,
+    isHit: boolean,
+    cacheResponseTime: number,
+    reason?: string
+  ) => {
+    enhancedPerformanceMonitor.trackCacheRender(
+      componentName,
+      cacheKey,
+      isHit,
+      cacheResponseTime,
+      reason
+    );
+  };
+
+  const getMetrics = () => enhancedPerformanceMonitor.getEnhancedMetrics(componentName);
+
+  const resetMetrics = () => enhancedPerformanceMonitor.resetMetrics(componentName);
+
+  const generateReport = () => enhancedPerformanceMonitor.generateIntegratedReport();
+
+  return {
+    trackRender,
+    trackCacheRender,
+    getMetrics,
+    resetMetrics,
+    generateReport
+  };
+}
+
+// Export the performance monitor instance (enhanced)
+export const performanceMonitor = enhancedPerformanceMonitor;
+
+// Export original instance for backward compatibility
+export const basicPerformanceMonitor = PerformanceMonitor.getInstance();
+
+export type { RenderMetrics, PerformanceOptions, FeatureFlags, EnhancedPerformanceMetrics };

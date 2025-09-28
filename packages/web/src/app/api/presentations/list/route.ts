@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, getDatabaseUserId, createAuthenticatedSupabaseClient } from '@/utils/auth-helpers';
 import { createClient } from '@/utils/supabase/server';
+import {
+  generatePresentationsListETag,
+  handleConditionalRequest,
+  addCacheHeaders,
+  CACHE_CONFIG,
+} from '@/utils/cache-helpers';
 
 export const runtime = 'nodejs'
 
@@ -43,7 +49,23 @@ export async function GET(request: NextRequest) {
         createdAt: p.created_at,
         updatedAt: p.updated_at,
       }));
-      return NextResponse.json({ success: true, presentations: formattedPresentations, count: formattedPresentations.length });
+      const responseData = { success: true, presentations: formattedPresentations, count: formattedPresentations.length };
+
+      // Generate ETag for caching
+      const etag = generatePresentationsListETag(formattedPresentations);
+
+      // Check for conditional request
+      const conditionalResponse = handleConditionalRequest(request, etag);
+      if (conditionalResponse) {
+        return conditionalResponse;
+      }
+
+      // Create response with cache headers
+      const response = NextResponse.json(responseData);
+      return addCacheHeaders(response, etag, {
+        ...CACHE_CONFIG.presentations.list,
+        private: true, // User-specific data should be private
+      });
     }
 
     const supabase = await createAuthenticatedSupabaseClient(authUser);
@@ -73,10 +95,26 @@ export async function GET(request: NextRequest) {
       updatedAt: p.updated_at
     }));
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       presentations: formattedPresentations,
       count: formattedPresentations.length
+    };
+
+    // Generate ETag for caching
+    const etag = generatePresentationsListETag(formattedPresentations);
+
+    // Check for conditional request
+    const conditionalResponse = handleConditionalRequest(request, etag);
+    if (conditionalResponse) {
+      return conditionalResponse;
+    }
+
+    // Create response with cache headers
+    const response = NextResponse.json(responseData);
+    return addCacheHeaders(response, etag, {
+      ...CACHE_CONFIG.presentations.list,
+      private: true, // User-specific data should be private
     });
   } catch (error) {
     console.error('[Presentations List] Unexpected error:', error);
