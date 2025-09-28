@@ -136,11 +136,11 @@ const PRODUCTION_ENVIRONMENT_CONFIG: EnvironmentConfig = {
 function getEnvironmentConfig(): EnvironmentConfig {
   // Check if we're in a build environment with BUILD_ENV set
   if (typeof __BUILD_ENV__ !== 'undefined') {
-    return __BUILD_ENV__ === 'production' ? PRODUCTION_ENVIRONMENT_CONFIG : LOCAL_ENVIRONMENT_CONFIG;
+    return __BUILD_ENV__ === 'development' ? LOCAL_ENVIRONMENT_CONFIG : PRODUCTION_ENVIRONMENT_CONFIG;
   }
-  
-  // Default to local environment for development
-  return LOCAL_ENVIRONMENT_CONFIG;
+
+  // Default to production environment (was localhost, now production)
+  return PRODUCTION_ENVIRONMENT_CONFIG;
 }
 
 export const DEFAULT_ENVIRONMENT_CONFIG: EnvironmentConfig = getEnvironmentConfig();

@@ -54,10 +54,10 @@ describe('Configuration Management System', () => {
       expect(DEFAULT_FEATURE_FLAGS.exportFeatures).toBe(true);
     });
 
-    it('should have development-appropriate environment defaults', () => {
-      expect(DEFAULT_ENVIRONMENT_CONFIG.environment).toBe('development');
-      expect(DEFAULT_ENVIRONMENT_CONFIG.apiBaseUrl).toBe('http://localhost:3000');
-      expect(DEFAULT_ENVIRONMENT_CONFIG.logLevel).toBe('debug');
+    it('should have production-appropriate environment defaults', () => {
+      expect(DEFAULT_ENVIRONMENT_CONFIG.environment).toBe('production');
+      expect(DEFAULT_ENVIRONMENT_CONFIG.apiBaseUrl).toBe('https://productory-powerups.netlify.app');
+      expect(DEFAULT_ENVIRONMENT_CONFIG.logLevel).toBe('info');
       expect(DEFAULT_ENVIRONMENT_CONFIG.maxStorageSize).toBe(50);
     });
 
@@ -266,8 +266,8 @@ describe('Configuration Management System', () => {
       } as Partial<EnvironmentConfig>);
       
       const config = configManager.getConfig();
-      expect(config.environment.environment).toBe('development'); // Current default
-      expect(config.environment.apiBaseUrl).toBe('http://localhost:3000'); // Unchanged
+      expect(config.environment.environment).toBe('production'); // New default
+      expect(config.environment.apiBaseUrl).toBe('https://productory-powerups.netlify.app'); // New default
       
       expect(consoleSpy).toHaveBeenCalledWith("[ConfigManager] Environment setting 'environment' cannot be modified in Sprint 0");
       expect(consoleSpy).toHaveBeenCalledWith("[ConfigManager] Environment setting 'apiBaseUrl' cannot be modified in Sprint 0");
