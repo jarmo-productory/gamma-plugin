@@ -10,7 +10,7 @@ import { Calendar } from 'lucide-react'
 import TimetableGrid from './components/TimetableGrid'
 import { Presentation } from './types'
 import { usePerformanceTracker, featureFlags } from '@/utils/performance'
-import { swrConfig } from '@/lib/swr-config'
+import { swrConfig, cacheKeys, cacheMetrics } from '@/lib/swr-config'
 import {
   AlertDialog,
   AlertDialogAction,
