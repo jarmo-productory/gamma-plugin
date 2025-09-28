@@ -17,4 +17,24 @@ export const swrConfig: SWRConfiguration = {
   refreshInterval: 0, // Disable automatic refresh
 }
 
+// Cache key generators
+export const cacheKeys = {
+  presentations: {
+    list: () => '/api/presentations/list',
+    detail: (id: string) => `/api/presentations/${id}`,
+  }
+}
+
+// Simple cache metrics
+export const cacheMetrics = {
+  recordHit: () => {
+    // Simple logging for now
+    console.log('Cache hit recorded')
+  },
+  recordMiss: () => {
+    // Simple logging for now
+    console.log('Cache miss recorded')
+  }
+}
+
 export { fetcher }
