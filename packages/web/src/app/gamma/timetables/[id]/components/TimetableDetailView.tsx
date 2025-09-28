@@ -29,7 +29,7 @@ export default function TimetableDetailView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     // Narrow change signals to meaningful fields to avoid ref-equality pitfalls
-   - revision is an internal runtime field
+    // revision is an internal runtime field
     // (presentation as any)._revision,
     presentation.updatedAt,
     saving,
