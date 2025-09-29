@@ -1,7 +1,8 @@
 [build]
   base = "packages/web"
+  publish = ".next"
   command = "cd ../../ && npm ci && cd packages/web && npm run build"
-  # Next.js plugin automatically detects .next directory
+  # Next.js plugin relies on the Next.js `.next` output; publish must match
 
 # Build environment variables and secrets scanning configuration
 [build.environment]
