@@ -9,14 +9,10 @@ import {
   FileText
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { Presentation as PresentationType } from '../../types'
 import { formatDuration, formatTime } from '../utils/timeCalculations'
-
-interface PresentationStatsProps {
-  presentation: PresentationType
-}
-
-export default function PresentationStats({ presentation }: PresentationStatsProps) {
+import { useTimetableState } from '../TimetableDetailContext'
+export default function PresentationStats() {
+  const { presentation } = useTimetableState()
   const { timetableData } = presentation
   
   const estimatedEndTime = timetableData.items[timetableData.items.length - 1]?.endTime || presentation.startTime

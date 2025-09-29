@@ -1,20 +1,12 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Presentation } from '../../types'
-import { formatTime } from '../utils/timeCalculations'
+import { formatTime, parseStartTimeInput } from '../utils/timeCalculations'
+import { useTimetableActions, useTimetableState } from '../TimetableDetailContext'
 
-interface SimpleEditableTableProps {
-  presentation: Presentation
-  onStartTimeChange: (newStartTime: string) => void
-  onDurationChange: (slideId: string, newDurationString: string) => void
-}
-
-export default function SimpleEditableTable({
-  presentation,
-  onStartTimeChange,
-  onDurationChange
-}: SimpleEditableTableProps) {
+export default function SimpleEditableTable() {
+  const { presentation } = useTimetableState()
+  const { updateStartTime, updateSlideDuration } = useTimetableActions()
   const [editingCell, setEditingCell] = useState<{ slideId: string; field: string } | null>(null)
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -46,10 +38,17 @@ export default function SimpleEditableTable({
       // Only allow editing start time for the first slide
       const firstSlide = timetableData.items[0]
       if (slideId === firstSlide.id) {
-        onStartTimeChange(inputValue)
+        const parsed = parseStartTimeInput(inputValue)
+        if (parsed) {
+          updateStartTime(parsed)
+        }
       }
     } else if (field === 'duration') {
-      onDurationChange(slideId, inputValue)
+      const trimmed = (inputValue ?? '').trim()
+      const minutes = Number(trimmed)
+      if (Number.isFinite(minutes) && minutes >= 0) {
+        updateSlideDuration(slideId, Math.round(minutes))
+      }
     }
 
     setEditingCell(null)

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Presentation } from '../../types'
+import { useReducer, useEffect, useMemo, useCallback, useRef } from 'react'
+import { Presentation, TimetableItem } from '../../types'
 import PresentationStats from './PresentationStats'
 import SimpleEditableTable from './SimpleEditableTable'
-import { recalculateTimeTable } from '../utils/timeCalculations'
+import { recalculateTimeTable, calculateTotalDuration } from '../utils/timeCalculations'
+import { TimetableProvider } from '../TimetableDetailContext'
 
 interface TimetableDetailViewProps {
   presentation: Presentation
@@ -12,115 +13,191 @@ interface TimetableDetailViewProps {
   saving: boolean
 }
 
-export default function TimetableDetailView({ 
-  presentation, 
-  onSave, 
-  saving 
+type TimetableReducerState = {
+  presentation: Presentation
+  hasUnsavedChanges: boolean
+}
+
+type TimetableReducerAction =
+  | { type: 'SYNC_FROM_SERVER'; payload: Presentation }
+  | { type: 'UPDATE_START_TIME'; payload: string }
+  | { type: 'UPDATE_DURATION'; payload: { slideId: string; minutes: number } }
+  | { type: 'MARK_SAVED' }
+
+const AUTO_SAVE_DELAY = 1000
+
+const clonePresentation = (source: Presentation): Presentation => ({
+  ...source,
+  timetableData: {
+    ...source.timetableData,
+    items: source.timetableData.items.map((item) => ({ ...item })),
+  },
+})
+
+const applyRecalculation = (
+  presentation: Presentation,
+  items: TimetableItem[],
+  startTime: string,
+) => {
+  const recalculatedItems = recalculateTimeTable(items, startTime)
+  const totalDuration = calculateTotalDuration(recalculatedItems)
+
+  presentation.startTime = startTime
+  presentation.totalDuration = totalDuration
+  presentation.slideCount = recalculatedItems.length
+  presentation.timetableData = {
+    ...presentation.timetableData,
+    startTime,
+    totalDuration,
+    items: recalculatedItems,
+  }
+
+  return presentation
+}
+
+const timetableReducer = (
+  state: TimetableReducerState,
+  action: TimetableReducerAction,
+): TimetableReducerState => {
+  switch (action.type) {
+    case 'SYNC_FROM_SERVER': {
+      return {
+        presentation: clonePresentation(action.payload),
+        hasUnsavedChanges: false,
+      }
+    }
+    case 'UPDATE_START_TIME': {
+      const nextPresentation = clonePresentation(state.presentation)
+      const clonedItems = nextPresentation.timetableData.items.map((item) => ({ ...item }))
+      const updated = applyRecalculation(nextPresentation, clonedItems, action.payload)
+      return {
+        presentation: updated,
+        hasUnsavedChanges: true,
+      }
+    }
+    case 'UPDATE_DURATION': {
+      const { slideId, minutes } = action.payload
+      const safeMinutes = Math.max(0, Math.round(minutes))
+      const nextPresentation = clonePresentation(state.presentation)
+      const updatedItems = nextPresentation.timetableData.items.map((item) =>
+        item.id === slideId ? { ...item, duration: safeMinutes } : { ...item },
+      )
+      const recalculatedPresentation = applyRecalculation(
+        nextPresentation,
+        updatedItems,
+        nextPresentation.timetableData.startTime,
+      )
+      return {
+        presentation: recalculatedPresentation,
+        hasUnsavedChanges: true,
+      }
+    }
+    case 'MARK_SAVED':
+      return {
+        ...state,
+        hasUnsavedChanges: false,
+      }
+    default:
+      return state
+  }
+}
+
+export default function TimetableDetailView({
+  presentation,
+  onSave,
+  saving,
 }: TimetableDetailViewProps) {
-  const [localPresentation, setLocalPresentation] = useState(presentation)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [state, dispatch] = useReducer(timetableReducer, {
+    presentation: clonePresentation(presentation),
+    hasUnsavedChanges: false,
+  })
 
-  // Sync localPresentation from parent after a confirmed save (avoid clobbering in-progress edits)
+  const latestOnSaveRef = useRef(onSave)
   useEffect(() => {
-    // Only sync when not actively saving; rely on parent revision/updatedAt as change signal
+    latestOnSaveRef.current = onSave
+  }, [onSave])
+
+  // Sync reducer state with parent presentation after confirmed save
+  useEffect(() => {
     if (saving) return
-    setLocalPresentation(presentation)
-    setHasUnsavedChanges(false)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    // Narrow change signals to meaningful fields to avoid ref-equality pitfalls
-    // revision is an internal runtime field
-    // (presentation as any)._revision,
-    presentation.updatedAt,
-    saving,
-  ])
+    dispatch({ type: 'SYNC_FROM_SERVER', payload: presentation })
+  }, [presentation, saving])
 
-  // Handle start time changes with recalculation
-  const handleStartTimeChange = (newStartTime: string) => {
-    const updatedPresentation = {
-      ...localPresentation,
-      startTime: newStartTime,
-      timetableData: {
-        ...localPresentation.timetableData,
-        startTime: newStartTime,
-        items: recalculateTimeTable(localPresentation.timetableData.items, newStartTime)
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!state.hasUnsavedChanges || saving) {
+      return
+    }
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      latestOnSaveRef.current(state.presentation)
+      dispatch({ type: 'MARK_SAVED' })
+      autoSaveTimeoutRef.current = null
+    }, AUTO_SAVE_DELAY)
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+        autoSaveTimeoutRef.current = null
       }
     }
-    setLocalPresentation(updatedPresentation)
-    setHasUnsavedChanges(true)
-    
-    // Auto-save after a brief delay
-    setTimeout(() => {
-      onSave(updatedPresentation)
-      setHasUnsavedChanges(false)
-    }, 1000)
-  }
+  }, [state.presentation, state.hasUnsavedChanges, saving])
 
-  // Handle individual slide duration changes
-  const handleDurationChange = (slideId: string, newDurationString: string) => {
-    // Minutes-only input; ignore anything else
-    const trimmed = (newDurationString ?? '').trim()
-    const asNum = Number(trimmed)
-    if (!Number.isFinite(asNum) || asNum < 0) return
-    const newDurationMinutes = Math.round(asNum)
-    
-    // Update the specific slide duration
-    const updatedItems = localPresentation.timetableData.items.map(item => 
-      item.id === slideId 
-        ? { ...item, duration: newDurationMinutes }
-        : item
-    )
-    
-    // Recalculate all times based on new durations
-    const recalculatedItems = recalculateTimeTable(updatedItems, localPresentation.startTime)
-    
-    // Calculate new total duration
-    const totalDuration = recalculatedItems.reduce((sum, item) => sum + item.duration, 0)
-    
-    const updatedPresentation = {
-      ...localPresentation,
-      totalDuration,
-      timetableData: {
-        ...localPresentation.timetableData,
-        items: recalculatedItems,
-        totalDuration
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
       }
     }
-    
-    setLocalPresentation(updatedPresentation)
-    setHasUnsavedChanges(true)
-    
-    // Auto-save after a brief delay
-    setTimeout(() => {
-      onSave(updatedPresentation)
-      setHasUnsavedChanges(false)
-    }, 1000)
-  }
+  }, [])
 
-  // Handle manual save trigger
-  const handleManualSave = () => {
-    if (hasUnsavedChanges) {
-      onSave(localPresentation)
-      setHasUnsavedChanges(false)
-    }
-  }
+  const updateStartTime = useCallback((time: string) => {
+    dispatch({ type: 'UPDATE_START_TIME', payload: time })
+  }, [])
+
+  const updateSlideDuration = useCallback((slideId: string, minutes: number) => {
+    dispatch({ type: 'UPDATE_DURATION', payload: { slideId, minutes } })
+  }, [])
+
+  const markSaved = useCallback(() => {
+    dispatch({ type: 'MARK_SAVED' })
+  }, [])
+
+  const providerState = useMemo(
+    () => ({
+      presentation: state.presentation,
+      hasUnsavedChanges: state.hasUnsavedChanges,
+      saving,
+    }),
+    [state.presentation, state.hasUnsavedChanges, saving],
+  )
+
+  const providerActions = useMemo(
+    () => ({
+      updateStartTime,
+      updateSlideDuration,
+      markSaved,
+    }),
+    [updateStartTime, updateSlideDuration, markSaved],
+  )
 
   return (
-    <>
-      {/* Presentation Statistics */}
+    <TimetableProvider state={providerState} actions={providerActions}>
       <div className="mb-6">
-        <PresentationStats presentation={localPresentation} />
+        <PresentationStats />
       </div>
-      
-      {/* Main Editable Table - Takes remaining height */}
+
       <div className="flex-1 min-h-0">
-        <SimpleEditableTable 
-          key={`table-${localPresentation.updatedAt}-${(localPresentation as any)._revision || 0}`}
-          presentation={localPresentation}
-          onStartTimeChange={handleStartTimeChange}
-          onDurationChange={handleDurationChange}
-        />
+        <SimpleEditableTable key={`table-${state.presentation.updatedAt}`} />
       </div>
-    </>
+    </TimetableProvider>
   )
 }
+
+export type { TimetableReducerState, TimetableReducerAction }
+export { timetableReducer }

@@ -249,7 +249,7 @@ Transform unbearably slow Netlify production navigation (1-2 seconds) into respo
 **Root Cause:** Complex state management causing performance bottlenecks
 
 **Implementation Steps:**
-- [ ] **TimetableDetailView useReducer:**
+- [x] **TimetableDetailView useReducer:** Implemented reducer-driven draft state with auto-save debounce
   ```typescript
   const timetableReducer = (state: TimetableState, action: TimetableAction) => {
     switch (action.type) {
@@ -264,7 +264,8 @@ Transform unbearably slow Netlify production navigation (1-2 seconds) into respo
 
   const [state, dispatch] = useReducer(timetableReducer, initialState)
   ```
-- [ ] **Context Splitting:**
+- [x] **Context Splitting:** Data/actions contexts power `PresentationStats` & `SimpleEditableTable` via `TimetableProvider`
+- [x] **Reducer unit tests:** `packages/web/src/app/gamma/timetables/[id]/components/__tests__/TimetableReducer.test.ts` validates duration + start-time recalculations
   ```typescript
   // Separate data from actions to prevent unnecessary re-renders
   const TimetableDataContext = createContext()
