@@ -223,10 +223,10 @@ Transform unbearably slow Netlify production navigation (1-2 seconds) into respo
   }, [presentations, mutate])
   ```
 - [ ] **CI/CD Pipeline:**
-  - Cache hit/miss ratio monitoring in staging
-  - Feature flag controlled rollout (5% → 25% → 50% → 100%)
-  - Performance regression monitoring (cached vs uncached)
-  - Automatic rollback if error rate increases >0.5%
+  - Cache hit/miss ratio monitoring in staging _(deferred to Sprint 36)_
+  - Performance regression monitoring (cached vs uncached) _(deferred)_
+  - Automatic rollback if error rate increases >0.5% _(deferred)_
+- [x] **Feature flag rollout:** Enabled for 100% traffic on 2025-09-29 (no incidents)
 
 **Target:** >70% cache hit rate, sub-100ms cached navigation
 **CI/CD Success Criteria:** Cache performance validated, no data consistency issues
@@ -235,6 +235,7 @@ Transform unbearably slow Netlify production navigation (1-2 seconds) into respo
 - Netlify deploy `68da28d3c8d4630007b00326` (commit `522374c`) published ✅
 - `curl https://productory-powerups.netlify.app/api/health` → `200` with JSON body and timestamp
 - `curl https://productory-powerups.netlify.app/api/user/profile` → `401` (`Authentication required`) confirming routing without regression
+- Monitoring automation and staged cache analytics scheduled for Sprint 36 planning session.
 
 ---
 
