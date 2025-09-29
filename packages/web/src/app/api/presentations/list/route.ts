@@ -8,10 +8,26 @@ import {
   CACHE_CONFIG,
 } from '@/utils/cache-helpers';
 
+const shouldLogPerformance = process.env.LOG_PRESENTATIONS_PERF === 'true' || process.env.NODE_ENV !== 'production'
+
+const logQueryDuration = (label: string, startedAt: number, count: number) => {
+  if (!shouldLogPerformance) return
+
+  const durationMs = Date.now() - startedAt
+  const message = `[perf][presentations:list] label=${label} duration=${durationMs}ms count=${count}`
+
+  if (durationMs > 100) {
+    console.warn(`${message} (slow-query-warning)`)
+  } else {
+    console.log(message)
+  }
+}
+
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
+    const startedAt = Date.now()
     // Authenticate user (device token or Supabase session)
     const authUser = await getAuthenticatedUser(request);
     if (!authUser) {
@@ -49,6 +65,7 @@ export async function GET(request: NextRequest) {
         createdAt: p.created_at,
         updatedAt: p.updated_at,
       }));
+      logQueryDuration('device-token-rpc', startedAt, formattedPresentations.length)
       const responseData = { success: true, presentations: formattedPresentations, count: formattedPresentations.length };
 
       // Generate ETag for caching
@@ -94,6 +111,7 @@ export async function GET(request: NextRequest) {
       createdAt: p.created_at,
       updatedAt: p.updated_at
     }));
+    logQueryDuration('supabase-client', startedAt, formattedPresentations.length)
 
     const responseData = {
       success: true,
