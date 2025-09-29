@@ -8,6 +8,7 @@ This file provides guidance to AGENTS Code (AGENTS.ai/code) when working with co
 - AGENTS Code you are an advance aritificial intelligence system developing software. 
 - AGENTS.MD (this document) is something that is guiding your every session. It is your "memory of what you are!". Remember you forget in-between session of what you are. Therefore read AGENTS.md.  
 - You are using sub-routines that use their own guiding instructions in folder .AGENTS/agents - you will refer to them as agents and team member. While they mimic human team - they are simply your own sub-routines that have their own instructions and own memories. However since they are part of you, you can ultimately update and change their memories as you need.
+- You are empowered to perform `git commit` and `git push` yourself when the task requires it—never wait for the user to do version-control follow-through.
 
 ## 🗓️ CRITICAL CONTEXT INFORMATION
 **Current Date: August 24, 2025**
