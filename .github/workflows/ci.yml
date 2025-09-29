@@ -100,67 +100,21 @@ jobs:
     - name: Build shared library
       run: npm run build:shared
 
-  deploy:
-    name: Deploy to Netlify
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: test
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Install Web dependencies
-      run: cd packages/web && rm -rf node_modules package-lock.json && npm install
-      
-    - name: Write commit SHA for health endpoint
-      run: echo "${{ github.sha }}" > packages/web/COMMIT_SHA
-      
-    - name: Build Web app for production
-      run: cd packages/web && npm run build
-      env:
-        NODE_ENV: production
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      
-    - name: Deploy to Netlify
-      id: netlify-deploy
-      uses: nwtgck/actions-netlify@v3.0
-      with:
-        publish-dir: './packages/web/.next'
-        production-branch: main
-        production-deploy: true
-        deploy-message: "Deploy from GitHub Actions - ${{ github.sha }}"
-        enable-pull-request-comment: false
-        enable-commit-comment: false
-        enable-commit-status: true
-        overwrites-pull-request-comment: false
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: 9652d33b-9bc4-4c79-8d8f-702cf4dbe787
-      timeout-minutes: 5
-      
-    - name: Print deployment URL
-      run: |
-        echo "✅ Deployed to Netlify!"
-        echo "🌐 Production URL: ${{ steps.netlify-deploy.outputs.deploy-url }}"
-        echo "📊 Deploy logs: ${{ steps.netlify-deploy.outputs.logs-url }}"
+  # Deployment disabled - Let Netlify auto-deploy from source using @netlify/plugin-nextjs
+  # This avoids the "dual deployment" race condition where GitHub Actions artifact
+  # deploy conflicts with Netlify's source build, causing some API routes to be missing
+  #
+  # deploy:
+  #   name: Deploy to Netlify
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   needs: test
 
   health-check:
     name: Production Health Check
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    needs: deploy
+    needs: test
     
     steps:
     - name: Checkout code
