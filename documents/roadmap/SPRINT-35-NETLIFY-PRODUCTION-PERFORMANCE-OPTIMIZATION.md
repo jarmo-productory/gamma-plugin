@@ -116,6 +116,7 @@ Transform unbearably slow Netlify production navigation (1-2 seconds) into respo
   - React DevTools profiler integration in CI
   - A/B testing framework with performance metrics
   - Progressive rollout: 10% → 25% → 50% → 100%
+- [x] **Vitest regression suite updated:** `packages/web/src/tests/performance/TimetableComponents.test.tsx` migrated to Vitest (2025-09-29) covering memoized handlers + data fetch flows
 
 **Target:** <12 re-renders per navigation, eliminate dual state issues
 **CI/CD Success Criteria:** 50% render reduction, stable bundle size, no user complaints
