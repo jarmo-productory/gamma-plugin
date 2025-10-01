@@ -1,40 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { withCors, handleOPTIONS } from '@/utils/cors';
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-function getCorsHeaders(request: NextRequest): Record<string, string> {
-  const origin = request.headers.get('origin') || '';
-
-  // Allow Chrome extension origins and localhost
-  const allowedOrigins = [
-    'chrome-extension://bhoijiicgpeihilgcfndkgkifmhccnjn',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://productory-powerups.netlify.app'
-  ];
-
-  const isAllowed = allowedOrigins.some(allowed => origin.startsWith(allowed)) ||
-                    origin.startsWith('chrome-extension://');
-
-  return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : allowedOrigins[0],
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Credentials': 'true',
-  };
-}
-
-function withCors(res: NextResponse, request: NextRequest) {
-  const headers = getCorsHeaders(request);
-  Object.entries(headers).forEach(([k, v]) => res.headers.set(k, v))
-  return res
-}
-
 export async function OPTIONS(request: NextRequest) {
-  const headers = getCorsHeaders(request);
-  return new NextResponse(null, { status: 204, headers })
+  return handleOPTIONS(request);
 }
 
 export async function POST(request: NextRequest) {

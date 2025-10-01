@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, getDatabaseUserId, createAuthenticatedSupabaseClient } from '@/utils/auth-helpers';
 import { createClient } from '@/utils/supabase/server';
 import { canonicalizeGammaUrl } from '@/utils/url';
+import { withCors, handleOPTIONS } from '@/utils/cors';
 
 export const runtime = 'nodejs'
+
+export async function OPTIONS(request: NextRequest) {
+  return handleOPTIONS(request);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,28 +17,28 @@ export async function GET(request: NextRequest) {
     const url = searchParams.get('url');
     
     if (!url) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'url parameter is required' },
         { status: 400 }
-      );
+      ), request);
     }
 
     // Authenticate user (device token or Supabase session)
     const authUser = await getAuthenticatedUser(request);
     if (!authUser) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      );
+      ), request);
     }
 
     // Get database user ID for RLS
     const dbUserId = await getDatabaseUserId(authUser);
     if (!dbUserId) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'User not found in database' },
         { status: 404 }
-      );
+      ), request);
     }
 
     const canonicalUrl = canonicalizeGammaUrl(url);
@@ -46,17 +51,17 @@ export async function GET(request: NextRequest) {
       });
       if (error) {
         console.error('[Presentations Get] RPC error:', error);
-        return NextResponse.json({ error: 'Failed to fetch presentation' }, { status: 500 });
+        return withCors(NextResponse.json({ error: 'Failed to fetch presentation' }, { status: 500 }), request);
       }
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) {
-        return NextResponse.json({ error: 'Presentation not found' }, { status: 404 });
+        return withCors(NextResponse.json({ error: 'Presentation not found' }, { status: 404 }), request);
       }
-      return NextResponse.json({ 
-        success: true, 
+      return withCors(NextResponse.json({
+        success: true,
         timetableData: row.timetable_data,
-        updatedAt: row.updated_at 
-      });
+        updatedAt: row.updated_at
+      }), request);
     }
 
     // Web session path: RLS via SSR client
@@ -69,29 +74,29 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: 'Presentation not found' },
           { status: 404 }
-        );
+        ), request);
       }
       console.error('[Presentations Get] Database error:', error);
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Failed to fetch presentation' },
         { status: 500 }
-      );
+      ), request);
     }
 
     // Return in format expected by extension
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       success: true,
       timetableData: presentation.timetable_data,
       updatedAt: presentation.updated_at
-    });
+    }), request);
   } catch (error) {
     console.error('[Presentations Get] Unexpected error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to fetch presentation' },
       { status: 500 }
-    );
+    ), request);
   }
 }

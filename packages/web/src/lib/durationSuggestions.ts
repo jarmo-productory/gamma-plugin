@@ -191,7 +191,13 @@ export function clearPresentationState(presentationId: string): void {
 export function isUserAuthenticated(): boolean {
   // Simple check - in production this would check actual auth state
   // For now, check if we have a session cookie or token
-  return typeof window !== 'undefined' &&
-         (document.cookie.includes('sb-') || // Supabase session
-          localStorage.getItem('deviceToken')); // Device token
+  if (typeof window === 'undefined') return false;
+
+  try {
+    return document.cookie.includes('sb-') || // Supabase session
+           (localStorage.getItem('deviceToken') !== null); // Device token
+  } catch (error) {
+    // localStorage might not be available in some contexts
+    return document.cookie.includes('sb-');
+  }
 }
