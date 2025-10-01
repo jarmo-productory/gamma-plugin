@@ -132,14 +132,9 @@ const PRODUCTION_ENVIRONMENT_CONFIG: EnvironmentConfig = {
   syncIntervalMs: 30000, // 30 seconds
 };
 
-// Function to get the appropriate environment config based on build environment
+// Function to get the appropriate environment config - LOCKED TO PRODUCTION
 function getEnvironmentConfig(): EnvironmentConfig {
-  // Check if we're in a build environment with BUILD_ENV set
-  if (typeof __BUILD_ENV__ !== 'undefined') {
-    return __BUILD_ENV__ === 'development' ? LOCAL_ENVIRONMENT_CONFIG : PRODUCTION_ENVIRONMENT_CONFIG;
-  }
-
-  // Default to production environment (was localhost, now production)
+  // FORCE PRODUCTION ENVIRONMENT - EXTENSION LOCKED TO PROD
   return PRODUCTION_ENVIRONMENT_CONFIG;
 }
 
@@ -393,18 +388,16 @@ export class ConfigManager {
    * Private helper methods
    */
   private createDefaultConfig(): AppConfig {
-    // Creating a new default configuration object
+    // Creating a new default configuration object - LOCKED TO PRODUCTION
     const features = { ...DEFAULT_FEATURE_FLAGS };
 
-    // Set debugMode based on environment for production cleanup
-    if (DEFAULT_ENVIRONMENT_CONFIG.environment === 'production') {
-      features.debugMode = false;
-      features.loggingEnabled = false;
-    }
+    // FORCE PRODUCTION SETTINGS - Extension locked to production
+    features.debugMode = false;
+    features.loggingEnabled = false;
 
     return {
       features,
-      environment: { ...DEFAULT_ENVIRONMENT_CONFIG },
+      environment: { ...PRODUCTION_ENVIRONMENT_CONFIG }, // Always use production config
       user: { ...DEFAULT_USER_CONFIG },
       version: '0.0.7',
       lastUpdated: new Date().toISOString(),
@@ -422,18 +415,16 @@ export class ConfigManager {
       ...existing.features,
     };
 
-    // Force debugMode/loggingEnabled to false in production environment (overrides stored values)
-    if (DEFAULT_ENVIRONMENT_CONFIG.environment === 'production') {
-      mergedFeatures.debugMode = false;
-      mergedFeatures.loggingEnabled = false;
-    }
+    // FORCE PRODUCTION SETTINGS - Extension locked to production
+    mergedFeatures.debugMode = false;
+    mergedFeatures.loggingEnabled = false;
 
     const merged: AppConfig = {
       ...existing,
       features: mergedFeatures,
       environment: {
-        ...existing.environment,
-        ...DEFAULT_ENVIRONMENT_CONFIG,
+        // FORCE PRODUCTION ENVIRONMENT - ignore any stored environment settings
+        ...PRODUCTION_ENVIRONMENT_CONFIG,
       },
       user: {
         ...DEFAULT_USER_CONFIG,

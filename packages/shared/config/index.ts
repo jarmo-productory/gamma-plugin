@@ -132,13 +132,19 @@ const PRODUCTION_ENVIRONMENT_CONFIG: EnvironmentConfig = {
   syncIntervalMs: 30000, // 30 seconds
 };
 
-// Function to get the appropriate environment config based on build environment
+// Function to get the appropriate environment config - SHARED CONFIG FOR EXTENSION
 function getEnvironmentConfig(): EnvironmentConfig {
+  // For extension builds, always use production
+  // For web builds, respect BUILD_ENV
+  if (typeof process !== 'undefined' && process.env?.BUILD_TARGET === 'extension') {
+    return PRODUCTION_ENVIRONMENT_CONFIG;
+  }
+
   // Check if we're in a build environment with BUILD_ENV set
   if (typeof __BUILD_ENV__ !== 'undefined') {
     return __BUILD_ENV__ === 'production' ? PRODUCTION_ENVIRONMENT_CONFIG : LOCAL_ENVIRONMENT_CONFIG;
   }
-  
+
   // Default to local environment for development
   return LOCAL_ENVIRONMENT_CONFIG;
 }

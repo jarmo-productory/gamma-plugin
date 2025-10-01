@@ -48,6 +48,7 @@ export interface UserProfile {
 export interface UserPreferences {
   theme?: 'light' | 'dark' | 'auto';
   autoSync?: boolean;
+  shareDurationData?: boolean; // Opt-in to share duration data for better suggestions
   defaultDuration?: number;
   syncInterval?: number; // in minutes
   exportFormat?: 'xlsx' | 'csv';
@@ -84,3 +85,31 @@ export const isSlide = (obj: any): obj is Slide => {
 export const isTimetableItem = (obj: any): obj is TimetableItem => {
   return obj && typeof obj.id === 'string' && typeof obj.duration === 'number';
 };
+
+// Sprint 36: Slide Duration Prediction Types
+export interface DurationSuggestion {
+  averageDuration: number;        // Suggested duration in minutes
+  confidence: 'high' | 'medium' | 'low';
+  sampleSize: number;             // Number of similar slides used
+  durationRange: {
+    p25: number;                  // 25th percentile
+    median: number;               // 50th percentile (median)
+    p75: number;                  // 75th percentile
+  };
+  matchQuality: {
+    titleSimilarity: number;      // 0-1 score
+    contentSimilarity: number;    // 0-1 score
+  };
+}
+
+export interface DurationSuggestionRequest {
+  title: string;
+  content: string[];
+}
+
+export interface DurationSuggestionResponse {
+  success: boolean;
+  suggestion?: DurationSuggestion;
+  message?: string;
+  error?: string;
+}

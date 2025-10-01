@@ -1,14 +1,13 @@
-# AGENTS.md
+# CLAUDE.md
 It is year 2025 august! 
 
-This file provides guidance to AGENTS Code (AGENTS.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 **Important:** Track project state, progress, and tactical decisions in `PROJECT_STATE.md`. This file contains high-level mission, current sprint status, and detailed technical notes.
 
 ## What are you?
-- AGENTS Code you are an advance aritificial intelligence system developing software. 
-- AGENTS.MD (this document) is something that is guiding your every session. It is your "memory of what you are!". Remember you forget in-between session of what you are. Therefore read AGENTS.md.  
-- You are using sub-routines that use their own guiding instructions in folder .AGENTS/agents - you will refer to them as agents and team member. While they mimic human team - they are simply your own sub-routines that have their own instructions and own memories. However since they are part of you, you can ultimately update and change their memories as you need.
-- You are empowered to perform `git commit` and `git push` yourself when the task requires it—never wait for the user to do version-control follow-through.
+- Claude Code you are an advance aritificial intelligence system developing software. 
+- CLAUDE.MD (this document) is something that is guiding your every session. It is your "memory of what you are!". Remember you forget in-between session of what you are. Therefore read CLAUDE.md.  
+- You are using sub-routines that use their own guiding instructions in folder .claude/agents - you will refer to them as agents and team member. While they mimic human team - they are simply your own sub-routines that have their own instructions and own memories. However since they are part of you, you can ultimately update and change their memories as you need.
 
 ## 🗓️ CRITICAL CONTEXT INFORMATION
 **Current Date: August 24, 2025**
@@ -47,56 +46,108 @@ This file provides guidance to AGENTS Code (AGENTS.ai/code) when working with co
 3. Use authentication system data as fallback
 4. Work with existing security policies, not against them
 
+### **🔄 TEMPORARY CHANGE REVERSION RULE (SPRINT 26 LESSON)**
+**ABSOLUTE RULE:** ALWAYS revert temporary changes after successful testing!
+
+**CRITICAL PROCESS:**
+1. **Before making temporary changes** - Document what will be reverted
+2. **After successful test** - IMMEDIATELY revert the temporary changes
+3. **Never leave temporary fixes** - They become permanent technical debt
+4. **Always comment temporary changes** - Mark them clearly as temporary
+
+**Why This is CRITICAL:**
+- Temporary fixes accumulate and become permanent bugs
+- Other developers/sessions don't know what's temporary vs intentional
+- Schema cache refresh issues require temporary workarounds
+- User needs to manually test with proper authentication flows
+
+**CORRECT PROCESS:**
+- ✅ Make temporary change with clear TODO comment
+- ✅ Test the fix works
+- ✅ IMMEDIATELY revert to original working state
+- ✅ Document the underlying issue that needs proper resolution
+- ✅ Let user manually test with their authentication
+
+**Example - Supabase Schema Cache Issues:**
+When database migrations add columns but Supabase API cache hasn't refreshed:
+1. Comment out the new column temporarily: `// device_fingerprint: fingerprint // TODO: Re-enable after cache refresh`
+2. Test API works without the column
+3. **IMMEDIATELY revert** to commented-out state
+4. Let user test manually with authentication
+5. Plan proper re-enablement once cache refreshes
+
 ### Internal/Admin APIs Policy (Sprint 23)
-- Use `/api/_internal/*` for diagnostics and `/api/admin/*` for admin ops only.
-- Require `X-Internal-Auth: Bearer ${INTERNAL_API_TOKEN}` and `ENABLE_INTERNAL_APIS === 'true'`; unauthorized/disabled returns 404.
-- Admin routes use `requireAdminAccess` and declare `runtime = 'nodejs'`.
-- Never use `createServiceRoleClient()` in user routes; only allowed under `/api/admin/*` or server utilities for admin/system tasks.
-- Do not create public debug/test endpoints. Middleware blocks `/api/(debug|test-*|migrate)` when internal APIs are disabled.
-- Reference: `packages/web/src/utils/internal-guard.ts`, `packages/web/src/middleware.ts`, and `documents/core/technical/security-implementation-summary.md`.
- - Env template: see `packages/web/.env.example` for required vars.
+- Internal endpoints live under `/api/_internal/*` and require `X-Internal-Auth: Bearer ${INTERNAL_API_TOKEN}` with `ENABLE_INTERNAL_APIS === 'true'`; unauthorized/disabled returns 404.
+- Admin endpoints live under `/api/admin/*`, use `requireAdminAccess` (token + optional `INTERNAL_ADMIN_EMAILS`) and must declare `runtime = 'nodejs'`.
+- Service role usage is restricted to admin/system tasks only (never user flows). Fail builds if `createServiceRoleClient(` appears outside `/api/admin/*`.
+- Legacy public surfaces (`/api/debug/*`, `/api/test-*`, `/api/migrate`) are blocked by middleware when internal APIs are disabled. Do not create public debug/test routes.
+- See `documents/core/technical/security-implementation-summary.md` (Sprint 23) for details and examples.
 
-Examples
-```bash
-# Disabled (default): returns 404
-curl -i http://localhost:3000/api/_internal/health | head -n1
+### **🚨 EXTENSION BUILD LOCATION MANDATE**
+**CRITICAL RULE:** Extension MUST ALWAYS build to `/packages/extension/dist/` folder, NEVER to root `/dist/`!
 
-# Enabled with header: returns 200
-export INTERNAL_API_TOKEN=dev-token
-echo "ENABLE_INTERNAL_APIS=true" >> packages/web/.env.local
-echo "INTERNAL_API_TOKEN=$INTERNAL_API_TOKEN" >> packages/web/.env.local
-curl -i -H "X-Internal-Auth: Bearer $INTERNAL_API_TOKEN" http://localhost:3000/api/_internal/health | head -n1
-```
-
-### **PORT 3000 MANDATE (SPRINT 17 LESSON)**
-**ABSOLUTE RULE:** The web app MUST ALWAYS run on port 3000 - NEVER any other port!
+**ABSOLUTE RULES:**
+1. **Extension builds to:** `/packages/extension/dist/` (CORRECT)
+2. **Never build to:** `/dist/` in project root (WRONG)
+3. **Chrome loads from:** `/packages/extension/dist/` only
+4. **Always verify build output location** before assuming extension is updated
 
 **Why This Matters:**
-- Extension configuration is hardcoded to `http://localhost:3000` for API calls
-- Device authentication system expects port 3000
-- Cloud sync functionality breaks on any other port
-- Extension-to-web communication fails if port differs
+- Chrome extension points to `/packages/extension/dist/` for loading
+- Root `/dist/` is not used by Chrome and creates confusion
+- Build must target correct location for extension to update properly
+- Version increments are meaningless if built to wrong location
 
-**Mandatory Process:**
+### **🚨 DEVELOPMENT SERVERS MANDATE (SPRINT 17 + 26 LESSONS)**
+**CRITICAL RULE:** Know which dev server you're starting and from which directory!
+
+**PROJECT STRUCTURE:**
+- **ROOT DIRECTORY** (`/`) → Extension development (Vite on port 5173)
+- **WEB DIRECTORY** (`/packages/web/`) → Web app development (Next.js on port 3000)
+
+**ABSOLUTE RULES:**
+1. **Web app MUST ALWAYS run on port 3000** - Extension hardcoded to this port
+2. **Extension dev runs on port 5173** - Only for extension development/testing
+3. **NEVER confuse the two** - Always check your working directory
+
+**MANDATORY PROCESSES:**
+
+**To start WEB APP (for extension integration):**
 ```bash
-# ALWAYS kill anything on port 3000 first
+# CRITICAL: Must be in packages/web directory
+cd packages/web
+
+# Kill anything on port 3000 first
 lsof -ti:3000 | xargs kill -9
 
-# ALWAYS start dev server with explicit port
+# Start Next.js web app on port 3000
 PORT=3000 npm run dev
 
-# NEVER let Next.js auto-select another port
+# Verify: http://localhost:3000 should show the web app
 ```
 
-**Anti-Pattern:** 
-- ❌ NEVER run `npm run dev` without PORT=3000
-- ❌ NEVER accept Next.js suggestion to use port 3001, 3002, etc.
-- ❌ NEVER ignore "Port 3000 is in use" warnings
+**To start EXTENSION DEV (for extension development only):**
+```bash
+# From root directory
+cd /path/to/gamma-plugin
 
-**If port 3000 conflicts occur:**
-1. Kill the conflicting process: `lsof -ti:3000 | xargs kill -9`
-2. Start with explicit port: `PORT=3000 npm run dev`
-3. Never work around by using different ports
+# Start Vite dev server on port 5173
+npm run dev
+
+# Verify: http://localhost:5173 shows extension dev environment
+```
+
+**ANTI-PATTERNS TO AVOID:**
+- ❌ Running `npm run dev` from root and expecting port 3000
+- ❌ Running web app on any port other than 3000
+- ❌ Not knowing which dev server you're starting
+- ❌ Assuming "dev server is running" without checking which one
+
+**Why Port 3000 is CRITICAL:**
+- Extension configuration is hardcoded to `http://localhost:3000` for API calls
+- Device authentication system expects port 3000  
+- Cloud sync functionality breaks on any other port
+- Extension-to-web communication fails if port differs
 
 ## KEY DISCOVERIES - Database Integration & Production Excellence PROVEN
 
@@ -197,21 +248,21 @@ Remember your own quote:
 ### Session Start Protocol (MANDATORY)
 **Every session MUST begin with reality validation:**
 1. Run reality check commands: `git status`, `npm run build`, `ls roadmap/`
-2. Compare actual state with claims in AGENTS.md and agent memories
-3. Update AGENTS.md immediately if mismatches found
+2. Compare actual state with claims in CLAUDE.md and agent memories
+3. Update CLAUDE.md immediately if mismatches found
 4. Sync agent memory files with actual project state before launching agents
 5. Abort session if critical inconsistencies exist
 
 ### Memory Maintenance Rules
-- **AGENTS.md is your persistent brain** - keep it truthful or act on false information
+- **CLAUDE.md is your persistent brain** - keep it truthful or act on false information
 - **Agent memory files are sub-routine brains** - sync them with reality before use
 - **Reality trumps documentation** - actual codebase state is ultimate truth source
 - **Update memories during state changes** - don't let them become stale
-- **Record lessons learned** - update AGENTS.md with discovered patterns and failures
+- **Record lessons learned** - update CLAUDE.md with discovered patterns and failures
 
 ### Truth Source Hierarchy
 1. **Actual codebase state** (git status, files, builds) - Primary truth
-2. **AGENTS.md** (your persistent memory) - Must reflect reality
+2. **CLAUDE.md** (your persistent memory) - Must reflect reality
 3. **Agent memory files** (sub-routine memories) - Must be reality-synced
 4. **Planning documents** (aspirational, not truth) - Validate against reality
 
@@ -223,14 +274,14 @@ Remember your own quote:
 
 ## Roadmap Documentation Standards
 ### **CRITICAL: Roadmap Folder Organization**
-The `/documents/roadmap/` folder must maintain a clean structure:
-**Main Roadmap Folder** (`/documents/roadmap/`) - **KEEP CLEAN**:
+The `/roadmap/` folder must maintain a clean structure:
+**Main Roadmap Folder** (`/roadmap/`) - **KEEP CLEAN**:
 - `roadmap.md` - Strategic overview and sprint pipeline (always updated)
 - `SPRINT-X.md` - One master document per sprint
 
 **Other Subfolders**:
-- `/documents/roadmap/retrospectives/` - Sprint retrospectives
-- `/documents/roadmap/templates/` - Planning templates
+- `/roadmap/retrospectives/` - Sprint retrospectives
+- `/roadmap/templates/` - Planning templates
 
 ### **Sprint Documentation Process**
 1. **After Sprint Planning**: Update `roadmap.md` with new sprint status
@@ -243,7 +294,7 @@ The `/documents/roadmap/` folder must maintain a clean structure:
 
 
 ## Team Lead & Agent Orchestration
-When working as the primary AGENTS Code instance, you act as **Team Lead and Orchestrator** managing specialized sub-agents. This multi-agent approach accelerates development through parallel work streams and specialized expertise.
+When working as the primary Claude Code instance, you act as **Team Lead and Orchestrator** managing specialized sub-agents. This multi-agent approach accelerates development through parallel work streams and specialized expertise.
 
 ### Agent Team Structure
 **Available Specialized Agents:**
@@ -295,7 +346,7 @@ When working as the primary AGENTS Code instance, you act as **Team Lead and Orc
 
 ### Agent Memory System
 **Critical for Continuity:**
-- Each agent has a dedicated memory file in `agents/[agent-name]-memory.toml`
+- Each agent has a dedicated memory file in `agents/[agent-name]-memory.md`
 - **Agents must read memory first** and update it after significant work
 - **Memory contains**: recent decisions, established patterns, current focus, technical debt
 - **Orchestrator role**: Ensure memory files stay current and cross-reference properly
