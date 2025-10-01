@@ -17,9 +17,10 @@
 -- Create temporary test schema (isolated from production)
 DROP SCHEMA IF EXISTS fingerprint_test CASCADE;
 CREATE SCHEMA fingerprint_test;
-SET search_path TO fingerprint_test, public;
+SET search_path TO fingerprint_test, public, extensions;
 
 -- Enable pg_trgm extension (Supabase pre-installed, verified 2025-09-30)
+-- Extension already installed in extensions schema, just ensure search_path includes it
 CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
 
 -- Create normalization function
