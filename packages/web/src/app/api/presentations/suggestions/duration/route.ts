@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/utils/auth-helpers';
 import { createClient } from '@/utils/supabase/server';
 import type { DurationSuggestion, DurationSuggestionRequest } from '@/types';
+import { withCors, handleOPTIONS } from '@/utils/cors';
 
 export const runtime = 'nodejs';
+
+export async function OPTIONS(request: NextRequest) {
+  return handleOPTIONS(request);
+}
 
 /**
  * POST /api/presentations/suggestions/duration
@@ -29,10 +34,10 @@ export async function POST(request: NextRequest) {
     // Authenticate user
     const authUser = await getAuthenticatedUser(request);
     if (!authUser) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
-      );
+      ), request);
     }
 
     // Parse request body
@@ -40,10 +45,10 @@ export async function POST(request: NextRequest) {
     const { title, content } = body;
 
     if (!title || !content || !Array.isArray(content)) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { success: false, error: 'Invalid request: title and content array required' },
         { status: 400 }
-      );
+      ), request);
     }
 
     // Serialize content to text (canonical format)
@@ -63,18 +68,18 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[Duration Suggestion] RPC error:', error);
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { success: false, error: 'Failed to fetch duration suggestion' },
         { status: 500 }
-      );
+      ), request);
     }
 
     // No matches found
     if (!matches || matches.length === 0) {
-      return NextResponse.json({
+      return withCors(NextResponse.json({
         success: true,
         message: 'No similar slides found'
-      });
+      }), request);
     }
 
     // Parse result from RPC
@@ -103,16 +108,16 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       success: true,
       suggestion
-    });
+    }), request);
 
   } catch (error) {
     console.error('[Duration Suggestion] Unexpected error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
-    );
+    ), request);
   }
 }

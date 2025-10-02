@@ -66,7 +66,15 @@
       "Bash(npm test:*)",
       "Bash(NODE_ENV=production npm run build)",
       "Bash(gtimeout:*)",
-      "WebFetch(domain:answers.netlify.com)"
+      "WebFetch(domain:answers.netlify.com)",
+      "Bash(for file in packages/web/src/app/api/devices/*/route.ts packages/web/src/app/api/presentations/*/route.ts packages/web/src/app/api/presentations/*/*/route.ts packages/web/src/app/api/user/*/route.ts packages/web/src/app/api/user/*/*/route.ts)",
+      "Bash(do)",
+      "Bash(if [ -f \"$file\" ])",
+      "Bash(then)",
+      "Bash(echo \"=== $file ===\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(for:*)"
     ],
     "deny": []
   }

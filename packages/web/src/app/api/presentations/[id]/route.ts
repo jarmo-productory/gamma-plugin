@@ -7,8 +7,13 @@ import {
   addCacheHeaders,
   CACHE_CONFIG,
 } from '@/utils/cache-helpers';
+import { withCors, handleOPTIONS } from '@/utils/cors';
 
 export const runtime = 'nodejs'
+
+export async function OPTIONS(request: NextRequest) {
+  return handleOPTIONS(request);
+}
 
 export async function GET(
   request: NextRequest,
@@ -18,19 +23,19 @@ export async function GET(
     // Authenticate user (device token or Supabase session)
     const authUser = await getAuthenticatedUser(request);
     if (!authUser) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      );
+      ), request);
     }
 
     // Get database user ID for RLS
     const dbUserId = await getDatabaseUserId(authUser);
     if (!dbUserId) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'User not found in database' },
         { status: 404 }
-      );
+      ), request);
     }
 
     const { id } = await params;
@@ -42,11 +47,11 @@ export async function GET(
       });
       if (error) {
         console.error('[Presentations Get] RPC error:', error);
-        return NextResponse.json({ error: 'Failed to fetch presentation' }, { status: 500 });
+        return withCors(NextResponse.json({ error: 'Failed to fetch presentation' }, { status: 500 }), request);
       }
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) {
-        return NextResponse.json({ error: 'Presentation not found' }, { status: 404 });
+        return withCors(NextResponse.json({ error: 'Presentation not found' }, { status: 404 }), request);
       }
       const formattedPresentation = {
         id: row.id,
@@ -67,15 +72,15 @@ export async function GET(
       // Check for conditional request
       const conditionalResponse = handleConditionalRequest(request, etag);
       if (conditionalResponse) {
-        return conditionalResponse;
+        return withCors(conditionalResponse, request);
       }
 
       // Create response with cache headers
       const response = NextResponse.json(responseData);
-      return addCacheHeaders(response, etag, {
+      return withCors(addCacheHeaders(response, etag, {
         ...CACHE_CONFIG.presentations.detail,
         private: true, // User-specific data should be private
-      });
+      }), request);
     }
 
     const supabase = await createAuthenticatedSupabaseClient(authUser);
@@ -87,16 +92,16 @@ export async function GET(
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: 'Presentation not found' },
           { status: 404 }
-        );
+        ), request);
       }
       console.error('[Presentations Get] Database error:', error);
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Failed to fetch presentation' },
         { status: 500 }
-      );
+      ), request);
     }
 
     // Transform data for frontend
@@ -123,21 +128,21 @@ export async function GET(
     // Check for conditional request
     const conditionalResponse = handleConditionalRequest(request, etag);
     if (conditionalResponse) {
-      return conditionalResponse;
+      return withCors(conditionalResponse, request);
     }
 
     // Create response with cache headers
     const response = NextResponse.json(responseData);
-    return addCacheHeaders(response, etag, {
+    return withCors(addCacheHeaders(response, etag, {
       ...CACHE_CONFIG.presentations.detail,
       private: true, // User-specific data should be private
-    });
+    }), request);
   } catch (error) {
     console.error('[Presentations Get] Unexpected error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to fetch presentation' },
       { status: 500 }
-    );
+    ), request);
   }
 }
 
@@ -149,19 +154,19 @@ export async function DELETE(
     // Authenticate user (device token or Supabase session)
     const authUser = await getAuthenticatedUser(request);
     if (!authUser) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      );
+      ), request);
     }
 
     // Get database user ID for RLS
     const dbUserId = await getDatabaseUserId(authUser);
     if (!dbUserId) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'User not found in database' },
         { status: 404 }
-      );
+      ), request);
     }
 
     const { id } = await params;
@@ -174,13 +179,13 @@ export async function DELETE(
       });
       if (error) {
         console.error('[Presentations Delete] RPC error:', error);
-        return NextResponse.json({ error: 'Failed to delete presentation' }, { status: 500 });
+        return withCors(NextResponse.json({ error: 'Failed to delete presentation' }, { status: 500 }), request);
       }
       const success = data === true;
       if (!success) {
-        return NextResponse.json({ error: 'Presentation not found' }, { status: 404 });
+        return withCors(NextResponse.json({ error: 'Presentation not found' }, { status: 404 }), request);
       }
-      return NextResponse.json({ success: true, message: 'Presentation deleted successfully' });
+      return withCors(NextResponse.json({ success: true, message: 'Presentation deleted successfully' }), request);
     }
 
     // Supabase session path (RLS enforced)
@@ -192,15 +197,15 @@ export async function DELETE(
 
     if (error) {
       console.error('[Presentations Delete] Database error:', error);
-      return NextResponse.json({ error: 'Failed to delete presentation' }, { status: 500 });
+      return withCors(NextResponse.json({ error: 'Failed to delete presentation' }, { status: 500 }), request);
     }
 
-    return NextResponse.json({ success: true, message: 'Presentation deleted successfully' });
+    return withCors(NextResponse.json({ success: true, message: 'Presentation deleted successfully' }), request);
   } catch (error) {
     console.error('[Presentations Delete] Unexpected error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to delete presentation' },
       { status: 500 }
-    );
+    ), request);
   }
 }

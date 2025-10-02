@@ -7,6 +7,7 @@ import {
   addCacheHeaders,
   CACHE_CONFIG,
 } from '@/utils/cache-helpers';
+import { withCors, handleOPTIONS } from '@/utils/cors';
 
 const shouldLogPerformance = process.env.LOG_PRESENTATIONS_PERF === 'true' || process.env.NODE_ENV !== 'production'
 
@@ -25,25 +26,29 @@ const logQueryDuration = (label: string, startedAt: number, count: number) => {
 
 export const runtime = 'nodejs'
 
+export async function OPTIONS(request: NextRequest) {
+  return handleOPTIONS(request);
+}
+
 export async function GET(request: NextRequest) {
   try {
     const startedAt = Date.now()
     // Authenticate user (device token or Supabase session)
     const authUser = await getAuthenticatedUser(request);
     if (!authUser) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      );
+      ), request);
     }
 
     // Get database user ID for RLS
     const dbUserId = await getDatabaseUserId(authUser);
     if (!dbUserId) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'User not found in database' },
         { status: 404 }
-      );
+      ), request);
     }
 
     if (authUser.source === 'device-token') {
@@ -51,7 +56,7 @@ export async function GET(request: NextRequest) {
       const { data, error } = await supabase.rpc('rpc_list_presentations', { p_user_id: dbUserId });
       if (error) {
         console.error('[Presentations List] RPC error:', error);
-        return NextResponse.json({ error: 'Failed to fetch presentations' }, { status: 500 });
+        return withCors(NextResponse.json({ error: 'Failed to fetch presentations' }, { status: 500 }), request);
       }
       const presentations = data || [];
       const formattedPresentations = presentations.map((p: any) => ({
@@ -74,15 +79,15 @@ export async function GET(request: NextRequest) {
       // Check for conditional request
       const conditionalResponse = handleConditionalRequest(request, etag);
       if (conditionalResponse) {
-        return conditionalResponse;
+        return withCors(conditionalResponse, request);
       }
 
       // Create response with cache headers
       const response = NextResponse.json(responseData);
-      return addCacheHeaders(response, etag, {
+      return withCors(addCacheHeaders(response, etag, {
         ...CACHE_CONFIG.presentations.list,
         private: true, // User-specific data should be private
-      });
+      }), request);
     }
 
     const supabase = await createAuthenticatedSupabaseClient(authUser);
@@ -93,10 +98,10 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('[Presentations List] Database error:', error);
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Failed to fetch presentations' },
         { status: 500 }
-      );
+      ), request);
     }
 
     // Transform data for frontend
@@ -125,20 +130,20 @@ export async function GET(request: NextRequest) {
     // Check for conditional request
     const conditionalResponse = handleConditionalRequest(request, etag);
     if (conditionalResponse) {
-      return conditionalResponse;
+      return withCors(conditionalResponse, request);
     }
 
     // Create response with cache headers
     const response = NextResponse.json(responseData);
-    return addCacheHeaders(response, etag, {
+    return withCors(addCacheHeaders(response, etag, {
       ...CACHE_CONFIG.presentations.list,
       private: true, // User-specific data should be private
-    });
+    }), request);
   } catch (error) {
     console.error('[Presentations List] Unexpected error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to fetch presentations' },
       { status: 500 }
-    );
+    ), request);
   }
 }
