@@ -111,17 +111,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   performanceMetrics: false,
 };
 
-// Environment-specific configurations
-const LOCAL_ENVIRONMENT_CONFIG: EnvironmentConfig = {
-  environment: 'development',
-  apiBaseUrl: 'http://localhost:3000',
-  webBaseUrl: 'http://localhost:3000',
-  enableAnalytics: false,
-  logLevel: 'debug',
-  maxStorageSize: 50, // 50MB
-  syncIntervalMs: 30000, // 30 seconds
-};
-
+// CHROME EXTENSION IS LOCKED TO PRODUCTION - NO LOCAL DEVELOPMENT
+// Extension always connects to production API
 const PRODUCTION_ENVIRONMENT_CONFIG: EnvironmentConfig = {
   environment: 'production',
   apiBaseUrl: 'https://productory-powerups.netlify.app',
@@ -132,13 +123,7 @@ const PRODUCTION_ENVIRONMENT_CONFIG: EnvironmentConfig = {
   syncIntervalMs: 30000, // 30 seconds
 };
 
-// Function to get the appropriate environment config - LOCKED TO PRODUCTION
-function getEnvironmentConfig(): EnvironmentConfig {
-  // FORCE PRODUCTION ENVIRONMENT - EXTENSION LOCKED TO PROD
-  return PRODUCTION_ENVIRONMENT_CONFIG;
-}
-
-export const DEFAULT_ENVIRONMENT_CONFIG: EnvironmentConfig = getEnvironmentConfig();
+export const DEFAULT_ENVIRONMENT_CONFIG: EnvironmentConfig = PRODUCTION_ENVIRONMENT_CONFIG;
 
 export const DEFAULT_USER_CONFIG: UserConfig = {
   theme: 'auto',

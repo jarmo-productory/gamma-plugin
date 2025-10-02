@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
       }
       // Device-token path uses SECURITY DEFINER RPC via anon client (RLS compliant)
       const supabase = await createClient();
+
+      // Ensure user record exists before saving presentation
+      await ensureUserRecord(supabase, { id: dbUserId, email: authUser.userEmail });
       const { data, error } = await supabase.rpc('rpc_upsert_presentation_from_device', {
         p_user_id: dbUserId,
         p_gamma_url: canonicalUrl,

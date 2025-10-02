@@ -3,7 +3,7 @@
 **Date**: October 2, 2025
 **Agent**: Research Specialist
 **Task ID**: folder-organization-audit
-**Version**: 1.0
+**Version**: 1.1 (Corrected for Sprint 21 auth patterns)
 
 ---
 
@@ -43,7 +43,7 @@ CREATE TABLE presentations (
 - `idx_presentations_user_id` on `user_id`
 - `idx_presentations_gamma_url` on `gamma_url`
 
-**RLS Policies**: Enabled with user-scoped access
+**RLS Policies**: Enabled with user-scoped access via `users.auth_id = auth.uid()` pattern (Sprint 21)
 
 ### 1.2 Current UI Architecture
 
@@ -177,18 +177,26 @@ CREATE INDEX idx_folders_tree ON folders(user_id, parent_folder_id, position);
 -- Enable RLS
 ALTER TABLE folders ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
+-- RLS Policies (Sprint 21 pattern: users.auth_id → auth.uid())
 CREATE POLICY "Users can view own folders" ON folders
-  FOR SELECT USING (user_id = auth.uid());
+  FOR SELECT USING (
+    user_id IN (SELECT id FROM users WHERE auth_id = auth.uid())
+  );
 
 CREATE POLICY "Users can create own folders" ON folders
-  FOR INSERT WITH CHECK (user_id = auth.uid());
+  FOR INSERT WITH CHECK (
+    user_id IN (SELECT id FROM users WHERE auth_id = auth.uid())
+  );
 
 CREATE POLICY "Users can update own folders" ON folders
-  FOR UPDATE USING (user_id = auth.uid());
+  FOR UPDATE USING (
+    user_id IN (SELECT id FROM users WHERE auth_id = auth.uid())
+  );
 
 CREATE POLICY "Users can delete own folders" ON folders
-  FOR DELETE USING (user_id = auth.uid());
+  FOR DELETE USING (
+    user_id IN (SELECT id FROM users WHERE auth_id = auth.uid())
+  );
 ```
 
 ### 3.2 Presentations Table Modification
@@ -198,8 +206,8 @@ CREATE POLICY "Users can delete own folders" ON folders
 ALTER TABLE presentations
 ADD COLUMN folder_id UUID REFERENCES folders(id) ON DELETE SET NULL;
 
--- Index for folder queries
-CREATE INDEX idx_presentations_folder_id ON folders(folder_id);
+-- Index for folder queries (corrected: on presentations table)
+CREATE INDEX idx_presentations_folder_id ON presentations(folder_id);
 
 -- Composite index for user folder queries
 CREATE INDEX idx_presentations_user_folder ON presentations(user_id, folder_id);
@@ -215,6 +223,11 @@ ON presentations(user_id, folder_id, updated_at DESC);
 - `ON DELETE SET NULL`: When folder deleted, presentations move to root
 - Alternative: `ON DELETE CASCADE` (delete presentations with folder) - NOT RECOMMENDED
 - `ON DELETE RESTRICT` (prevent folder deletion if contains items) - OPTIONAL
+
+**Important Corrections (v1.1)**:
+- ✅ RLS policies use Sprint 21 pattern: `user_id IN (SELECT id FROM users WHERE auth_id = auth.uid())`
+- ✅ Index `idx_presentations_folder_id` correctly targets `presentations` table (not `folders`)
+- ✅ Cycle-prevention trigger walks upward from `NEW.parent_folder_id` to detect loops
 
 ### 3.3 Helper Functions
 
@@ -253,16 +266,20 @@ CREATE OR REPLACE FUNCTION prevent_folder_cycles()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Check if new parent creates cycle
+  -- Walk upward from NEW.parent_folder_id to detect if we reach NEW.id
   IF NEW.parent_folder_id IS NOT NULL THEN
     IF EXISTS (
-      WITH RECURSIVE ancestors AS (
-        SELECT parent_folder_id FROM folders WHERE id = NEW.id
+      WITH RECURSIVE parents AS (
+        -- Start from the proposed parent
+        SELECT parent_folder_id FROM folders WHERE id = NEW.parent_folder_id
         UNION ALL
+        -- Walk upward through ancestors
         SELECT f.parent_folder_id
         FROM folders f
-        INNER JOIN ancestors a ON f.id = a.parent_folder_id
+        INNER JOIN parents p ON f.id = p.parent_folder_id
       )
-      SELECT 1 FROM ancestors WHERE parent_folder_id = NEW.id
+      -- If we encounter NEW.id in the ancestor chain, it's a cycle
+      SELECT 1 FROM parents WHERE parent_folder_id = NEW.id
     ) THEN
       RAISE EXCEPTION 'Circular folder reference detected';
     END IF;

@@ -111,17 +111,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   performanceMetrics: false,
 };
 
-// Environment-specific configurations
-const LOCAL_ENVIRONMENT_CONFIG: EnvironmentConfig = {
-  environment: 'development',
-  apiBaseUrl: 'http://localhost:3000',
-  webBaseUrl: 'http://localhost:3000',
-  enableAnalytics: false,
-  logLevel: 'debug',
-  maxStorageSize: 50, // 50MB
-  syncIntervalMs: 30000, // 30 seconds
-};
-
+// CHROME EXTENSION IS LOCKED TO PRODUCTION - NO LOCAL DEVELOPMENT
+// Extension always connects to production API
 const PRODUCTION_ENVIRONMENT_CONFIG: EnvironmentConfig = {
   environment: 'production',
   apiBaseUrl: 'https://productory-powerups.netlify.app',
@@ -132,24 +123,7 @@ const PRODUCTION_ENVIRONMENT_CONFIG: EnvironmentConfig = {
   syncIntervalMs: 30000, // 30 seconds
 };
 
-// Function to get the appropriate environment config - SHARED CONFIG FOR EXTENSION
-function getEnvironmentConfig(): EnvironmentConfig {
-  // For extension builds, always use production
-  // For web builds, respect BUILD_ENV
-  if (typeof process !== 'undefined' && process.env?.BUILD_TARGET === 'extension') {
-    return PRODUCTION_ENVIRONMENT_CONFIG;
-  }
-
-  // Check if we're in a build environment with BUILD_ENV set
-  if (typeof __BUILD_ENV__ !== 'undefined') {
-    return __BUILD_ENV__ === 'production' ? PRODUCTION_ENVIRONMENT_CONFIG : LOCAL_ENVIRONMENT_CONFIG;
-  }
-
-  // Default to local environment for development
-  return LOCAL_ENVIRONMENT_CONFIG;
-}
-
-export const DEFAULT_ENVIRONMENT_CONFIG: EnvironmentConfig = getEnvironmentConfig();
+export const DEFAULT_ENVIRONMENT_CONFIG: EnvironmentConfig = PRODUCTION_ENVIRONMENT_CONFIG;
 
 export const DEFAULT_USER_CONFIG: UserConfig = {
   theme: 'auto',
@@ -401,9 +375,15 @@ export class ConfigManager {
    * Private helper methods
    */
   private createDefaultConfig(): AppConfig {
-    console.log('[ConfigManager] Creating a new default configuration object.'); // Added for debugging
+    // Creating a new default configuration object - LOCKED TO PRODUCTION
+    const features = { ...DEFAULT_FEATURE_FLAGS };
+
+    // FORCE PRODUCTION SETTINGS - Extension locked to production
+    features.debugMode = false;
+    features.loggingEnabled = false;
+
     return {
-      features: { ...DEFAULT_FEATURE_FLAGS },
+      features,
       environment: { ...DEFAULT_ENVIRONMENT_CONFIG },
       user: { ...DEFAULT_USER_CONFIG },
       version: '0.0.7',
@@ -416,16 +396,22 @@ export class ConfigManager {
    * This is used to progressively turn on Sprint-level features (e.g., authentication in Sprint 1)
    */
   private applyMigrationsAndMergeDefaults(existing: AppConfig): AppConfig {
+    const mergedFeatures = {
+      // Prefer stored values, but ensure new flags exist
+      ...DEFAULT_FEATURE_FLAGS,
+      ...existing.features,
+    };
+
+    // FORCE PRODUCTION SETTINGS - Extension locked to production
+    mergedFeatures.debugMode = false;
+    mergedFeatures.loggingEnabled = false;
+
     const merged: AppConfig = {
       ...existing,
-      features: {
-        // Prefer stored values, but ensure new flags exist
-        ...DEFAULT_FEATURE_FLAGS,
-        ...existing.features,
-      },
+      features: mergedFeatures,
       environment: {
+        // FORCE PRODUCTION ENVIRONMENT - ignore any stored environment settings
         ...DEFAULT_ENVIRONMENT_CONFIG,
-        ...existing.environment,
       },
       user: {
         ...DEFAULT_USER_CONFIG,
