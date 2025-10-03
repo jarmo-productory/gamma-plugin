@@ -35,15 +35,22 @@ export async function POST(request: NextRequest) {
 
     // RLS COMPLIANCE: Device-token path requires RPC-based ops; block direct table access
     if (authUser.source === 'device-token') {
-      const dbUserId = await getDatabaseUserId(authUser);
-      if (!dbUserId) {
-        return withCors(NextResponse.json({ error: 'User not found' }, { status: 404 }), request);
-      }
       // Device-token path uses SECURITY DEFINER RPC via anon client (RLS compliant)
       const supabase = await createClient();
 
-      // Ensure user record exists before saving presentation
-      await ensureUserRecord(supabase, { id: dbUserId, email: authUser.userEmail });
+      // Sync user record and get database user ID via SECURITY DEFINER RPC
+      const { data: dbUserId, error: syncError } = await supabase.rpc('rpc_sync_user_from_auth', {
+        p_auth_id: authUser.userId,
+        p_email: authUser.userEmail
+      });
+
+      if (syncError || !dbUserId) {
+        console.error('user_sync_rpc_fail', { error: syncError, code: syncError?.code, details: syncError?.details });
+        return withCors(NextResponse.json(
+          { error: 'Failed to sync user record' },
+          { status: syncError?.code === 'PGRST116' ? 401 : 422 }
+        ), request);
+      }
       const { data, error } = await supabase.rpc('rpc_upsert_presentation_from_device', {
         p_user_id: dbUserId,
         p_gamma_url: canonicalUrl,
@@ -54,7 +61,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (error) {
-        console.error('presentations_save_rpc_fail', error);
+        console.error('presentations_save_rpc_fail', { error, code: error?.code, details: error?.details, hint: error?.hint });
         return withCors(NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 }), request);
       }
 
