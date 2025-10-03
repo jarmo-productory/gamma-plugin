@@ -46,6 +46,7 @@ function reconcileAndUpdate(newSlides) {
     // Generating new timetable
     const newTimetable = generateTimetable(newSlides);
     renderTimetable(newTimetable);
+    // Don't mark as user change - this is auto-generated
     debouncedSave();
     return;
   }
@@ -73,6 +74,7 @@ function reconcileAndUpdate(newSlides) {
   currentTimetable.items = newItems;
   const recalculatedTimetable = recalculateTimetable(currentTimetable);
   renderTimetable(recalculatedTimetable);
+  // Don't mark as user change - this is auto-reconciliation from background polling
   debouncedSave();
 }
 
@@ -944,22 +946,22 @@ function renderTimetable(timetable) {
 const debouncedSave = debounce(async () => {
   if (currentTimetable && currentPresentationUrl) {
     const key = `timetable-${currentPresentationUrl}`;
-    
+
     // Only sync to cloud if user made actual changes
     if (!userMadeChanges) {
       // No user changes detected, skipping auto-sync to cloud
-      
+
       // Still save locally for UI updates
       await saveData(key, currentTimetable);
       // Timetable saved locally only
       return;
     }
-    
+
     try {
       // Get configuration for sync
       const config = configManager.getConfig();
       const apiBaseUrl = config.environment.apiBaseUrl;
-      
+
       // Use enhanced save with cloud sync if authentication is available
       if (config.features.cloudSync && apiBaseUrl) {
         await saveDataWithSync(key, currentTimetable, {
@@ -969,7 +971,7 @@ const debouncedSave = debounce(async () => {
           enableAutoSync: true,
         });
         // Timetable saved with cloud sync due to user changes
-        
+
         // Reset the flag after successful sync
         userMadeChanges = false;
       } else {
@@ -988,7 +990,7 @@ const debouncedSave = debounce(async () => {
       }
     }
   }
-}, 500);
+}, 2000); // Increased from 500ms to 2000ms to reduce Chrome throttling
 
 function handleSliderInput(event) {
   const newDuration = parseInt(event.target.value, 10);

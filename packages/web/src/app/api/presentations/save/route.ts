@@ -40,15 +40,43 @@ export async function POST(request: NextRequest) {
 
       // Sync user record and get database user ID via SECURITY DEFINER RPC
       // Note: authUser.userId is the Supabase auth UUID (as string from token validation)
+      console.log('user_sync_rpc_attempt', {
+        auth_id: authUser.userId,
+        email: authUser.userEmail,
+        auth_id_type: typeof authUser.userId
+      });
+
       const { data: dbUserId, error: syncError } = await supabase.rpc('rpc_sync_user_from_auth', {
-        p_auth_id: authUser.userId as unknown as string, // Ensure string type for UUID cast
+        p_auth_id: authUser.userId,
         p_email: authUser.userEmail
       });
 
+      console.log('user_sync_rpc_response', {
+        dbUserId,
+        syncError,
+        errorCode: syncError?.code,
+        errorMessage: syncError?.message,
+        errorDetails: syncError?.details,
+        errorHint: syncError?.hint
+      });
+
       if (syncError || !dbUserId) {
-        console.error('user_sync_rpc_fail', { error: syncError, code: syncError?.code, details: syncError?.details });
+        console.error('user_sync_rpc_fail', {
+          error: syncError,
+          code: syncError?.code,
+          message: syncError?.message,
+          details: syncError?.details,
+          hint: syncError?.hint
+        });
         return withCors(NextResponse.json(
-          { error: 'Failed to sync user record' },
+          {
+            error: 'Failed to sync user record',
+            debug: {
+              code: syncError?.code,
+              message: syncError?.message,
+              hint: syncError?.hint
+            }
+          },
           { status: syncError?.code === 'PGRST116' ? 401 : 422 }
         ), request);
       }
