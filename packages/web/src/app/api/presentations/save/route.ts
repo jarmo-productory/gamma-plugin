@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       });
 
       const { data: dbUserId, error: syncError } = await supabase.rpc('rpc_sync_user_from_auth', {
-        p_auth_id: authUser.userId,
+        p_auth_id: authUser.userId, // Supabase client will cast TEXT to UUID
         p_email: authUser.userEmail
       });
 
