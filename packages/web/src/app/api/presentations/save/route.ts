@@ -204,6 +204,13 @@ export async function POST(request: NextRequest) {
       return withCors(NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid body', details: error.issues }, { status: 400 }), request);
     }
     console.error('[Presentations Save] Unexpected error:', error);
-    return withCors(NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 }), request);
+    return withCors(NextResponse.json({
+      error: 'Failed to save presentation',
+      debug: {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        type: error?.constructor?.name
+      }
+    }, { status: 500 }), request);
   }
 }
