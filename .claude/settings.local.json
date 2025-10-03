@@ -39,7 +39,9 @@
       "Bash(pkill:*)",
       "Bash(npm run dev:*)",
       "Bash(xargs sed:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(cat:*)",
+      "Bash(xargs:*)"
     ],
     "deny": []
   }
