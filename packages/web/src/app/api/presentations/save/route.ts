@@ -91,7 +91,15 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error('presentations_save_rpc_fail', { error, code: error?.code, details: error?.details, hint: error?.hint });
-        return withCors(NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 }), request);
+        return withCors(NextResponse.json({
+          error: 'Failed to save presentation',
+          debug: {
+            code: error?.code,
+            message: error?.message,
+            details: error?.details,
+            hint: error?.hint
+          }
+        }, { status: 500 }), request);
       }
 
       const row = Array.isArray(data) ? data[0] : data;
