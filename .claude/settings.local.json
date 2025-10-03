@@ -77,7 +77,8 @@
       "Bash(for:*)",
       "Bash(cat:*)",
       "Bash(BUILD_ENV=production npm run build:extension)",
-      "Bash(BUILD_ENV=production BUILD_TARGET=extension npx vite build)"
+      "Bash(BUILD_ENV=production BUILD_TARGET=extension npx vite build)",
+      "Bash(yes Y)"
     ],
     "deny": []
   }

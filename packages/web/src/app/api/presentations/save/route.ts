@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, getDatabaseUserId } from '@/utils/auth-helpers';
+import { getAuthenticatedUser } from '@/utils/auth-helpers';
 import { createClient } from '@/utils/supabase/server';
 import { ensureUserRecord } from '@/utils/user';
 import { canonicalizeGammaUrl } from '@/utils/url';
@@ -35,71 +35,12 @@ export async function POST(request: NextRequest) {
 
     // RLS COMPLIANCE: Device-token path requires RPC-based ops; block direct table access
     if (authUser.source === 'device-token') {
-      try {
-        // Device-token path uses SECURITY DEFINER RPC via anon client (RLS compliant)
-        const supabase = await createClient();
+      // Device-token path uses SECURITY DEFINER RPC via anon client (RLS compliant)
+      const supabase = await createClient();
 
-        // Sync user record and get database user ID via SECURITY DEFINER RPC
-        // Note: authUser.userId is the Supabase auth UUID (as string from token validation)
-        console.log('user_sync_rpc_attempt', {
-          auth_id: authUser.userId,
-          email: authUser.userEmail,
-          auth_id_type: typeof authUser.userId
-        });
-
-        // Explicitly cast TEXT to UUID to prevent type mismatch errors
-        const authUserId = authUser.userId;
-
-        // Validate UUID format before passing to RPC
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(authUserId)) {
-          console.error('user_sync_invalid_uuid', { authUserId, type: typeof authUserId });
-          return withCors(NextResponse.json({
-            error: 'Invalid user ID format',
-            debug: {
-              authUserId,
-              expectedFormat: 'UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)',
-              receivedType: typeof authUserId
-            }
-          }, { status: 422 }), request);
-        }
-
-        const { data: dbUserId, error: syncError } = await supabase.rpc('rpc_sync_user_from_auth', {
-          p_auth_id: authUserId, // Now validated UUID string
-          p_email: authUser.userEmail
-        });
-
-      console.log('user_sync_rpc_response', {
-        dbUserId,
-        syncError,
-        errorCode: syncError?.code,
-        errorMessage: syncError?.message,
-        errorDetails: syncError?.details,
-        errorHint: syncError?.hint
-      });
-
-      if (syncError || !dbUserId) {
-        console.error('user_sync_rpc_fail', {
-          error: syncError,
-          code: syncError?.code,
-          message: syncError?.message,
-          details: syncError?.details,
-          hint: syncError?.hint
-        });
-        return withCors(NextResponse.json(
-          {
-            error: 'Failed to sync user record',
-            debug: {
-              code: syncError?.code,
-              message: syncError?.message,
-              hint: syncError?.hint
-            }
-          },
-          { status: syncError?.code === 'PGRST116' ? 401 : 422 }
-        ), request);
-      }
       const { data, error } = await supabase.rpc('rpc_upsert_presentation_from_device', {
-        p_user_id: dbUserId,
+        p_auth_id: authUser.userId,
+        p_email: authUser.userEmail || null,
         p_gamma_url: canonicalUrl,
         p_title: payload.title,
         p_start_time: payload.start_time ?? null,
@@ -109,6 +50,7 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error('presentations_save_rpc_fail', { error, code: error?.code, details: error?.details, hint: error?.hint });
+        const status = error?.code === 'P0001' ? 404 : 500;
         return withCors(NextResponse.json({
           error: 'Failed to save presentation',
           debug: {
@@ -117,11 +59,12 @@ export async function POST(request: NextRequest) {
             details: error?.details,
             hint: error?.hint
           }
-        }, { status: 500 }), request);
+        }, { status }), request);
       }
 
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) {
+        console.error('presentations_save_rpc_empty_response');
         return withCors(NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 }), request);
       }
 
@@ -138,24 +81,6 @@ export async function POST(request: NextRequest) {
         updatedAt: row.updated_at,
       };
       return withCors(NextResponse.json({ success: true, presentation: formattedPresentation, message: 'Presentation saved' }), request);
-      } catch (deviceTokenError) {
-        // Catch any errors in the device-token path
-        console.error('device_token_save_error', {
-          error: deviceTokenError,
-          message: deviceTokenError instanceof Error ? deviceTokenError.message : String(deviceTokenError),
-          stack: deviceTokenError instanceof Error ? deviceTokenError.stack : undefined,
-          type: deviceTokenError?.constructor?.name
-        });
-        return withCors(NextResponse.json({
-          error: 'Device token save failed',
-          debug: {
-            message: deviceTokenError instanceof Error ? deviceTokenError.message : String(deviceTokenError),
-            type: deviceTokenError?.constructor?.name,
-            authUserId: authUser.userId,
-            authUserEmail: authUser.userEmail
-          }
-        }, { status: 500 }), request);
-      }
     }
 
     // Web session path: use SSR client and ensure first-party users row

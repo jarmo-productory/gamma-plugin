@@ -603,9 +603,9 @@ function setupAuthSystemOnce() {
     // Auth event received
     if (event.type === 'login' || event.type === 'logout' || event.type === 'session_expired') {
       const isAuthenticated = event.type === 'login';
-      globalAuthState = { 
-        isAuthenticated, 
-        email: event.type === 'login' ? (globalAuthState?.email || '') : ''
+      globalAuthState = {
+        isAuthenticated,
+        email: event.type === 'login' ? (event.user?.email || globalAuthState?.email || '') : ''
       };
       
       // Update all current button instances with debouncing
