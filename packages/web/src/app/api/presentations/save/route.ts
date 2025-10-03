@@ -35,21 +35,39 @@ export async function POST(request: NextRequest) {
 
     // RLS COMPLIANCE: Device-token path requires RPC-based ops; block direct table access
     if (authUser.source === 'device-token') {
-      // Device-token path uses SECURITY DEFINER RPC via anon client (RLS compliant)
-      const supabase = await createClient();
+      try {
+        // Device-token path uses SECURITY DEFINER RPC via anon client (RLS compliant)
+        const supabase = await createClient();
 
-      // Sync user record and get database user ID via SECURITY DEFINER RPC
-      // Note: authUser.userId is the Supabase auth UUID (as string from token validation)
-      console.log('user_sync_rpc_attempt', {
-        auth_id: authUser.userId,
-        email: authUser.userEmail,
-        auth_id_type: typeof authUser.userId
-      });
+        // Sync user record and get database user ID via SECURITY DEFINER RPC
+        // Note: authUser.userId is the Supabase auth UUID (as string from token validation)
+        console.log('user_sync_rpc_attempt', {
+          auth_id: authUser.userId,
+          email: authUser.userEmail,
+          auth_id_type: typeof authUser.userId
+        });
 
-      const { data: dbUserId, error: syncError } = await supabase.rpc('rpc_sync_user_from_auth', {
-        p_auth_id: authUser.userId, // Supabase client will cast TEXT to UUID
-        p_email: authUser.userEmail
-      });
+        // Explicitly cast TEXT to UUID to prevent type mismatch errors
+        const authUserId = authUser.userId;
+
+        // Validate UUID format before passing to RPC
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(authUserId)) {
+          console.error('user_sync_invalid_uuid', { authUserId, type: typeof authUserId });
+          return withCors(NextResponse.json({
+            error: 'Invalid user ID format',
+            debug: {
+              authUserId,
+              expectedFormat: 'UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)',
+              receivedType: typeof authUserId
+            }
+          }, { status: 422 }), request);
+        }
+
+        const { data: dbUserId, error: syncError } = await supabase.rpc('rpc_sync_user_from_auth', {
+          p_auth_id: authUserId, // Now validated UUID string
+          p_email: authUser.userEmail
+        });
 
       console.log('user_sync_rpc_response', {
         dbUserId,
@@ -120,6 +138,24 @@ export async function POST(request: NextRequest) {
         updatedAt: row.updated_at,
       };
       return withCors(NextResponse.json({ success: true, presentation: formattedPresentation, message: 'Presentation saved' }), request);
+      } catch (deviceTokenError) {
+        // Catch any errors in the device-token path
+        console.error('device_token_save_error', {
+          error: deviceTokenError,
+          message: deviceTokenError instanceof Error ? deviceTokenError.message : String(deviceTokenError),
+          stack: deviceTokenError instanceof Error ? deviceTokenError.stack : undefined,
+          type: deviceTokenError?.constructor?.name
+        });
+        return withCors(NextResponse.json({
+          error: 'Device token save failed',
+          debug: {
+            message: deviceTokenError instanceof Error ? deviceTokenError.message : String(deviceTokenError),
+            type: deviceTokenError?.constructor?.name,
+            authUserId: authUser.userId,
+            authUserEmail: authUser.userEmail
+          }
+        }, { status: 500 }), request);
+      }
     }
 
     // Web session path: use SSR client and ensure first-party users row
@@ -214,4 +250,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 }), request);
   }
 }
-// Cache bust: Fri Oct  3 14:42:46 EEST 2025
+// Cache bust: Fri Oct  3 15:15:00 EEST 2025 - UUID validation + device-token error handling
