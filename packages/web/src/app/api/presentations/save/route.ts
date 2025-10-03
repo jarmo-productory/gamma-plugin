@@ -39,8 +39,9 @@ export async function POST(request: NextRequest) {
       const supabase = await createClient();
 
       // Sync user record and get database user ID via SECURITY DEFINER RPC
+      // Note: authUser.userId is the Supabase auth UUID (as string from token validation)
       const { data: dbUserId, error: syncError } = await supabase.rpc('rpc_sync_user_from_auth', {
-        p_auth_id: authUser.userId,
+        p_auth_id: authUser.userId as unknown as string, // Ensure string type for UUID cast
         p_email: authUser.userEmail
       });
 
