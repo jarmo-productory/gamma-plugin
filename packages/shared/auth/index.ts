@@ -79,32 +79,45 @@ export class AuthManager {
     }
   }
 
+  private isTokenActive(token: { token: string; expiresAt?: string } | null): boolean {
+    if (!token || !token.token) {
+      return false;
+    }
+
+    if (!token.expiresAt) {
+      return true;
+    }
+
+    return new Date(token.expiresAt) > new Date();
+  }
+
   private async updateAuthState() {
     try {
-      // Check device token authentication
-      const token = await deviceAuth.getStoredToken();
-      const isAuthenticated = !!(token && token.token);
-      
+      let token = await deviceAuth.getStoredToken();
+      let hasActiveToken = this.isTokenActive(token);
+
       let user: UserProfile | null = null;
-      if (isAuthenticated) {
-        try {
-          user = await this.getCurrentUser();
-        } catch (error) {
-          console.warn('[AuthManager] Failed to get current user:', error);
-        }
+      if (hasActiveToken) {
+        user = await this.getCurrentUser();
+        // getCurrentUser might clear token if invalid
+        token = await deviceAuth.getStoredToken();
+        hasActiveToken = this.isTokenActive(token);
       }
 
       this.authState = {
-        isAuthenticated: !!user,
+        isAuthenticated: hasActiveToken,
         user,
-        session: token ? {
+        session: hasActiveToken && token ? {
           userId: user?.id || '',
           token: token.token,
           expiresAt: token.expiresAt,
-          isActive: new Date(token.expiresAt) > new Date(),
+          isActive: hasActiveToken,
         } : null,
         lastChecked: new Date().toISOString(),
       };
+
+      this.authCache.result = this.authState.isAuthenticated;
+      this.authCache.timestamp = Date.now();
 
       this.emitAuthEvent({
         type: this.authState.isAuthenticated ? 'login' : 'logout',
@@ -113,92 +126,116 @@ export class AuthManager {
       });
     } catch (error) {
       console.error('[AuthManager] Error updating auth state:', error);
+      this.authState = {
+        isAuthenticated: false,
+        user: null,
+        session: null,
+        lastChecked: new Date().toISOString(),
+      };
+      this.authCache.result = false;
+      this.authCache.timestamp = Date.now();
+      this.emitAuthEvent({
+        type: 'logout',
+        user: null,
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 
 
   async isAuthenticated(): Promise<boolean> {
-    // Sprint 27 Fix: Check cache first to prevent excessive API calls
     if (this.authCache.isValid()) {
       return this.authCache.result;
     }
 
-    // For device-based auth, first do lightweight local check
-    const token = await deviceAuth.getStoredToken();
-    if (!token || !token.token) {
+    let token = await deviceAuth.getStoredToken();
+    if (!this.isTokenActive(token)) {
+      this.authState.user = null;
+      this.authState.session = null;
+      this.authState.isAuthenticated = false;
       this.authCache.result = false;
       this.authCache.timestamp = Date.now();
       return false;
     }
 
-    // Check if token is obviously expired locally first
-    if (token.expiresAt && new Date(token.expiresAt) <= new Date()) {
+    const user = await this.getCurrentUser();
+    token = await deviceAuth.getStoredToken();
+    const stillActive = this.isTokenActive(token);
+
+    if (!stillActive) {
+      this.authState.user = null;
+      this.authState.session = null;
+      this.authState.isAuthenticated = false;
       this.authCache.result = false;
       this.authCache.timestamp = Date.now();
       return false;
     }
 
-    try {
-      // Only make API call if token appears valid locally
-      const user = await this.getCurrentUser();
-      const result = !!user;
-      
-      // Update cache
-      this.authCache.result = result;
-      this.authCache.timestamp = Date.now();
-      
-      return result;
-    } catch (error) {
-      console.warn('[AuthManager] Token validation failed:', error);
-      this.authCache.result = false;
-      this.authCache.timestamp = Date.now();
-      return false;
+    if (user) {
+      this.authState.user = user;
+      this.authState.session = token ? {
+        userId: user.id,
+        token: token.token,
+        expiresAt: token.expiresAt,
+        isActive: true,
+      } : null;
     }
+
+    this.authState.isAuthenticated = true;
+    this.authCache.result = true;
+    this.authCache.timestamp = Date.now();
+    return true;
   }
 
   async getCurrentUser(): Promise<UserProfile | null> {
     // For device-based auth, get user info from profile API
     const token = await deviceAuth.getStoredToken();
-    if (token && token.token) {
-      try {
-        const config = await import('../config/index.js').then(m => m.configManager.getConfig());
-        const apiBaseUrl = config.environment.apiBaseUrl || 'http://localhost:3000';
-        
-        console.log('[AuthManager] Attempting to fetch user profile from:', apiBaseUrl + '/api/user/profile');
-        console.log('[AuthManager] Using device token:', token.token.substring(0, 10) + '...');
-        
-        const response = await deviceAuth.authorizedFetch(apiBaseUrl, '/api/user/profile');
-        console.log('[AuthManager] API response status:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          const user: UserProfile = {
-            id: data.user.id,
-            email: data.user.email,
-            name: data.user.name || data.user.email.split('@')[0],
-            createdAt: data.user.linkedAt || new Date().toISOString(),
-          };
-          
-          // Cache the user data in authState
-          this.authState.user = user;
-          return user;
-        } else {
-          console.warn('[AuthManager] Failed to get user profile:', response.status);
-          // If token is invalid (404/401), clear it so user can get a fresh one
-          if (response.status === 404 || response.status === 401) {
-            console.log('[AuthManager] Clearing invalid device token');
-            await deviceAuth.clearToken();
-          }
-        }
-      } catch (error) {
-        console.error('[AuthManager] Error getting user profile:', error);
-        // Clear token on network errors too - might be stale
-        await deviceAuth.clearToken();
-      }
+    if (!token || !token.token) {
+      this.authState.user = null;
+      return null;
     }
-    
-    // Return cached user data or null
-    return this.authState.user;
+
+    try {
+      const config = await import('../config/index.js').then(m => m.configManager.getConfig());
+      const apiBaseUrl = config.environment.apiBaseUrl || 'http://localhost:3000';
+
+      const response = await deviceAuth.authorizedFetch(apiBaseUrl, '/api/user/profile');
+      console.log('[AuthManager] API response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        const user: UserProfile = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name || data.user.email.split('@')[0],
+          createdAt: data.user.linkedAt || new Date().toISOString(),
+        };
+
+        this.authState.user = user;
+        return user;
+      }
+
+      console.warn('[AuthManager] Failed to get user profile:', response.status);
+
+      if (response.status === 404 || response.status === 401) {
+        console.log('[AuthManager] Clearing invalid device token');
+        await deviceAuth.clearToken();
+        this.authState.user = null;
+        this.authCache.result = false;
+      }
+
+      return null;
+    } catch (error) {
+      const err = error as Error;
+      if (err?.message === 'not_authenticated') {
+        await deviceAuth.clearToken();
+        this.authCache.result = false;
+      }
+
+      console.error('[AuthManager] Error getting user profile:', error);
+      this.authState.user = null;
+      return null;
+    }
   }
 
   async getAuthState(): Promise<AuthState> {

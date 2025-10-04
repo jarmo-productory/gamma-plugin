@@ -1,22 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { withCors, handleOPTIONS } from '@/utils/cors';
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const corsHeaders: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-}
-
-function withCors(res: NextResponse) {
-  Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v))
-  return res
-}
-
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders })
+export async function OPTIONS(request: NextRequest) {
+  return handleOPTIONS(request);
 }
 
 export async function POST(request: NextRequest) {
@@ -48,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error('[Device Register] DB insert failed:', insertError);
-      return withCors(NextResponse.json({ error: 'Failed to register device' }, { status: 500 }));
+      return withCors(NextResponse.json({ error: 'Failed to register device' }, { status: 500 }), request);
     }
 
     console.log(`[Device Register] Created device: ${deviceId} with code: ${code}, fingerprint: ${deviceFingerprint ? 'present' : 'none'}`);
@@ -57,12 +47,12 @@ export async function POST(request: NextRequest) {
       deviceId,
       code,
       expiresAt,
-    }));
+    }), request);
   } catch (error) {
     console.error('[Device Register] Error:', error);
     return withCors(NextResponse.json(
       { error: 'Failed to register device' },
       { status: 500 }
-    ));
+    ), request);
   }
 }

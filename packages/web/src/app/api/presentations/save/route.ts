@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, getDatabaseUserId } from '@/utils/auth-helpers';
+import { getAuthenticatedUser } from '@/utils/auth-helpers';
 import { createClient } from '@/utils/supabase/server';
 import { ensureUserRecord } from '@/utils/user';
 import { canonicalizeGammaUrl } from '@/utils/url';
 import { normalizeSaveRequest } from '@/schemas/presentations';
 import { ZodError } from 'zod';
+import { withCors, handleOPTIONS } from '@/utils/cors';
 
 export const runtime = 'nodejs'
+
+export async function OPTIONS(request: NextRequest) {
+  return handleOPTIONS(request);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,22 +27,20 @@ export async function POST(request: NextRequest) {
     // Authenticate user (device token or Supabase session)
     const authUser = await getAuthenticatedUser(request);
     if (!authUser) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      );
+      ), request);
     }
 
     // RLS COMPLIANCE: Device-token path requires RPC-based ops; block direct table access
     if (authUser.source === 'device-token') {
-      const dbUserId = await getDatabaseUserId(authUser);
-      if (!dbUserId) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
       // Device-token path uses SECURITY DEFINER RPC via anon client (RLS compliant)
       const supabase = await createClient();
+
       const { data, error } = await supabase.rpc('rpc_upsert_presentation_from_device', {
-        p_user_id: dbUserId,
+        p_auth_id: authUser.userId,
+        p_email: authUser.userEmail || null,
         p_gamma_url: canonicalUrl,
         p_title: payload.title,
         p_start_time: payload.start_time ?? null,
@@ -46,13 +49,23 @@ export async function POST(request: NextRequest) {
       });
 
       if (error) {
-        console.error('presentations_save_rpc_fail', error);
-        return NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 });
+        console.error('presentations_save_rpc_fail', { error, code: error?.code, details: error?.details, hint: error?.hint });
+        const status = error?.code === 'P0001' ? 404 : 500;
+        return withCors(NextResponse.json({
+          error: 'Failed to save presentation',
+          debug: {
+            code: error?.code,
+            message: error?.message,
+            details: error?.details,
+            hint: error?.hint
+          }
+        }, { status }), request);
       }
 
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) {
-        return NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 });
+        console.error('presentations_save_rpc_empty_response');
+        return withCors(NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 }), request);
       }
 
       console.log('presentations_save_rpc_success');
@@ -67,7 +80,7 @@ export async function POST(request: NextRequest) {
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       };
-      return NextResponse.json({ success: true, presentation: formattedPresentation, message: 'Presentation saved' });
+      return withCors(NextResponse.json({ success: true, presentation: formattedPresentation, message: 'Presentation saved' }), request);
     }
 
     // Web session path: use SSR client and ensure first-party users row
@@ -121,10 +134,10 @@ export async function POST(request: NextRequest) {
 
     if (result.error) {
       console.error('[Presentations Save] Database error:', result.error);
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Failed to save presentation' },
         { status: 500 }
-      );
+      ), request);
     }
 
     // Transform data for frontend
@@ -141,17 +154,25 @@ export async function POST(request: NextRequest) {
       updatedAt: presentation.updated_at
     };
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       success: true,
       presentation: formattedPresentation,
       message: existingPresentation ? 'Presentation updated successfully' : 'Presentation created successfully'
-    });
+    }), request);
   } catch (error) {
     if (error instanceof ZodError) {
       console.warn('presentations_validation_error', error.issues);
-      return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid body', details: error.issues }, { status: 400 });
+      return withCors(NextResponse.json({ code: 'VALIDATION_ERROR', message: 'Invalid body', details: error.issues }, { status: 400 }), request);
     }
     console.error('[Presentations Save] Unexpected error:', error);
-    return NextResponse.json({ error: 'Failed to save presentation' }, { status: 500 });
+    return withCors(NextResponse.json({
+      error: 'Failed to save presentation',
+      debug: {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        type: error?.constructor?.name
+      }
+    }, { status: 500 }), request);
   }
 }
+// Cache bust: Fri Oct  3 15:15:00 EEST 2025 - UUID validation + device-token error handling

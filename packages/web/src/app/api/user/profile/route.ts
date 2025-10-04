@@ -2,19 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateSecureToken } from '@/utils/secureTokenStore';
 import { createClient } from '@/utils/supabase/server';
 import { ensureUserRecord } from '@/utils/user';
+import { withCors, handleOPTIONS } from '@/utils/cors';
 
 // Declare Node.js runtime for secure operations
 export const runtime = 'nodejs';
+
+export async function OPTIONS(request: NextRequest) {
+  return handleOPTIONS(request);
+}
 
 // Handle device token authentication (for Chrome extension)
 async function handleDeviceTokenAuth(request: NextRequest) {
   // Get the device token from Authorization header
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Authorization header required' },
       { status: 401 }
-    );
+    ), request);
   }
 
   const token = authHeader.substring(7); // Remove "Bearer " prefix
@@ -24,10 +29,10 @@ async function handleDeviceTokenAuth(request: NextRequest) {
   // SPRINT 19 SECURITY: Use secure token validation with hashing
   const tokenData = await validateSecureToken(token);
   if (!tokenData) {
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Invalid or expired token' },
       { status: 401 }
-    );
+    ), request);
   }
   
   const userInfo = {
@@ -38,8 +43,8 @@ async function handleDeviceTokenAuth(request: NextRequest) {
   };
 
   console.log(`[User Profile] SECURE: Retrieved profile via hashed token for user: ${userInfo.email}`);
-  
-  return NextResponse.json({
+
+  return withCors(NextResponse.json({
     user: {
       id: userInfo.id,
       email: userInfo.email,
@@ -47,7 +52,7 @@ async function handleDeviceTokenAuth(request: NextRequest) {
       linkedAt: userInfo.linkedAt,
       lastSeen: userInfo.lastSeen
     }
-  });
+  }), request);
 }
 
 // Handle web session authentication (for web dashboard)
@@ -57,16 +62,16 @@ async function handleWebAuth(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      );
+      ), request);
     }
 
     // Ensure user row exists and return unified DTO including preferences
     const appUser = await ensureUserRecord(supabase, { id: user.id, email: user.email || null })
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       user: {
         id: appUser.id,
         email: appUser.email || user.email,
@@ -75,13 +80,13 @@ async function handleWebAuth(request: NextRequest) {
         email_notifications: appUser.email_notifications ?? true,
         marketing_notifications: appUser.marketing_notifications ?? false,
       }
-    });
+    }), request);
   } catch (error) {
     console.error('[User Profile] Error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to get user profile' },
       { status: 500 }
-    );
+    ), request);
   }
 }
 
@@ -102,10 +107,10 @@ export async function GET(request: NextRequest) {
     return handleWebAuth(request);
   } catch (error) {
     console.error('[User Profile] Error:', error);
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to get user profile' },
       { status: 500 }
-    );
+    ), request);
   }
 }
 
@@ -115,10 +120,10 @@ export async function PUT(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      );
+      ), request);
     }
 
     const body = await request.json();
@@ -126,24 +131,24 @@ export async function PUT(request: NextRequest) {
 
     // Validate name input
     if (!name || typeof name !== 'string') {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Name is required and must be a string' },
         { status: 400 }
-      );
+      ), request);
     }
 
     if (name.trim().length === 0) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Name cannot be empty' },
         { status: 400 }
-      );
+      ), request);
     }
 
     if (name.length > 255) {
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Name must be 255 characters or less' },
         { status: 400 }
-      );
+      ), request);
     }
 
     // Ensure user exists first to avoid brittle PGRST116 handling
@@ -165,15 +170,15 @@ export async function PUT(request: NextRequest) {
         details: e?.details,
         hint: e?.hint,
       });
-      return NextResponse.json(
+      return withCors(NextResponse.json(
         { error: 'Failed to update profile' },
         { status: 500 }
-      );
+      ), request);
     }
 
     console.log(`[User Profile] Updated name for user: ${user.id}`);
 
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       success: true,
       user: {
         id: data.id,
@@ -183,7 +188,7 @@ export async function PUT(request: NextRequest) {
         email_notifications: data.email_notifications ?? appUser.email_notifications ?? true,
         marketing_notifications: data.marketing_notifications ?? appUser.marketing_notifications ?? false,
       }
-    });
+    }), request);
   } catch (error) {
     const e: any = error;
     console.error('[User Profile] Error updating profile:', {
@@ -192,9 +197,9 @@ export async function PUT(request: NextRequest) {
       details: e?.details,
       hint: e?.hint,
     });
-    return NextResponse.json(
+    return withCors(NextResponse.json(
       { error: 'Failed to update profile' },
       { status: 500 }
-    );
+    ), request);
   }
 }

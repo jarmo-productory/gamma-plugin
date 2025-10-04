@@ -371,4 +371,4 @@ setInterval(() => {
       contentPort.postMessage({ type: 'get-slides' });
     }
   }
-}, 5000); // every 5 seconds
+}, 15000); // every 15 seconds (reduced from 5s to prevent Chrome throttling)
