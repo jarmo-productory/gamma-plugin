@@ -111,19 +111,29 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   performanceMetrics: false,
 };
 
-// CHROME EXTENSION IS LOCKED TO PRODUCTION - NO LOCAL DEVELOPMENT
-// Extension always connects to production API
-const PRODUCTION_ENVIRONMENT_CONFIG: EnvironmentConfig = {
-  environment: 'production',
-  apiBaseUrl: 'https://productory-powerups.netlify.app',
-  webBaseUrl: 'https://productory-powerups.netlify.app',
-  enableAnalytics: false,
-  logLevel: 'info',
-  maxStorageSize: 50, // 50MB
-  syncIntervalMs: 30000, // 30 seconds
-};
+// Environment configuration - imported directly (no aliasing needed)
+// Vite will tree-shake unused imports based on BUILD_ENV
+import { ENVIRONMENT_CONFIG as LOCAL_ENV, DEBUG_MODE as LOCAL_DEBUG, LOGGING_ENABLED as LOCAL_LOGGING } from './environment.local';
+import { ENVIRONMENT_CONFIG as PROD_ENV, DEBUG_MODE as PROD_DEBUG, LOGGING_ENABLED as PROD_LOGGING } from './environment.production';
 
-export const DEFAULT_ENVIRONMENT_CONFIG: EnvironmentConfig = PRODUCTION_ENVIRONMENT_CONFIG;
+// Build-time constant replaced by vite
+declare const __BUILD_ENV__: string;
+
+// Direct assignment - vite will inline and tree-shake
+export const DEFAULT_ENVIRONMENT_CONFIG: EnvironmentConfig =
+  __BUILD_ENV__ === 'local' ? LOCAL_ENV :
+  __BUILD_ENV__ === 'development' ? LOCAL_ENV :
+  PROD_ENV;
+
+const DEBUG_MODE =
+  __BUILD_ENV__ === 'local' ? LOCAL_DEBUG :
+  __BUILD_ENV__ === 'development' ? LOCAL_DEBUG :
+  PROD_DEBUG;
+
+const LOGGING_ENABLED =
+  __BUILD_ENV__ === 'local' ? LOCAL_LOGGING :
+  __BUILD_ENV__ === 'development' ? LOCAL_LOGGING :
+  PROD_LOGGING;
 
 export const DEFAULT_USER_CONFIG: UserConfig = {
   theme: 'auto',
@@ -373,16 +383,16 @@ export class ConfigManager {
    * Private helper methods
    */
   private createDefaultConfig(): AppConfig {
-    // Creating a new default configuration object - LOCKED TO PRODUCTION
+    // Creating a new default configuration object
     const features = { ...DEFAULT_FEATURE_FLAGS };
 
-    // FORCE PRODUCTION SETTINGS - Extension locked to production
-    features.debugMode = false;
-    features.loggingEnabled = false;
+    // Set debug mode based on environment (imported from env-specific module)
+    features.debugMode = DEBUG_MODE;
+    features.loggingEnabled = LOGGING_ENABLED;
 
     return {
       features,
-      environment: { ...PRODUCTION_ENVIRONMENT_CONFIG }, // Always use production config
+      environment: { ...DEFAULT_ENVIRONMENT_CONFIG },
       user: { ...DEFAULT_USER_CONFIG },
       version: '0.0.7',
       lastUpdated: new Date().toISOString(),
@@ -400,16 +410,16 @@ export class ConfigManager {
       ...existing.features,
     };
 
-    // FORCE PRODUCTION SETTINGS - Extension locked to production
-    mergedFeatures.debugMode = false;
-    mergedFeatures.loggingEnabled = false;
+    // Set debug mode based on environment (imported from env-specific module)
+    mergedFeatures.debugMode = DEBUG_MODE;
+    mergedFeatures.loggingEnabled = LOGGING_ENABLED;
 
     const merged: AppConfig = {
       ...existing,
       features: mergedFeatures,
       environment: {
-        // FORCE PRODUCTION ENVIRONMENT - ignore any stored environment settings
-        ...PRODUCTION_ENVIRONMENT_CONFIG,
+        // Use environment-specific config
+        ...DEFAULT_ENVIRONMENT_CONFIG,
       },
       user: {
         ...DEFAULT_USER_CONFIG,

@@ -13,21 +13,28 @@ export default defineConfig(({ mode }) => {
         '@shared': resolve(__dirname, 'packages/shared'),
         '@extension': resolve(__dirname, 'packages/extension'),
         '@web': resolve(__dirname, 'packages/web'),
+        // Environment-specific module aliasing
+        '@env-config': resolve(__dirname, `packages/extension/shared-config/environment.${buildEnv === 'production' ? 'production' : 'local'}.ts`),
       },
     },
     define: {
       'process.env.BUILD_TARGET': JSON.stringify(buildTarget),
-      'process.env.BUILD_ENV': JSON.stringify(process.env.BUILD_ENV || 'development'),
-      '__BUILD_ENV__': JSON.stringify(process.env.BUILD_ENV || 'development'),
+      'process.env.BUILD_ENV': JSON.stringify(buildEnv),
+      '__BUILD_ENV__': JSON.stringify(buildEnv),
     }
   }
 
   // Chrome Extension specific configuration
   if (buildTarget === 'extension') {
+    // Use different output directories for local vs production builds
+    const outDir = buildEnv === 'production'
+      ? 'packages/extension/dist-prod'
+      : 'packages/extension/dist';
+
     return {
       ...baseConfig,
       build: {
-        outDir: 'packages/extension/dist',
+        outDir,
         emptyOutDir: true,
         rollupOptions: {
           input: {

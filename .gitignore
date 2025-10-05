@@ -60,6 +60,7 @@ certs/
 
 # Build artifacts - Sprint 18 cleanup
 packages/extension/dist/
+packages/extension/dist-prod/
 packages/web/.next/
 packages/web/out/
 *.tsbuildinfo
