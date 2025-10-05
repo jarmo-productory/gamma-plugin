@@ -82,8 +82,9 @@ beforeAll(() => {
   };
 });
 
-// Mock fetch globally
-global.fetch = vi.fn();
+// Use Node.js native fetch (available in Node 18+)
+// If integration tests need real HTTP calls, don't mock fetch
+// The mock is only for unit tests that need fetch isolation
 
 // Mock Next.js headers
 vi.mock('next/headers', () => ({
