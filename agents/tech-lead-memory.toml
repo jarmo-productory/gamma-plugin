@@ -35,7 +35,25 @@ quality = ["0 errors baseline", "E2E testing mandatory", "TypeScript strict mode
 
 [next]
 architecture = ["Event-driven sync pattern", "WebSocket for real-time"]
-priority = "Sprint 8 codebase cleanup and security hardening"
+priority = "Sprint 36: Fix auth type mismatches; Sprint 37-38: Type safety & JWT refresh"
+
+[sprint36_findings]
+# 2025-10-05 Architecture Evaluation
+root_cause = "TEXT/UUID type mismatch in device_tokens.user_id causing 500 errors"
+auth_flow = "Extension → device token (TEXT user_id) → RPC expects UUID → failure"
+dev_friction = "Extension was locked to production API, no local development"
+recommendation = "Hybrid approach: tactical fixes now, strategic redesign Sprint 37-38"
+
+[sprint36_immediate_actions]
+critical_fix = "Migrate device_tokens.user_id from TEXT to UUID"
+enable_dev = "BUILD_ENV switching with environment.local.ts for localhost"
+token_refresh = "Add extension-compatible refresh endpoint (no session required)"
+type_safety = "Update RPC return types from TEXT to uuid"
+
+[strategic_roadmap]
+sprint37 = "Database type generation (Kysely/Prisma), JWT refresh tokens"
+sprint38 = "Unified config management, remove Vite complexity, E2E auth tests"
+future = "Evaluate OAuth2 device flow (RFC 8628) if multi-tenant needed"
 
 [cleanup_analysis]
 # Sprint 8 discovery findings

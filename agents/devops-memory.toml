@@ -101,6 +101,49 @@ monitoring_ready = "Performance monitoring and alerting systems operational"
 rollback_procedures = "Emergency rollback automation tested and documented"
 documentation_complete = "Comprehensive performance optimization report generated"
 
+[sprint37_production_debugging]
+# Sprint 37: Production Presentation Save Failure Analysis (Oct 5, 2025)
+root_cause = "Missing 'cookies' permission in both manifest.json and manifest.production.json"
+impact = "All presentation saves fail with 401 Unauthorized in production"
+authentication_flow = "Device-token auth uses 'credentials: include' which requires cookies permission"
+
+[critical_findings_oct5]
+missing_permission = "cookies permission not in manifest permissions array"
+why_local_works = "localhost has relaxed CORS/cookie policies; production enforces strict manifest permissions"
+production_state = "Extension builds correctly with proper API URLs, but auth completely broken"
+cors_status = "CORS correctly configured and working (verified via curl)"
+api_health = "All endpoints operational, SSL/TLS configured, only auth failing"
+
+[immediate_fixes_required]
+manifest_update = "Add 'cookies' to permissions array in both manifest files"
+files_to_update = ["packages/extension/manifest.json", "packages/extension/manifest.production.json"]
+testing_steps = ["Rebuild production", "Test device registration", "Verify token storage", "Test save operation"]
+validation_script = "scripts/validate-production-build.sh (cookies permission check)"
+
+[production_monitoring_gaps]
+error_logging = "All logging disabled in production (DEBUG_MODE=false, LOGGING_ENABLED=false)"
+user_feedback = "No error messages shown to users when saves fail"
+monitoring = "No production error tracking, API response monitoring, or authentication metrics"
+recommendation = "Enable error-level logging, add user notifications, deploy Sentry/Rollbar"
+
+[build_validation_verified]
+environment_injection = "__BUILD_ENV__ correctly replaced with 'production' at build time"
+api_urls = "Production build contains correct API URLs (productory-powerups.netlify.app)"
+tree_shaking = "Unused environment configs removed from bundle"
+output_directory = "packages/extension/dist-prod/ for production builds"
+build_command = "BUILD_ENV=production BUILD_TARGET=extension npm run build"
+
+[deployment_checklist]
+pre_deployment = ["Add cookies permission", "Rebuild production", "Run validation script", "Test auth flow"]
+validation = ["Check manifest for cookies", "Verify no localhost URLs", "Confirm production environment"]
+monitoring = ["Setup error tracking", "Configure alerts", "Track auth success rate", "Monitor save operations"]
+
+[lessons_learned]
+permission_gaps = "Extension permissions must be explicitly declared; browser blocks operations silently without them"
+local_vs_prod = "Local development relaxes security policies; production strictly enforces manifest"
+silent_failures = "Production logging disabled = zero visibility into failures"
+auth_brittleness = "credentials: include requires cookies permission for cross-origin requests"
+
 [next]
-tasks = ["Deploy optimizations to production", "Monitor performance improvements", "Validate user experience gains"]
-priority = "Production deployment of navigation performance optimizations"
+tasks = ["Add cookies permission to manifests (CRITICAL)", "Enable error-level production logging", "Implement user error notifications", "Deploy production monitoring"]
+priority = "Fix production authentication by adding cookies permission"
