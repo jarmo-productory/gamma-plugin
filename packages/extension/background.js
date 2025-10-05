@@ -372,3 +372,9 @@ setInterval(() => {
     }
   }
 }, 15000); // every 15 seconds (reduced from 5s to prevent Chrome throttling)
+
+// Handle toolbar button click to open sidebar
+chrome.action.onClicked.addListener(async (tab) => {
+  // Open sidebar when extension icon is clicked
+  await chrome.sidePanel.open({ windowId: tab.windowId });
+});
