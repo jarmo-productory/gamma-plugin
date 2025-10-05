@@ -38,14 +38,16 @@ export async function POST(request: NextRequest) {
       // Device-token path uses SECURITY DEFINER RPC via anon client (RLS compliant)
       const supabase = await createClient();
 
+      // CRITICAL: Parameter order must match RPC function signature for PostgreSQL type validation
+      // RPC signature: (p_auth_id, p_gamma_url, p_title, p_timetable_data, p_start_time, p_total_duration, p_email)
       const { data, error } = await supabase.rpc('rpc_upsert_presentation_from_device', {
         p_auth_id: authUser.userId,
-        p_email: authUser.userEmail || null,
         p_gamma_url: canonicalUrl,
         p_title: payload.title,
+        p_timetable_data: payload.timetable_data,
         p_start_time: payload.start_time ?? null,
         p_total_duration: payload.total_duration ?? null,
-        p_timetable_data: payload.timetable_data,
+        p_email: authUser.userEmail || null,
       });
 
       if (error) {
