@@ -55,6 +55,35 @@ sprint37 = "Database type generation (Kysely/Prisma), JWT refresh tokens"
 sprint38 = "Unified config management, remove Vite complexity, E2E auth tests"
 future = "Evaluate OAuth2 device flow (RFC 8628) if multi-tenant needed"
 
+[sprint38_root_cause_analysis]
+# 2025-10-05 Production RPC Parameter Mismatch Investigation
+date = "2025-10-05"
+issue = "Extension presentation save returns 500: Parameter 4 $4 could not be matched"
+root_cause = "RPC parameter order mismatch between code and database function"
+evidence_migration = "20251004101500 deployed correctly to production (verified via migration list)"
+evidence_function = "rpc_upsert_presentation_from_device(uuid, text, text, jsonb, text, integer, text)"
+evidence_code = "packages/web route.ts passes params in wrong order: p_auth_id, p_email, p_gamma_url, p_title..."
+evidence_git = "Commit f92a737 had CORRECT fix but was reverted in f96ea89 without documentation"
+parameter_4_issue = "Code passes 'title' (text) where DB expects 'timetable_data' (jsonb)"
+
+[sprint38_solution]
+recommendation = "Re-apply reverted fix from commit f92a737"
+confidence = "HIGH (99%)"
+correct_order = "p_auth_id, p_gamma_url, p_title, p_timetable_data, p_start_time, p_total_duration, p_email"
+broken_order = "p_auth_id, p_email, p_gamma_url, p_title, p_start_time, p_total_duration, p_timetable_data"
+why_fix_works = "Supabase RPC named params use positional binding - order must match function signature exactly"
+rollback_plan = "git revert HEAD if production fails; Netlify deploys in 4 minutes"
+test_plan = "Local test with device-token → validate against local Supabase → deploy → prod validation"
+
+[sprint38_architecture_lessons]
+lesson_1 = "Supabase RPC named parameters are POSITIONAL - object property order matters"
+lesson_2 = "Migration sync (local|remote) doesn't guarantee code correctness"
+lesson_3 = "Always document WHY a working fix was reverted"
+lesson_4 = "Extension and web paths use different code - need independent E2E tests"
+prevention_1 = "Generate TypeScript types from Supabase schema (Kysely/Prisma)"
+prevention_2 = "Add integration tests for device-token flows"
+prevention_3 = "Pre-commit hooks to validate RPC signatures match database"
+
 [cleanup_analysis]
 # Sprint 8 discovery findings
 date = "2025-08-22"

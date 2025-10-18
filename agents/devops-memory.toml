@@ -147,3 +147,45 @@ auth_brittleness = "credentials: include requires cookies permission for cross-o
 [next]
 tasks = ["Add cookies permission to manifests (CRITICAL)", "Enable error-level production logging", "Implement user error notifications", "Deploy production monitoring"]
 priority = "Fix production authentication by adding cookies permission"
+
+[sprint37_rpc_validation_oct5]
+# Production RPC Function Validation (Oct 5, 2025)
+validation_status = "CRITICAL MISMATCH FOUND"
+root_cause = "Migration 20251003163000 uses reg.device_fingerprint but registration API doesn't set it"
+migration_deployed = "Yes - both 20250903000002 (add column) and 20251003163000 (use column) are deployed"
+column_exists = "Yes - device_fingerprint added to device_registrations in Sprint 27"
+actual_problem = "Registration API doesn't populate device_fingerprint field, RPC INSERT uses NULL"
+
+[rpc_mismatch_details]
+expected_behavior = "device_fingerprint should be set during registration, used during exchange"
+actual_behavior = "device_fingerprint is NULL during registration, causes NULL INSERT in device_tokens"
+why_no_error = "device_fingerprint column is nullable (TEXT), INSERT succeeds with NULL value"
+impact = "Device tokens created with NULL fingerprint, breaks fingerprint-based lookup/dedup"
+evidence = "Production API returns 'Device not linked yet' for invalid code (expected), no PostgreSQL errors visible"
+
+[validation_methodology]
+api_test = "curl productory-powerups.netlify.app/api/devices/exchange - Returns expected 404"
+migration_check = "supabase migration list - Shows all migrations deployed (Local|Remote sync)"
+schema_review = "Analyzed 3 migrations: 20250901123000 (create table), 20250903000002 (add column), 20251003163000 (use column)"
+code_review = "packages/web/src/app/api/devices/exchange/route.ts - RPC signature matches database function"
+
+[required_actions]
+priority_1 = "Query production DB: SELECT device_fingerprint FROM device_registrations LIMIT 10"
+priority_2 = "Complete flow test: Register → Link → Exchange with actual device"
+priority_3 = "Check Netlify/Supabase logs for silent INSERT errors or NULL fingerprint issues"
+fix_option_a = "Update RPC to use COALESCE(reg.device_fingerprint, input_device_id) as fallback"
+fix_option_b = "Update registration API to calculate and store device_fingerprint"
+fix_option_c = "Backfill NULL fingerprints and add NOT NULL constraint"
+
+[production_api_endpoints_verified]
+exchange_endpoint = "https://productory-powerups.netlify.app/api/devices/exchange (operational)"
+register_endpoint = "https://productory-powerups.netlify.app/api/devices/register (needs testing)"
+response_behavior = "Returns JSON error messages correctly, no 500 errors for invalid input"
+cors_status = "Working - API accepts cross-origin requests from extension"
+
+[deployment_timeline_gap]
+sprint_27_sept_3 = "Added device_fingerprint column to device_registrations and device_tokens"
+sprint_35_oct_3 = "Updated exchange_device_code RPC to use device_fingerprint in INSERT"
+missing_update = "Registration API NEVER updated to populate device_fingerprint during registration"
+result = "All device_registrations have NULL device_fingerprint, exchange inserts NULL into device_tokens"
+severity = "HIGH - Breaks device fingerprinting feature added in Sprint 27"

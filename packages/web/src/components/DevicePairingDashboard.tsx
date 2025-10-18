@@ -56,6 +56,7 @@ export default function DevicePairingDashboard() {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'same-origin',
       body: JSON.stringify({ code: pairingCode }),
     });
 
