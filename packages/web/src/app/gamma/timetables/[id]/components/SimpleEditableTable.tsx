@@ -3,21 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { formatTime, parseStartTimeInput } from '../utils/timeCalculations'
 import { useTimetableActions, useTimetableState } from '../TimetableDetailContext'
-import { Lightbulb, Check, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import {
   fetchDurationSuggestion,
-  loadSlideState,
-  markSlideAsEdited,
-  dismissSuggestion,
-  acceptSuggestion,
-  isUserAuthenticated,
 } from '@/lib/durationSuggestions'
 import type { DurationSuggestion } from '@/types'
 
@@ -28,36 +15,56 @@ export default function SimpleEditableTable() {
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const [suggestions, setSuggestions] = useState<Record<string, DurationSuggestion>>({})
-  const [slideStates, setSlideStates] = useState<Record<string, { userEdited: boolean; suggestionDismissed: boolean }>>({})
 
   const { timetableData } = presentation
 
-  // Load slide states and fetch suggestions on mount
+  // Fetch suggestions on mount - always show if available
   useEffect(() => {
-    if (!isUserAuthenticated()) return
+    let isMounted = true
+    const abortController = new AbortController()
 
-    // Load states for all slides
-    const states: Record<string, any> = {}
-    timetableData.items.forEach(item => {
-      states[item.id] = loadSlideState(presentation.id, item.id)
-    })
-    setSlideStates(states)
+    // Fetch suggestions for all slides with titles
+    const fetchSuggestions = async () => {
+      const itemsWithContent = timetableData.items.filter(
+        item => item.title && item.content && item.content.length > 0
+      )
 
-    // Fetch suggestions for untouched slides
-    timetableData.items.forEach(item => {
-      const state = states[item.id]
-      if (!state.userEdited && !state.suggestionDismissed && item.title) {
-        fetchDurationSuggestion({
-          title: item.title,
-          content: item.content || [],
-        }).then(result => {
-          if (result && (result.confidence === 'high' || result.confidence === 'medium')) {
+      console.log(`[SimpleEditableTable] Fetching suggestions for ${itemsWithContent.length} slides`)
+
+      for (const item of itemsWithContent) {
+        if (!isMounted) break
+
+        try {
+          console.log(`[SimpleEditableTable] Requesting suggestion for "${item.title}"`)
+          const result = await fetchDurationSuggestion({
+            title: item.title,
+            content: item.content || [],
+          })
+
+          if (isMounted && result) {
+            console.log(`[SimpleEditableTable] Got suggestion for "${item.title}": ${JSON.stringify(result)}`)
             setSuggestions(prev => ({ ...prev, [item.id]: result }))
+          } else {
+            console.log(`[SimpleEditableTable] No suggestion returned for "${item.title}"`)
           }
-        })
+        } catch (err) {
+          if (isMounted) {
+            console.error('[Duration Suggestion] Fetch error:', err)
+          }
+        }
       }
-    })
-  }, [presentation.id, timetableData.items])
+    }
+
+    // Only fetch if we have slides
+    if (timetableData.items.length > 0) {
+      fetchSuggestions()
+    }
+
+    return () => {
+      isMounted = false
+      abortController.abort()
+    }
+  }, [presentation.id, timetableData.items.length])
 
   // Focus input when editing starts
   useEffect(() => {
@@ -93,45 +100,11 @@ export default function SimpleEditableTable() {
       const trimmed = (inputValue ?? '').trim()
       const minutes = Number(trimmed)
       if (Number.isFinite(minutes) && minutes >= 0) {
-        // Mark as manually edited
-        markSlideAsEdited(presentation.id, slideId)
-        setSlideStates(prev => ({ ...prev, [slideId]: { ...prev[slideId], userEdited: true } }))
-        setSuggestions(prev => {
-          const updated = { ...prev }
-          delete updated[slideId]
-          return updated
-        })
-
         updateSlideDuration(slideId, Math.round(minutes))
       }
     }
 
     setEditingCell(null)
-  }
-
-  const handleApplySuggestion = (slideId: string) => {
-    const suggestion = suggestions[slideId]
-    if (!suggestion) return
-
-    acceptSuggestion(presentation.id, slideId, suggestion)
-    setSlideStates(prev => ({ ...prev, [slideId]: { ...prev[slideId], userEdited: true } }))
-    setSuggestions(prev => {
-      const updated = { ...prev }
-      delete updated[slideId]
-      return updated
-    })
-
-    updateSlideDuration(slideId, suggestion.averageDuration)
-  }
-
-  const handleDismissSuggestion = (slideId: string) => {
-    dismissSuggestion(presentation.id, slideId)
-    setSlideStates(prev => ({ ...prev, [slideId]: { ...prev[slideId], suggestionDismissed: true } }))
-    setSuggestions(prev => {
-      const updated = { ...prev }
-      delete updated[slideId]
-      return updated
-    })
   }
 
   const cancelEdit = () => {
@@ -209,83 +182,36 @@ export default function SimpleEditableTable() {
                   {/* Duration */}
                   <td className="px-4 py-2 text-sm border-r">
                     <div className="flex items-center gap-2">
-                      {isEditingDuration ? (
-                        <input
-                          ref={inputRef}
-                          type="text"
-                          value={inputValue}
-                          onChange={(e) => setInputValue(e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          onBlur={handleBlur}
-                          className="w-12 px-1 py-0.5 text-sm border-0 outline-none bg-blue-50 focus:bg-blue-100"
-                          placeholder="5"
-                        />
-                      ) : (
-                        <>
-                          <div
-                            className="px-1 py-0.5 cursor-pointer hover:bg-gray-100 rounded"
-                            onClick={() => startEditing(item.id, 'duration', asMinutesString(item.duration))}
-                          >
-                            {asMinutesString(item.duration)}
-                          </div>
+                      <div className="flex flex-col gap-0.5">
+                        {isEditingDuration ? (
+                          <input
+                            ref={inputRef}
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            onBlur={handleBlur}
+                            className="w-12 px-1 py-0.5 text-sm border-0 outline-none bg-blue-50 focus:bg-blue-100"
+                            placeholder="5"
+                          />
+                        ) : (
+                          <>
+                            <div
+                              className="px-1 py-0.5 cursor-pointer hover:bg-gray-100 rounded"
+                              onClick={() => startEditing(item.id, 'duration', asMinutesString(item.duration))}
+                            >
+                              {asMinutesString(item.duration)}
+                            </div>
 
-                          {/* Suggestion Badge */}
-                          {suggestions[item.id] && !slideStates[item.id]?.userEdited && (
-                            <TooltipProvider delayDuration={200}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded px-2 py-1 text-xs animate-in fade-in slide-in-from-left-2 duration-300">
-                                    <Lightbulb className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                                    <span className="font-medium text-blue-700 dark:text-blue-300">
-                                      {suggestions[item.id].averageDuration} min
-                                    </span>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-4 w-4 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleApplySuggestion(item.id)
-                                      }}
-                                    >
-                                      <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-4 w-4 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleDismissSuggestion(item.id)
-                                      }}
-                                    >
-                                      <X className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-                                    </Button>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                  <div className="space-y-1 text-xs">
-                                    <p className="font-semibold">
-                                      AI Suggestion ({suggestions[item.id].confidence} confidence)
-                                    </p>
-                                    <p className="text-muted-foreground">
-                                      Based on {suggestions[item.id].sampleSize} similar slide{suggestions[item.id].sampleSize > 1 ? 's' : ''}
-                                    </p>
-                                    <div className="flex gap-2 text-muted-foreground">
-                                      <span>Range: {suggestions[item.id].durationRange.p25}-{suggestions[item.id].durationRange.p75} min</span>
-                                      <span>•</span>
-                                      <span>Median: {suggestions[item.id].durationRange.median} min</span>
-                                    </div>
-                                    <div className="text-muted-foreground text-[10px]">
-                                      Match: {Math.round(suggestions[item.id].matchQuality.titleSimilarity * 100)}% title, {Math.round(suggestions[item.id].matchQuality.contentSimilarity * 100)}% content
-                                    </div>
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </>
-                      )}
+                            {/* Suggestion Text */}
+                            {suggestions[item.id] && suggestions[item.id].sampleSize > 0 && (
+                              <div className="text-xs text-muted-foreground px-1">
+                                Suggested: {suggestions[item.id].averageDuration} min
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </td>
 

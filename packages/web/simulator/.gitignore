@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.simulator-storage/
+*.log
+.env
+.env.local

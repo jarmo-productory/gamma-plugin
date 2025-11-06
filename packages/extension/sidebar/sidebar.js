@@ -13,6 +13,7 @@ import {
   // copyToClipboard, // Currently unused
 } from '../lib/timetable.js';
 import { saveData, loadData, debounce } from '../lib/storage.js';
+import { fetchDurationSuggestion } from '../lib/durationSuggestions.js';
 
 // Import authentication and configuration infrastructure
 import { authManager } from '@shared/auth';
@@ -32,6 +33,9 @@ let currentPresentationUrl = null; // Track the current presentation
 let userMadeChanges = false;
 let cloudTimestamp = null;
 
+// Duration suggestions cache
+let durationSuggestions = {};
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 let authInitialized = false;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -46,6 +50,8 @@ function reconcileAndUpdate(newSlides) {
     // Generating new timetable
     const newTimetable = generateTimetable(newSlides);
     renderTimetable(newTimetable);
+    // Fetch duration suggestions for new timetable
+    fetchSuggestionsForTimetable(newTimetable);
     // Don't mark as user change - this is auto-generated
     debouncedSave();
     return;
@@ -140,9 +146,13 @@ const updateUIWithNewSlides = async (slides, tabId) => {
     if (storedTimetable) {
       // Found stored timetable
       currentTimetable = storedTimetable;
+      // Fetch suggestions for restored timetable
+      fetchSuggestionsForTimetable(storedTimetable);
     } else {
       // No stored timetable, generating new one
       currentTimetable = generateTimetable(slides);
+      // Fetch suggestions for new timetable
+      fetchSuggestionsForTimetable(currentTimetable);
     }
   }
 
@@ -756,6 +766,54 @@ function updateAuthButtonState(loginToolbarBtn, loginToolbarText, authState) {
   updateSyncControlsWithState(authState.isAuthenticated, authState.email);
 }
 
+/**
+ * Fetches duration suggestions for all slides in the timetable
+ */
+async function fetchSuggestionsForTimetable(timetable) {
+  if (!timetable || !timetable.items) return;
+
+  // Check if user is authenticated
+  const config = configManager.getConfig();
+  if (!config.features.cloudSync || !config.environment.apiBaseUrl) {
+    console.log('[Duration Suggestion] Cloud sync not enabled, skipping suggestions');
+    return;
+  }
+
+  const token = await deviceAuth.getStoredToken();
+  if (!token) {
+    console.log('[Duration Suggestion] No auth token, skipping suggestions');
+    return;
+  }
+
+  // Fetch suggestions for slides with content
+  const itemsWithContent = timetable.items.filter(
+    item => item.title && item.content && item.content.length > 0
+  );
+
+  console.log(`[Duration Suggestion] Fetching suggestions for ${itemsWithContent.length} slides`);
+
+  for (const item of itemsWithContent) {
+    try {
+      const result = await fetchDurationSuggestion({
+        title: item.title,
+        content: item.content || [],
+      });
+
+      if (result) {
+        console.log(`[Duration Suggestion] Got suggestion for "${item.title}": ${result.averageDuration} min`);
+        durationSuggestions[item.id] = result;
+      }
+    } catch (err) {
+      console.error(`[Duration Suggestion] Fetch error for "${item.title}":`, err);
+    }
+  }
+
+  // Re-render to show suggestions
+  if (Object.keys(durationSuggestions).length > 0) {
+    renderTimetable(timetable);
+  }
+}
+
 function renderTimetable(timetable) {
   // renderTimetable() called - about to recreate login button
   currentTimetable = timetable;
@@ -873,6 +931,12 @@ function renderTimetable(timetable) {
     itemDiv.className = 'slide-item';
     const contentHtml = generateContentHtml(item.content);
 
+    // Get suggestion for this slide (if available)
+    const suggestion = durationSuggestions[item.id];
+    const suggestionHtml = suggestion && suggestion.sampleSize > 0
+      ? `<div class="duration-suggestion">Suggested: ${suggestion.averageDuration} min</div>`
+      : '';
+
     itemDiv.innerHTML = `
       <div class="slide-item-header">
         <h3 class="slide-item__title">${item.title}</h3>
@@ -883,6 +947,7 @@ function renderTimetable(timetable) {
       <div class="duration-slider-container">
         <input type="range" min="0" max="60" value="${item.duration}" class="duration-slider" data-slide-id="${item.id}">
         <span class="duration-display">${parseInt(item.duration, 10)} min</span>
+        ${suggestionHtml}
       </div>
       <div class="slide-item-content">${contentHtml}</div>
     `;

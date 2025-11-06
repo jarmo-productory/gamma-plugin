@@ -313,6 +313,14 @@ input[type='range'].duration-slider::-moz-range-thumb {
   text-align: right;
 }
 
+.duration-suggestion {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: auto;
+  font-style: italic;
+  white-space: nowrap;
+}
+
 .time-display-section {
   display: flex;
   align-items: center;

@@ -11,6 +11,7 @@ interface TimetableDetailViewProps {
   presentation: Presentation
   onSave: (updatedPresentation: Presentation) => void
   saving: boolean
+  onUnsavedChangesChange?: (hasChanges: boolean) => void
 }
 
 type TimetableReducerState = {
@@ -23,8 +24,6 @@ type TimetableReducerAction =
   | { type: 'UPDATE_START_TIME'; payload: string }
   | { type: 'UPDATE_DURATION'; payload: { slideId: string; minutes: number } }
   | { type: 'MARK_SAVED' }
-
-const AUTO_SAVE_DELAY = 1000
 
 const clonePresentation = (source: Presentation): Presentation => ({
   ...source,
@@ -106,16 +105,12 @@ export default function TimetableDetailView({
   presentation,
   onSave,
   saving,
+  onUnsavedChangesChange,
 }: TimetableDetailViewProps) {
   const [state, dispatch] = useReducer(timetableReducer, {
     presentation: clonePresentation(presentation),
     hasUnsavedChanges: false,
   })
-
-  const latestOnSaveRef = useRef(onSave)
-  useEffect(() => {
-    latestOnSaveRef.current = onSave
-  }, [onSave])
 
   // Sync reducer state with parent presentation after confirmed save
   useEffect(() => {
@@ -123,38 +118,10 @@ export default function TimetableDetailView({
     dispatch({ type: 'SYNC_FROM_SERVER', payload: presentation })
   }, [presentation, saving])
 
-  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
+  // Notify parent about unsaved changes
   useEffect(() => {
-    if (!state.hasUnsavedChanges || saving) {
-      return
-    }
-
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current)
-    }
-
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      latestOnSaveRef.current(state.presentation)
-      dispatch({ type: 'MARK_SAVED' })
-      autoSaveTimeoutRef.current = null
-    }, AUTO_SAVE_DELAY)
-
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current)
-        autoSaveTimeoutRef.current = null
-      }
-    }
-  }, [state.presentation, state.hasUnsavedChanges, saving])
-
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current)
-      }
-    }
-  }, [])
+    onUnsavedChangesChange?.(state.hasUnsavedChanges)
+  }, [state.hasUnsavedChanges, onUnsavedChangesChange])
 
   const updateStartTime = useCallback((time: string) => {
     dispatch({ type: 'UPDATE_START_TIME', payload: time })

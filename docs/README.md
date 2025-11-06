@@ -1,6 +1,49 @@
-# Documentation Index
+# Gamma Timetable Extension - Documentation
 
-**Last Updated:** October 2025 (Sprint 38)
+**Last Updated:** 2025-10-19
+**Status:** ✅ Active - Governance Compliant
+**Governance Version:** 1.0.0
+
+---
+
+## 🎯 Quick Navigation (AI Agents Start Here)
+
+**Looking for something specific? Start here:**
+
+1. **Current Sprint** → [/docs/sprints/](/docs/sprints/) (check latest sprint-XX folder)
+2. **Security & Auth** → [/docs/security/](/docs/security/)
+3. **System Architecture** → [/docs/architecture/](/docs/architecture/)
+4. **Feature Specs** → [/docs/features/](/docs/features/)
+5. **Audit Reports** → [/docs/audits/](/docs/audits/)
+6. **Development Guides** → [/docs/guides/](/docs/guides/)
+7. **Quality Standards** → [/docs/quality/](/docs/quality/)
+
+---
+
+## 📁 Documentation Structure
+
+```
+docs/
+├── README.md                    # This file - master navigation
+├── sprints/                     # Sprint planning and tracking (NESTED ONLY)
+│   ├── sprint-XX/              # Each sprint is a directory
+│   │   ├── README.md           # Sprint navigation (MANDATORY)
+│   │   └── *.md                # Sprint documents
+├── security/                    # Security, auth, compliance (IMMUTABLE)
+│   ├── oauth/                  # OAuth implementation
+│   ├── authentication/         # Auth flows and specs
+│   └── audit-trail/            # Security audits (version tracked)
+├── architecture/                # System design and architecture
+├── features/                    # Feature specifications
+│   ├── planned/                # Planned features
+│   ├── in-progress/            # Active development
+│   └── completed/              # Completed features
+├── audits/                      # Technical audits and analysis
+├── processes/                   # Development processes and workflows
+├── guides/                      # How-to guides and tutorials
+├── quality/                     # Quality standards and governance
+└── archived/                    # Legacy documentation (read-only)
+```
 
 ---
 
@@ -8,7 +51,7 @@
 
 ### Getting Started
 
-1. **[Developer Setup Guide](DEVELOPER_SETUP.md)** (18KB, 827 lines)
+1. **[Developer Setup Guide](DEVELOPER_SETUP.md)**
    - Prerequisites and installation
    - Quick start guide (30 minutes)
    - Environment configuration
@@ -17,25 +60,23 @@
    - Deployment procedures
    - **Start here if you're new to the project**
 
-2. **[Local Development Guide](LOCAL_DEVELOPMENT.md)** (12KB)
+2. **[Local Development Guide](LOCAL_DEVELOPMENT.md)**
    - Setting up local development environment
    - Extension build for localhost:3000
    - Testing with local API server
 
 ### Architecture & Design
 
-3. **[Architecture Documentation](ARCHITECTURE.md)** (16KB, 543 lines)
+3. **[Architecture Documentation](ARCHITECTURE.md)**
    - System overview and components
    - Presentation save flow (current implementation)
    - Authentication and security model
    - Database schema and RPCs
-   - Architecture evolution (Sprint 26-38 timeline)
-   - Deployment architecture
    - **Essential reading for understanding the system**
 
 ### Operations & Support
 
-4. **[Troubleshooting Guide](TROUBLESHOOTING.md)** (16KB, 587 lines)
+4. **[Troubleshooting Guide](TROUBLESHOOTING.md)**
    - Quick diagnostics for common issues
    - Error code reference table
    - Known issues and workarounds
@@ -43,12 +84,27 @@
    - Emergency procedures (rollback, recovery)
    - **Critical for debugging production issues**
 
-5. **[Testing Guide](TESTING.md)** (11KB)
+5. **[Testing Guide](TESTING.md)**
    - Test structure and organization
    - Running tests (unit, integration, E2E)
    - Writing new tests
    - Test data management
    - Continuous Integration
+
+---
+
+## 📋 Documentation Standards
+
+**All documentation MUST follow:**
+
+1. ✅ **Naming Convention:** kebab-case-lowercase.md (no CamelCase, no snake_case)
+2. ✅ **Sprint Structure:** ALL sprints are nested directories with README.md
+3. ✅ **README Required:** Every nested folder (2+ files) needs README.md
+4. ✅ **AI Navigation:** Must be findable in ≤3 file reads
+5. ✅ **Security Docs:** Immutable with version tracking
+6. ✅ **Link Validation:** All internal links must be valid
+
+**See:** [/docs/quality/DOCUMENTATION-GOVERNANCE.md](/docs/quality/DOCUMENTATION-GOVERNANCE.md) for full rules.
 
 ---
 

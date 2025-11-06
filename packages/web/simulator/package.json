@@ -1,0 +1,31 @@
+{
+  "name": "gamma-extension-simulator",
+  "version": "1.0.0",
+  "description": "Node.js simulator for Gamma extension auth and API flows",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "simulator": "./bin/simulator.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "register": "tsx src/index.ts register",
+    "pair": "tsx src/index.ts pair",
+    "save": "tsx src/index.ts save",
+    "status": "tsx src/index.ts status",
+    "clear": "tsx src/index.ts clear"
+  },
+  "keywords": [
+    "gamma",
+    "simulator",
+    "auth",
+    "device-flow"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.0.0"
+  }
+}
