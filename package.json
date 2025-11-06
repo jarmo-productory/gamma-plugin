@@ -1,7 +1,7 @@
 {
   "name": "gamma-timetable-extension",
   "type": "module",
-  "version": "0.0.62",
+  "version": "0.0.63",
   "description": "Chrome extension that extracts slide content from Gamma presentations and generates customizable timetables",
   "keywords": [
     "chrome-extension",

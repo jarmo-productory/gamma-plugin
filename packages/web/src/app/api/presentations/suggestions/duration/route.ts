@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       ), request);
     }
 
-    // No matches found
+    // No matches found - RPC always returns a row, so check sample_size instead
     if (!matches || matches.length === 0) {
       return withCors(NextResponse.json({
         success: true,
@@ -126,6 +126,15 @@ export async function POST(request: NextRequest) {
 
     // Parse result from RPC
     const result = matches[0];
+
+    // CRITICAL: RPC returns zeros when no matches found (due to COALESCE)
+    // Check sample_size to determine if we actually found matches
+    if (result.sample_size === 0) {
+      return withCors(NextResponse.json({
+        success: true,
+        message: 'No similar slides found'
+      }), request);
+    }
 
     // Determine confidence level based on sample size and variance
     let confidence: 'high' | 'medium' | 'low' = 'low';
