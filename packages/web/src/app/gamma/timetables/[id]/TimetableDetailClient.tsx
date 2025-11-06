@@ -14,15 +14,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { 
-  Presentation, 
-  Loader2, 
-  ChevronLeft, 
-  ExternalLink, 
-  Download, 
+import {
+  Presentation,
+  Loader2,
+  ChevronLeft,
+  ExternalLink,
+  Download,
   ChevronDown,
   FileText,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Save
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Presentation as PresentationType } from '../types'
@@ -40,6 +41,7 @@ interface TimetableDetailClientProps {
 export default function TimetableDetailClient({ user, presentationId }: TimetableDetailClientProps) {
   const [saving, setSaving] = useState(false)
   const [showSavedMessage, setShowSavedMessage] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const router = useRouter()
   const { trackRender } = usePerformanceTracker('TimetableDetailClient');
 
@@ -246,6 +248,20 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
     [presentation?.presentationUrl]
   );
 
+  // Warn user before leaving with unsaved changes
+  React.useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
+        return e.returnValue
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
+
   // Memoize status indicator content
   const statusIndicatorContent = useMemo(() => {
     if (saving) {
@@ -345,6 +361,26 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
             {statusIndicatorContent}
           </div>
 
+          {/* Manual Save Button */}
+          <Button
+            onClick={() => presentation && handleSave(presentation)}
+            disabled={saving || !hasUnsavedChanges}
+            variant={hasUnsavedChanges ? "default" : "outline"}
+            size="sm"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                {hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+              </>
+            )}
+          </Button>
+
           {/* View Original Button */}
           {hasOriginalUrl && (
             <Button
@@ -393,10 +429,11 @@ export default function TimetableDetailClient({ user, presentationId }: Timetabl
       
       {/* Content - works with SidebarInset's flex structure */}
       <div className="flex-1 flex flex-col overflow-hidden p-4">
-        <TimetableDetailView 
-          presentation={presentation} 
+        <TimetableDetailView
+          presentation={presentation}
           onSave={handleSave}
           saving={saving}
+          onUnsavedChangesChange={setHasUnsavedChanges}
         />
       </div>
     </AppLayout>

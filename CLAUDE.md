@@ -137,10 +137,26 @@ Reality: "React.memo and useCallback added to all components in 30 minutes"
 4. Ask user before creating new top-level directories
 
 **CRITICAL DOCUMENT ORGANIZATION:**
-- **Audits**: ALWAYS save to `/documents/audits/` folder
-- **Sprint Plans**: ALWAYS save to `/documents/roadmap/` folder
-- **Research**: Use `/documents/audits/` for technical analysis
-- **Planning**: Use `/documents/roadmap/` for sprint planning and roadmaps
+Following [Documentation Governance](/docs/quality/DOCUMENTATION-GOVERNANCE.md):
+
+- **Audits**: ALWAYS save to `/docs/audits/` folder (technical audits, root cause analysis)
+- **Security Audits**: ALWAYS save to `/docs/security/audit-trail/` (immutable with version tracking)
+- **Sprint Plans**: ALWAYS save to `/docs/sprints/sprint-XX/` folder (nested directories ONLY)
+  - Create new sprints: `npm run sprint:create <number> "<name>"` (manual creation FORBIDDEN)
+  - Each sprint MUST have: README.md + .sprint-metadata.json
+- **Research**: Use `/docs/audits/` for technical analysis and research reports
+- **Architecture**: Use `/docs/architecture/` for system design and architecture docs
+- **Features**: Use `/docs/features/{planned,in-progress,completed}/` for feature specs
+- **Guides**: Use `/docs/guides/` for how-to guides and tutorials
+- **Processes**: Use `/docs/processes/` for development workflows and processes
+
+**File Naming Convention (MANDATORY):**
+- ✅ `kebab-case-lowercase.md` - ALWAYS use this format
+- ❌ `CamelCase.md`, `snake_case.md`, `UPPERCASE.md` - FORBIDDEN
+- ❌ Flat sprint files like `sprint-01-name.md` - MUST be nested in `sprint-01/` directory
+
+**Legacy Documentation:**
+- `/docs/archived/` - Legacy docs moved here (read-only, for historical reference only)
 
 ### **🧹 CLEANUP PHASE LESSONS LEARNED (Step 5):**
 

@@ -13,7 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { ExternalLink } from 'lucide-react'
 import { Presentation } from '../../types'
-import EditableDurationCell from './EditableDurationCell'
+import EditableDurationCellWithSuggestion from './EditableDurationCellWithSuggestion'
 import EditableStartTimeCell from './EditableStartTimeCell'
 import { formatTime } from '../utils/timeCalculations'
 
@@ -132,10 +132,13 @@ export default function CustomEditableTable({
 
         {/* Duration - Always editable */}
         <td className="p-4 align-middle border-r border-border/60">
-          <EditableDurationCell
+          <EditableDurationCellWithSuggestion
             duration={item.duration}
-            onDurationChange={onDurationChange}
+            onDurationChange={(newDuration) => onDurationChange(item.id, newDuration)}
             slideId={item.id}
+            presentationId={presentation.id}
+            slideTitle={item.title}
+            slideContent={item.content}
           />
         </td>
 

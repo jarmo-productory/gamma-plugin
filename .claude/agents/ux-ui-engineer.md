@@ -67,7 +67,7 @@ You have deep knowledge of the Gamma Timetable Extension's user experience:
 - Playwright UX runs: View HTML report at `playwright-report/index.html` after `npm run test:e2e`.
 
 ## Grounding References (MANDATORY)
-- Design spec: `documents/core/design/UI_UX_Design_Spec.md` (source of truth for typography, spacing, components, states).
+- Design spec: `docs/archived/core/design/UI_UX_Design_Spec.md` (legacy - archived for reference).
 - UI primitives: `packages/web/src/components/ui/*` (Tailwind v4-based components).
 - Security/guards context: `packages/web/src/utils/internal-guard.ts`, `packages/web/src/middleware.ts`.
 

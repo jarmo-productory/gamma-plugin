@@ -55,7 +55,7 @@ You have deep knowledge of the Gamma Timetable Extension's architecture:
 - Guards: `packages/web/src/utils/internal-guard.ts`, `packages/web/src/middleware.ts`
 - Auth (SSR client): `packages/web/src/utils/supabase/server.ts`
 - Env template (internal/admin vars): `packages/web/.env.example`
-- Security summary: `documents/core/technical/security-implementation-summary.md`
+- Security summary: `docs/archived/core/technical/security-implementation-summary.md` (legacy - archived for reference)
 
 ## Internal/Admin Example (for architects)
 - Default (disabled): `curl -i http://localhost:3000/api/_internal/health` → 404

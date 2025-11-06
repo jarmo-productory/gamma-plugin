@@ -2,21 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
-import { Check, X, Edit3, Lightbulb } from 'lucide-react'
+import { Check, X, Edit3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
   fetchDurationSuggestion,
-  loadSlideState,
-  markSlideAsEdited,
-  dismissSuggestion,
-  acceptSuggestion,
-  isUserAuthenticated,
 } from '@/lib/durationSuggestions'
 import type { DurationSuggestion } from '@/types'
 
@@ -42,24 +31,13 @@ export default function EditableDurationCellWithSuggestion({
   const [isValidInput, setIsValidInput] = useState(true)
   const [suggestion, setSuggestion] = useState<DurationSuggestion | null>(null)
   const [suggestionLoading, setSuggestionLoading] = useState(false)
-  const [slideState, setSlideState] = useState({ userEdited: false, suggestionDismissed: false })
   const inputRef = useRef<HTMLInputElement>(null)
 
   const formattedDuration = String(Math.max(0, Math.round(duration)))
 
-  // Load slide state from localStorage on mount
-  useEffect(() => {
-    const state = loadSlideState(presentationId, slideId)
-    setSlideState(state)
-  }, [presentationId, slideId])
-
-  // Fetch suggestion if conditions are met
+  // Fetch suggestion - always show if available
   useEffect(() => {
     const shouldFetchSuggestion =
-      !slideState.userEdited &&
-      !slideState.suggestionDismissed &&
-      !isEditing &&
-      isUserAuthenticated() &&
       slideTitle &&
       slideContent.length > 0
 
@@ -71,7 +49,8 @@ export default function EditableDurationCellWithSuggestion({
         content: slideContent,
       })
         .then(result => {
-          if (result && (result.confidence === 'high' || result.confidence === 'medium')) {
+          // ALWAYS show suggestions - don't hide based on confidence
+          if (result) {
             setSuggestion(result)
           }
         })
@@ -82,7 +61,7 @@ export default function EditableDurationCellWithSuggestion({
           setSuggestionLoading(false)
         })
     }
-  }, [slideState, isEditing, slideTitle, slideContent, suggestion, suggestionLoading, presentationId, slideId])
+  }, [slideTitle, slideContent, suggestion, suggestionLoading])
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -110,30 +89,8 @@ export default function EditableDurationCellWithSuggestion({
       return
     }
 
-    // Mark as manually edited
-    markSlideAsEdited(presentationId, slideId)
-    setSlideState(prev => ({ ...prev, userEdited: true }))
-    setSuggestion(null) // Hide suggestion immediately
-
     onDurationChange(inputValue)
     setIsEditing(false)
-  }
-
-  const handleApplySuggestion = () => {
-    if (suggestion) {
-      // Accept suggestion
-      acceptSuggestion(presentationId, slideId, suggestion)
-      setSlideState(prev => ({ ...prev, userEdited: true }))
-
-      onDurationChange(String(suggestion.averageDuration))
-      setSuggestion(null)
-    }
-  }
-
-  const handleDismissSuggestion = () => {
-    dismissSuggestion(presentationId, slideId)
-    setSlideState(prev => ({ ...prev, suggestionDismissed: true }))
-    setSuggestion(null)
   }
 
   const handleInputChange = (value: string) => {
@@ -198,13 +155,11 @@ export default function EditableDurationCellWithSuggestion({
     )
   }
 
-  // Render with suggestion badge (if available)
-  const showSuggestion = suggestion && !slideState.userEdited && !slideState.suggestionDismissed
-
+  // Render with suggestion text (if available)
   return (
-    <div className="flex items-center gap-2 w-full">
+    <div className="flex flex-col gap-0.5 w-full">
       <div
-        className="flex items-center justify-between group cursor-pointer hover:bg-muted/50 rounded px-2 py-1 transition-colors flex-1"
+        className="flex items-center justify-between group cursor-pointer hover:bg-muted/50 rounded px-2 py-1 transition-colors"
         onClick={startEditing}
       >
         <span className="text-sm font-medium">
@@ -213,54 +168,20 @@ export default function EditableDurationCellWithSuggestion({
         <Edit3 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
 
-      {showSuggestion && (
-        <div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2 duration-300">
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded px-2 py-1 text-xs">
-                  <Lightbulb className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                  <span className="font-medium text-blue-700 dark:text-blue-300">
-                    {suggestion.averageDuration} min
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-4 w-4 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
-                    onClick={handleApplySuggestion}
-                  >
-                    <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-4 w-4 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
-                    onClick={handleDismissSuggestion}
-                  >
-                    <X className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs">
-                <div className="space-y-1 text-xs">
-                  <p className="font-semibold">
-                    AI Suggestion ({suggestion.confidence} confidence)
-                  </p>
-                  <p className="text-muted-foreground">
-                    Based on {suggestion.sampleSize} similar slide{suggestion.sampleSize > 1 ? 's' : ''}
-                  </p>
-                  <div className="flex gap-2 text-muted-foreground">
-                    <span>Range: {suggestion.durationRange.p25}-{suggestion.durationRange.p75} min</span>
-                    <span>•</span>
-                    <span>Median: {suggestion.durationRange.median} min</span>
-                  </div>
-                  <div className="text-muted-foreground text-[10px]">
-                    Match: {Math.round(suggestion.matchQuality.titleSimilarity * 100)}% title, {Math.round(suggestion.matchQuality.contentSimilarity * 100)}% content
-                  </div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+      {suggestion && (
+        <div className="text-xs text-muted-foreground px-2">
+          {suggestion.sampleSize > 0 ? (
+            <>
+              Suggested: {suggestion.averageDuration} min
+              <span className="ml-1">
+                (based on {suggestion.sampleSize} similar slide{suggestion.sampleSize > 1 ? 's' : ''})
+              </span>
+            </>
+          ) : (
+            <span className="italic opacity-60">
+              No similar slides yet
+            </span>
+          )}
         </div>
       )}
     </div>
